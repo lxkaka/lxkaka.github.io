@@ -6,11 +6,11 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="https://github.lxkaka.io">
-  <title>lxkaka</title>
+  <title>Tag: web server | lxkaka</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta property="og:type" content="website">
 <meta property="og:title" content="lxkaka">
-<meta property="og:url" content="https://github.lxkaka.io/index.html">
+<meta property="og:url" content="https://github.lxkaka.io/tags/web-server/index.html">
 <meta property="og:site_name" content="lxkaka">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="lxkaka">
@@ -147,217 +147,34 @@
           <div id="js-content" class="content-ll">
             
   
-    <article id="post-django_signals" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/07/17/django_signals/">Django Signals小结</a>
-    </h1>
-  
-
-        
-        <a href="/2017/07/17/django_signals/" class="archive-article-date">
-  	<time datetime="2017-07-17T14:10:42.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-07-17</time>
-</a>
-        
-      </header>
     
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="Signals-用处"><a href="#Signals-用处" class="headerlink" title="Signals 用处"></a>Signals 用处</h2><p>django有一个“信号分配器”（signal dispatcher）使得当一些动作在框架的其他地方发生的时候，解耦的应用可以得到提醒。简单说，就是一些动作发生的时候，信号允许特定的发送者去提醒一些接受者，这是很有用的设计，因为可能多处代码对某些事件是很感兴趣，比如删除动作。  </p>
-<p>为此，django提供了很多内置的信号，当django触发某些动作时而通知到用户代码，包括：  </p>
-<ul>
-<li><code>django.db.models.signals.pre_save &amp; django.db.models.signals.post_save</code><br>  modle’s <code>save()</code>被调用之前或之后，发送signal </li>
-<li><code>django.db.models.signals.pre_delete &amp; django.db.models.signals.post_delete</code><br>  model’s <code>delete()</code>或者query_set’s <code>delete()</code>被调用之前或之后，发送signal</li>
-<li><code>django.db.models.signals.m2m_changed</code><br> 当modle的 <code>ManyToManyField</code>有修改时触发</li>
-<li><p><code>django.core.signals.request_started &amp; django.core.signals.request_finished</code><br>   当Django开始或者完成一个http请求  </p>
-<p>同样Django支持自定义Signal<br>如:  </p>
-</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> django.dispatch <span class="keyword">import</span> Signal </div><div class="line">my_signal = Signal(providing_args=[<span class="string">'instance'</span>, <span class="string">'content'</span>])</div></pre></td></tr></table></figure>
-<h2 id="监听-signals"><a href="#监听-signals" class="headerlink" title="监听 signals"></a>监听 signals</h2><p>要想接受信号，首先要用<code>Signal.connect()</code>注册一个接收器函数。发送signal,则接收函数被调用</p>
-<p>`Signal.connect(receiver[,sender=None,weak=True,dispatch_uid=None])<br>参数解释：</p>
-<ul>
-<li>receiver：连接到这个信号的回调函数</li>
-<li>sender：信号的发送者</li>
-<li>weak：是否是弱引用，默认是真。因此，如果你的接收器是是一个本地函数，会被当做垃圾回收，如果你不想，请在使用connect()方法的时候使用weak=False(1.9中以后被废弃）</li>
-<li>dispatch_uid：一个唯一的标识符给信号接收器，避免重复的信号被发送</li>
-</ul>
-<h2 id="定义接收函数"><a href="#定义接收函数" class="headerlink" title="定义接收函数"></a>定义接收函数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_callback</span><span class="params">(sendr, **kwargs)</span>:</span></div><div class="line">    <span class="keyword">print</span> <span class="string">'request finished'</span></div></pre></td></tr></table></figure>
-<p>注意的是所有的信号处理器都需要这两个参数：sender和 **kwargs。因为所有的信号都是发送关键字参数的，可能处理的时候没有任何参数，但不意味着在处理的过程中（在你写的处理函数之前）有任何的参数生成，如果没有传 kwargs参数的话，可能会发生问题；基于这样的考虑，这两个参数都是必须的。</p>
-<h2 id="连接接收函数"><a href="#连接接收函数" class="headerlink" title="连接接收函数"></a>连接接收函数</h2><p>有两中方法可以使用</p>
-<ul>
-<li>手动connect</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> django.core.signals <span class="keyword">import</span> request_finished</div><div class="line"></div><div class="line">request_finished.connect(my_callback)</div></pre></td></tr></table></figure>
-<ul>
-<li>用装饰器receiver</li>
-</ul>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> django.core.signals <span class="keyword">import</span> request_finished</div><div class="line"><span class="keyword">from</span> django.dispatch <span class="keyword">import</span> receiver</div><div class="line"></div><div class="line"><span class="meta">@receiver(request_finished)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_callback</span><span class="params">(sender, **kwargs)</span>:</span></div><div class="line">    print(<span class="string">"Request finished!"</span>)</div></pre></td></tr></table></figure>
-<h2 id="使用完整示例"><a href="#使用完整示例" class="headerlink" title="使用完整示例"></a>使用完整示例</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> django.db.models.signals <span class="keyword">import</span> post_save</div><div class="line"><span class="keyword">from</span> django.dispatch <span class="keyword">import</span> receiver</div><div class="line"></div><div class="line"><span class="meta">@receiver(post_save, sender=GroupSettings)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">group_settings_post_save_trigger</span><span class="params">(sender, instance, created, *args, **kwargs)</span>:</span></div><div class="line">    <span class="string">"""</span></div><div class="line">    本方法会在 GroupSettings.save() 后调用，量大，并且并不保证事务一定成功</div><div class="line">    所以一定注意本方法内一定是调用异步任务，并且业务逻辑并没有严格的数据一致性需求</div><div class="line">    :param sender:</div><div class="line">    :type instance: GroupSettings</div><div class="line">    :type created: bool</div><div class="line">    :param args:</div><div class="line">    :param kwargs:</div><div class="line">    """</div><div class="line">    <span class="keyword">from</span> api.activity_manager <span class="keyword">import</span> send_feed_message</div><div class="line">    <span class="keyword">from</span> api.constants <span class="keyword">import</span> FeedType</div><div class="line"></div><div class="line">    <span class="keyword">if</span> created <span class="keyword">and</span> instance.business_group:</div><div class="line">        <span class="keyword">for</span> business <span class="keyword">in</span> Business.objects.filter(business_group=instance.business_group):</div><div class="line">            send_feed_message(business, FeedType.REBOOT)</div></pre></td></tr></table></figure>
-<h3 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h3><p><code>update()</code> 并不会触发<code>pre_save, post_save</code>信号<br>所以当有这样的操作：<br><code>GroupSettings.objects.filter(business_group=business_group).update(**filterd)</code><br>想触发信号发送时，可以这样修改：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">group = GroupSettings.objects.filter(business_group=business_group).first()</div><div class="line"><span class="keyword">if</span> group:</div><div class="line">    <span class="keyword">for</span> key, value <span class="keyword">in</span> fileted.items():</div><div class="line">        setattr(group, key, value)</div><div class="line">    group.save()</div></pre></td></tr></table></figure>
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
+    
       
       
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Tech Notes</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">back-end</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">Django</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/07/17/django_signals/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2017" class="archive-year">2017</a>
         </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-uWSGI1" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
+        <div class="archives">
     
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/07/14/uWSGI1/">uWSGI--一个WSGI server</a>
-    </h1>
-  
-
-        
-        <a href="/2017/07/14/uWSGI1/" class="archive-article-date">
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      	<div class="article-meta">
+	      	<a href="/2017/07/14/uWSGI1/" class="archive-article-date">
   	<time datetime="2017-07-13T16:20:24.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-07-14</time>
 </a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <ul>
-<li><p><strong>相关背景知识，从 WSGI 说起:</strong></p>
-<p>  Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分为两个部分：一为“服务器”或“网关”，另一为“应用程序”或“应用框架”。在处理一个WSGI请求时，服务器会为应用程序提供环境信息及一个回调函数（Callback Function）。当应用程序完成处理请求后，通过前述的回调函数，将结果回传给服务器。</p>
-<p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/uwsgi1.png" alt="uwsgi"></p>
-<p>  wsgi server可以理解为一个符合wsgi规范的web server，接收request请求，封装一系列环境变量，按照wsgi规范调用注册的wsgi app，最后将response返回给客户端。<br>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/req_process.png" alt="process"></p>
-<pre><code>a. 服务器创建socket，监听端口，等待客户端连接。
-b. 当有请求来时，服务器解析客户端信息放到环境变量environ中，并调用绑定的handler来处理请求。
-c. handler解析这个http请求，将请求信息例如method，path等放到environ中。
-d. wsgi handler再将一些服务器端信息也放到environ中，最后服务器信息，客户端信息，本次请求信息全部都保存到了环境变量environ中。
-e. wsgi handler 调用注册的wsgi app，并将environ和回调函数（start_response)传给wsgi app
-f. wsgi app 将reponse header/status/body 回传给wsgi handler
-g. 最终handler还是通过socket将response信息塞回给客户端。
-</code></pre></li>
-<li><p>CGI:</p>
-<p>  外部应用程序（CGI程序）与Web服务器之间的接口标准，是在CGI程序和Web服务器之间传递信息的规程。简单点说CGI就是规定Web server要传哪些数据、以什么样的格式传递给 CGI 程序。CGI方式在遇到连接请求（用户请求）先要创建cgi的子进程，激活一个CGI进程，然后处理请求，处理完后结束这个子进程。这就是fork-and-execute模式。所以用cgi方式的服务器有多少连接请求就会有多少cgi子进程，子进程反复加载是cgi性能低下的主要原因。当用户请求数量非常多时，会大量挤占系统的资源如内存，CPU时间等，造成效能低下。</p>
-</li>
-<li><p>FASTCGI：</p>
-<p>  FastCGI是从CGI发展改进而来的。Fastcgi会先启一个master，解析配置文件，初始化执行环境，然后再启动多个worker。当请求过来时，master会传递给一个worker，然后立即可以接受下一个请求。这样就避免了重复的劳动，效率自然是高。而且当worker不够用时，master可以根据配置预先启动几个worker等着。</p>
-</li>
-<li><p>uWSGI</p>
-<p>  uWSGI是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议。uWSGI，既不用wsgi协议也不用FastCGI协议，而是自创了一个uwsgi的协议，uwsgi协议是一个uWSGI服务器自有的协议，<br>  它是一个二进制协议,能够携带任意类型的信息，每一个uwsgi packet前4byte为传输信息类型描述，它与WSGI相比是两样东西。<br>  uWSGI 保留了 fastcgi 的优点，实现进程控制，预先设置好启动多个worker处理请求。</p>
-<p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/Nginx_uwsgi.jpg" alt="nginx-uwsgi"></p>
-<p>  nginx 通过 ngx_http_uwsgi_module模块把请求传递个 uWSGI 服务器。</p>
-<p>  示例配置    </p>
-  <figure class="highlight crmsh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">location</span> <span class="title">/ &#123;  	include</span> uwsgi_params;  	uwsgi_pass localhost:<span class="number">9000</span>;&#125;</div></pre></td></tr></table></figure>
-<p>  常用配置参数</p>
-  <figure class="highlight groovy"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">uwsgi_pass [<span class="string">protocol:</span><span class="comment">//]address;   </span></div><div class="line">设置uwsgi服务器的协议和地址，协议可是uwsgi或suwsgi（uwsgi over ssl）； </div><div class="line">地址可以是ip地址，域名，和可选的端口：</div><div class="line">uwsgi_pass <span class="string">localhost:</span><span class="number">9000</span>;</div><div class="line">uwsgi_pass <span class="string">uwsgi:</span><span class="comment">//localhost:9000; </span></div><div class="line">uwsgi_pass <span class="string">suwsgi:</span><span class="comment">//[2001:db8::1]:9090; </span></div><div class="line">也可是unix socket： </div><div class="line">uwsgi_pass <span class="string">unix:</span><span class="regexp">/tmp/</span>uwsgi.socket;</div><div class="line"></div><div class="line">uwsgi_read_timeout time;</div><div class="line"><span class="string">Default:</span>uwsgi_read_timeout <span class="number">60</span>s; </div><div class="line">定义从uwsgi服务器读取响应的超时时间，如果在超时时间内uwsgi服务器没有传输任何东西，连接会被断开。</div></pre></td></tr></table></figure>
-<p>  uwsgi_params 定义了传递到uWSGI服务器的参数，示例：</p>
-<pre><code>uwsgi_param  QUERY_STRING       $query_string;
-uwsgi_param  REQUEST_METHOD     $request_method;
-uwsgi_param  CONTENT_TYPE       $content_type;
-uwsgi_param  CONTENT_LENGTH     $content_length;
-uwsgi_param  REQUEST_URI        $request_uri;
-uwsgi_param  PATH_INFO          $document_uri;
-uwsgi_param  DOCUMENT_ROOT      $document_root;
-uwsgi_param  SERVER_PROTOCOL    $server_protocol;
-uwsgi_param  REMOTE_ADDR        $remote_addr;
-uwsgi_param  REMOTE_PORT        $remote_port;
-uwsgi_param  SERVER_PORT        $server_port;
-uwsgi_param  SERVER_NAME        $server_name;
-</code></pre><p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/nginx_uwsgi2.png" alt="nignx-uwsgi2"></p>
-</li>
-<li><p>uWSGI 常用配置项</p>
-<p>  <strong>socket or uwsgi-socket</strong><br>  指定uwsgi的客户端将要连接的socket的路径（使用UNIX socket的情况）或者地址（使用网络地址的情况）。你最多可以同时指定8个socket选项。当使用命令行变量时，可以使用“-s”这个缩写。<br>  <code>--socket /tmp/uwsgi.sock</code></p>
-<p>  以上配置将会绑定到 /tmp/uwsgi.sock 指定的UNIX socket</p>
-<p>  <strong>protocol</strong><br>  设置默认的通信协议（uwsgi，http，fastcgi）<br>  <code>--protocol &lt;protocol&gt;</code></p>
-<p>  <strong>processes or workers</strong><br>  为预先派生模式设置工作进程的数量。这个设置是app能实现简单并且安全的并发能力的基础。设置的工作进程越多，就能越快的处理请求。每一个工作进程都等同于一个系统进程，它消耗内存，所以需要小心设置工作进程的数量。如果设置的数量太多，就有可能是系统崩溃。<br>  <code>--processes 8</code></p>
-<p>  以上配置会产生8个工作进程</p>
-<p>  <strong>harakiri</strong><br>  这个选项会设置harakiri超时时间。如果一个请求花费的时间超过了这个harakiri超时时间，那么这个请求都会被丢弃，并且当前处理这个请求的工作进程会被回收再利用（即重启）。<br>  <code>--harakiri 60</code></p>
-<p>  这个设置会使uwsgi丢弃所有需要60秒才能处理完成的请求。<br>  harakiri-verbose<br>  当一个请求被harakiri杀掉以后，你将在uWSGI日志中得到一条消息。激活这个选项会打印出额外的信息（例如，在linux中会打印出当前的syscall）<br>  <code>--harakiri-verbose</code></p>
-<p>  以上配置会开启harakiri的额外信息。</p>
-<p>  <strong>daemonize</strong><br>  使进程在后台运行，并将日志打到指定的日志文件或者udp服务器–daemonize /var/log/uwsgi.log 这个指令会让uWSGI在后台运行并将日志打到 /var/log/uwsgi.log文件中。</p>
-<p>  <strong>buffer-size</strong><br>  设置用于uwsgi包解析的内部缓存区大小。默认是4k。如果接受一个拥有很多请求头的大请求，可以增加这个值到64k。<br>  <code>--buffer-size 32768</code></p>
-<p>  这个命令会允许uWSGI服务器接收最大为32k的uwsgi包，再大的包就会被拒绝。</p>
-<p>  <strong>auto-procname</strong><br>  这个选项将自动给uWSGI的进程设置一些有意义的名字，例如“uWSGI master”， “uWSGI worker 1”， “uWSGI worker 2”。</p>
-<p>  <strong>procname-prefix</strong><br>  这个选项为进程名指定前缀。</p>
-<p>  <code>--procname-prefix &lt;value&gt;</code></p>
-<p>  <strong>procname-prefix-spaced</strong><br>  用这个选项给进程名指定前缀时，前缀和进程名之间有空格分隔。</p>
-<p>  <code>--procname-prefix-spaced &lt;value&gt;</code></p>
-<p>  <strong>procname-append</strong><br>  这个选项为进程名增加指定的后缀。<br>  <code>--procname-append &lt;value&gt;</code></p>
-<p>  <strong>master</strong><br>  启动主进程。</p>
-<p>  <strong>max-requests</strong><br>  为每个工作进程设置请求数的上限。当一个工作进程处理的请求数达到这个值，那么该工作进程就会被回收重用（重启）。你可以使用这个选项来默默地对抗内存泄漏（尽管这类情况使用reload-on-as和reload-on-rss选项更有用）。</p>
-<p>  <code>[uwsgi]
-  max-requests = 1000</code><br>  上述配置设置工作进程没处理1000个请求就会被回收重用。</p>
-<p>  <strong>socket-timeout</strong><br>  为所有的socket操作设置内部超时时间（默认4秒）。<br>  <code>--socket-timeout 10</code></p>
-<p>  这个配置会结束那些处于不活动状态超过10秒的连接。</p>
-<p>  <strong>module [python plugin required]</strong><br>  加载指定的python WSGI模块（模块路径必须在PYTHONPATH里）</p>
-<p><img src="http://7xorjs.com1.z0.glb.clouddn.com/simple.png" alt="simple" title="简单架构实例"></p>
-</li>
-</ul>
+        </div>
+    	 
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2017/07/14/uWSGI1/">uWSGI--一个WSGI server</a>
+    </h1>
+  
 
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
+        <div class="article-info info-on-right">
+          
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -381,316 +198,19 @@ uwsgi_param  SERVER_NAME        $server_name;
 		</ul>
 	</div>
 
-      
+          
 
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2017/07/14/uWSGI1/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
+        </div>
+        <div class="clearfix"></div>
+    </header>
   </div>
 </article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
   
-    <article id="post-pageFormatNotes" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
+  
+    </div></section>
+  
+
     
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/30/pageFormatNotes/">页面外观样式笔记</a>
-    </h1>
-  
-
-        
-        <a href="/2015/11/30/pageFormatNotes/" class="archive-article-date">
-  	<time datetime="2015-11-30T11:04:33.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-11-30</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="1-行内元素和块级元素的学习"><a href="#1-行内元素和块级元素的学习" class="headerlink" title="1. 行内元素和块级元素的学习"></a>1. 行内元素和块级元素的学习</h2><p>块级元素：总是以一个块的形式表现出来，并且跟同级的兄弟一次竖直排列，左右撑满。</p>
-<p>行内元素：行内元素不占据单独的空间，依附于块级元素，行内元素没有自己的区域。它同样是DOM树的一个节点，在这点上，行内元素和块级元素是没有区别的。行内元素不可以设置宽与高，但可以与其他行内元素位于同一行，行内元素内一般不可以包含块级元素。行内元素的高度一般由元素内部的字体大小决定，宽度由内容的长度控制。常见的行内元素有a,em,strong等。</p>
-<h3 id="行内元素的特点："><a href="#行内元素的特点：" class="headerlink" title="行内元素的特点："></a>行内元素的特点：</h3><ul>
-<li>和其他元素都在一行上；</li>
-<li>高，行高及外边距和内边距不可改变；</li>
-<li>宽度就是它的文字或图片的宽度，不可改变</li>
-<li>行内元素只能容纳文本或者其他行内元素</li>
-</ul>
-<h3 id="块级元素的特点："><a href="#块级元素的特点：" class="headerlink" title="块级元素的特点："></a>块级元素的特点：</h3><ul>
-<li>总是在新行上开始；</li>
-<li>高度，行高以及外边距和内边距都可控制；</li>
-<li>宽度缺省是它的容器的100%，除非设定一个宽度</li>
-<li>它可以容纳内联元素和其他块元素</li>
-</ul>
-<p><font color="red"> hexo generate 时出错： YAMLException: can not read a block mapping entry; a multiline key may not be an implicit key at line 4, column 1<br>注意页面开始的title，date，tag冒号后必须有空格</font></p>
-<h1 id="updating……"><a href="#updating……" class="headerlink" title="updating……"></a>updating……</h1>
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Tech Notes</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">js</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">css</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2015/11/30/pageFormatNotes/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-buidingDynamicDemo" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/29/buidingDynamicDemo/">建立动态演示的记录</a>
-    </h1>
-  
-
-        
-        <a href="/2015/11/29/buidingDynamicDemo/" class="archive-article-date">
-  	<time datetime="2015-11-29T04:10:24.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-11-29</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="用Raphaeljs画图，细节记录"><a href="#用Raphaeljs画图，细节记录" class="headerlink" title="用Raphaeljs画图，细节记录"></a>用<a href="http://raphaeljs.com/" target="_blank" rel="external">Raphaeljs</a>画图，细节记录</h1><h2 id="1-paper-path的用法"><a href="#1-paper-path的用法" class="headerlink" title="1. paper.path的用法"></a>1. <a href="http://raphaeljs.com/reference.html#Paper.path" target="_blank" rel="external">paper.path</a>的用法</h2><p>举例：用Q command<br>The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example, consider the following code:</p>
-<p><code>paper.path([&#39;M&#39;, 50, 150, &#39;Q&#39;, 225, 20, 400, 150]);</code></p>
-<p>这样的表示方法，其中的坐标都是绝对值。<br>如果像这样写,则 c 后面的坐标都为相对起点的距离。 <code>r.path(&quot;M320,240c-50,100,50,110,0,190&quot;).attr({fill: &quot;none&quot;, &quot;stroke-width&quot;: 2});</code>  </p>
-<p>This draws the quadratic Bézier curve shown. The equivalent path using the lowercase variant of the command would be “M 50,150 q 175,-130 350,0”, where the (x, y) and (x1, y1) parameters are the relative distances from the start point (50, 100):</p>
-<p><img src="https://www.packtpub.com/sites/default/files/Article-Images/9161OS_03_10.PNG" alt="示意图"></p>
-<h2 id="2-其他用法"><a href="#2-其他用法" class="headerlink" title="2. 其他用法"></a>2. 其他用法</h2><ul>
-<li>给曲线加箭头<br><code>r.path([&#39;M&#39;,xS,yS,&#39;L&#39;,x1,y1]).attr({&#39;arrow-end&#39;: &#39;classic-wide-long&#39;});</code>  </li>
-<li>加文本<br><code>r.text(x,y,text).attr({&#39;font-size&#39;: 20});</code><br>其他参数可参考<a href="http://raphaeljs.com/reference.html#Element.attr" target="_blank" rel="external">文档</a>  </li>
-<li><p>画圆<br><code>r.circle(x,y,radius).attr({fill: &#39;none&#39;, stroke: color, &#39;stroke-width&#39;: 2});</code></p>
-</li>
-<li><p>把多个raphael object 放到一个类似数组的对象里面，可以一次操作多个元素。<br><code>paper.set();</code><br>例子:</p>
-</li>
-</ul>
-<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">var</span> pathSet = r.set();</div><div class="line">     <span class="keyword">if</span>(peerChoice &amp;&amp; peerPath)&#123;</div><div class="line">     		pathSet.forEach(<span class="function"><span class="keyword">function</span>(<span class="params">element,index</span>)</span>&#123;</div><div class="line">          	element.remove();</div><div class="line">            &#125;);</div><div class="line">      &#125;</div></pre></td></tr></table></figure>
-<p>一个比较好的<a href="http://cancerbero.mbarreneche.com/raphaeltut/" target="_blank" rel="external">raphael tutorial</a></p>
-<h1 id="WebRTC-RLNC-分布式存储系统动态演示Demo截图"><a href="#WebRTC-RLNC-分布式存储系统动态演示Demo截图" class="headerlink" title="WebRTC + RLNC 分布式存储系统动态演示Demo截图"></a>WebRTC + RLNC 分布式存储系统动态演示Demo截图</h1><p><img src="http://7xorjs.com1.z0.glb.clouddn.com/屏幕快照%202015-12-16%20下午12.20.56.png" alt="截图1"><br><img src="http://7xorjs.com1.z0.glb.clouddn.com/屏幕快照%202015-12-16%20下午12.21.24.png" alt="截图2"></p>
-
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Tech Notes</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">js</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2015/11/29/buidingDynamicDemo/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-    <article id="post-blog-md" class="article article-type-post  article-index" itemscope itemprop="blogPost">
-  <div class="article-inner">
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/24/blog-md/">Github Page+Hexo搭建blog</a>
-    </h1>
-  
-
-        
-        <a href="/2015/11/24/blog-md/" class="archive-article-date">
-  	<time datetime="2015-11-23T19:41:53.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2015-11-24</time>
-</a>
-        
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="1-创建自己的Github-page"><a href="#1-创建自己的Github-page" class="headerlink" title="1.创建自己的Github page"></a>1.创建自己的Github page</h2><p>登录 <em><code>https://github.com/lxkaka</code></em> ,创建一个新repository，repository name 设置为 lxkaka.github.io,其他选项默认。点确认<br>然后在这个仓库的页面 <em><code>https://github.com/lxkaka/lxkaka.github.io</code></em> 的右边栏点Settings 往下拉找到GitHub Pages -&gt; Automatic Page generator.<br>访问 <em><a href="https://lxkaka.github.io" target="_blank" rel="external">https://lxkaka.github.io</a></em> 就能看到页面。</p>
-<h2 id="2-安装Hexo"><a href="#2-安装Hexo" class="headerlink" title="2. 安装Hexo"></a>2. 安装Hexo</h2><p>首先安装 hexo modul<br><code>$ npm install -g hexo</code></p>
-<p>建立一个文件夹，在次文件夹下<br><code>$ hexo init</code><br><code>$ npm install</code><br>本地的Hexo博客已经初步搭建起来，输入以下指令:<br><code>$ hexo generate</code>//可以简写为 hexo g<br><code>$ hexo server</code>//可以简写为 hexo s</p>
-<h2 id="3-部署Hexo到GitHub上"><a href="#3-部署Hexo到GitHub上" class="headerlink" title="3. 部署Hexo到GitHub上"></a>3. 部署Hexo到GitHub上</h2><p>将本地博客deploy到GitHub上,输入以下指令<br><code>$ npm install hexo-deployer-git --save</code><br>然后打开博客目录的_config.yml文件，设置 url: <a href="http://lxkaka.github.io/" target="_blank" rel="external">http://lxkaka.github.io/</a> deploy的type为git，repository(repo)<br>为：<em><a href="https://github.com/lxkaka/lxkaka.github.io.git" target="_blank" rel="external">https://github.com/lxkaka/lxkaka.github.io.git</a></em>（需要在type和repo后面加上一个空格再填写）。（这一步是绑定自己域名）最后在Hexo目录中找到source文件夹，在其中新建一个文件CNAME，没有后缀名（建议使用Sublime Text新建）内容为你的域名（即ＸXXXXX．XXXXXX，不要加ＷＷＷ之类的前缀），保存。输入以下指令：<br><code>$ hexo g</code><br><code>$ hexo deploy</code>//可简写为 hexo d</p>
-<p>在执行 <code>hexo deploy</code> 后,出现 <em>error deployer not found:git</em> 的错误处理  输入代码：<br><code>npm install hexo-deployer-git --save</code></p>
-<p>目前还没绑定自己的域名。所以只能lxkaka.github.io 访问</p>
-<h2 id="发表新文章"><a href="#发表新文章" class="headerlink" title="发表新文章"></a>发表新文章</h2><p>用hexo发表新文章</p>
-<p><code>$ hexo n &#39;&#39;my new post‘’</code><br>其中my new post为文章标题，执行命令后，会在项目\source_posts中生成my new post.md文件，用编辑器打开编写即可。</p>
-<p>当然，也可以直接在\source_posts中新建一个md文件。<br>写完后，推送到服务器上，执行</p>
-<p><code>$ hexo g</code> #生成<br><code>$ hexo d</code> #部署 # 可与hexo g合并为 hexo d -g</p>
-<h2 id="Note"><a href="#Note" class="headerlink" title="Note:"></a><em>Note:</em></h2><p>头像不显示解决办法:<br>接修改layout/_partial/left-col.ejs的第六行和第八行为：</p>
-<pre><code>&lt;img src=&quot;&lt;%=theme.avatar%&gt;&quot; class=&quot;js-avatar show&quot;&gt;
-&lt;img src=&quot;&lt;%=theme.avatar%&gt;&quot; class=&quot;js-avatar show&quot; style=&quot;width: 100%;height: 100%;opacity: 1;&quot;&gt;
-</code></pre>
-      
-
-      
-    </div>
-    <div class="article-info article-info-index">
-      
-      
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color1">Tech Notes</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-      
-
-      
-        <p class="article-more-link">
-          <a class="article-more-a" href="/2015/11/24/blog-md/">展开全文 >></a>
-        </p>
-      
-
-      
-      <div class="clearfix"></div>
-    </div>
-  </div>
-</article>
-
-<aside class="wrap-side-operation">
-    <div class="mod-side-operation">
-        
-        <div class="jump-container" id="js-jump-container" style="display:none;">
-            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
-                <i class="icon-font icon-back"></i>
-            </a>
-            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
-                <i class="icon-font icon-plane jump-plane"></i>
-            </div>
-        </div>
-        
-        
-    </div>
-</aside>
-
-
-
-
-  
-  
 
 
           </div>
@@ -712,10 +232,10 @@ uwsgi_param  SERVER_NAME        $server_name;
     <script>
 	var yiliaConfig = {
 		mathjax: false,
-		isHome: true,
+		isHome: false,
 		isPost: false,
 		isArchive: false,
-		isTag: false,
+		isTag: true,
 		isCategory: false,
 		open_in_new: false,
 		toc_hide_index: true,
