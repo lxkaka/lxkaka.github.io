@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>uWSI总结(重新编辑) | lxkaka的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="uWSGI–一个WSGI server 相关背景知识，从 WSGI 说起:   Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分">
+<meta name="keywords" content="technique share">
+<meta property="og:type" content="article">
+<meta property="og:title" content="uWSI总结(重新编辑)">
+<meta property="og:url" content="http://lxkaka.github.io/2017/07/14/uWSGI1/index.html">
+<meta property="og:site_name" content="lxkaka的博客">
+<meta property="og:description" content="uWSGI–一个WSGI server 相关背景知识，从 WSGI 说起:   Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分">
+<meta property="og:image" content="http://7xorjs.com1.z0.glb.clouddn.com/uwsgi1.png">
+<meta property="og:image" content="http://7xorjs.com1.z0.glb.clouddn.com/req_process.png">
+<meta property="og:image" content="http://7xorjs.com1.z0.glb.clouddn.com/Nginx_uwsgi.jpg">
+<meta property="og:image" content="http://7xorjs.com1.z0.glb.clouddn.com/nginx_uwsgi2.png">
+<meta property="og:image" content="http://7xorjs.com1.z0.glb.clouddn.com/simple.png">
+<meta property="og:updated_time" content="2017-07-17T15:06:20.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="uWSI总结(重新编辑)">
+<meta name="twitter:description" content="uWSGI–一个WSGI server 相关背景知识，从 WSGI 说起:   Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分">
+<meta name="twitter:image" content="http://7xorjs.com1.z0.glb.clouddn.com/uwsgi1.png">
+  
+    <link rel="alternative" href="/atom.xml" title="lxkaka的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="http://7xorjs.com1.z0.glb.clouddn.com/10549664.jpeg" class="js-avatar show">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">lxkaka</a></h1>
+		</hgroup>
+
+		
+
+		
+			<div class="switch-btn">
+				<div class="icon">
+					<div class="icon-ctn">
+						<div class="icon-wrap icon-house" data-idx="0">
+							<div class="birdhouse"></div>
+							<div class="birdhouse_holes"></div>
+						</div>
+						<div class="icon-wrap icon-ribbon hide" data-idx="1">
+							<div class="ribbon"></div>
+						</div>
+						
+						
+						<div class="icon-wrap icon-me hide" data-idx="3">
+							<div class="user"></div>
+							<div class="shoulder"></div>
+						</div>
+						
+					</div>
+					
+				</div>
+				<div class="tips-box hide">
+					<div class="tips-arrow"></div>
+					<ul class="tips-inner">
+						<li>菜单</li>
+						<li>标签</li>
+						
+						
+						<li>关于我</li>
+						
+					</ul>
+				</div>
+			</div>
+		
+
+		<div class="switch-area">
+			<div class="switch-wrap">
+				<section class="switch-part switch-part1">
+					<nav class="header-menu">
+						<ul>
+						
+							<li><a href="/">主页</a></li>
+				        
+							<li><a href="/archives">所有文章</a></li>
+				        
+						</ul>
+					</nav>
+					<nav class="header-nav">
+						<div class="social">
+							
+								<a class="github" target="_blank" href="https://github.com/lxkaka" title="github">github</a>
+					        
+								<a class="weibo" target="_blank" href="http://www.weibo.com/u/1876567532?wvr=5&" title="weibo">weibo</a>
+					        
+								<a class="facebook" target="_blank" href="https://www.facebook.com/linxiaoking" title="facebook">facebook</a>
+					        
+						</div>
+					</nav>
+				</section>
+				
+				
+				<section class="switch-part switch-part2">
+					<div class="widget tagcloud" id="js-tagcloud">
+						<a href="/tags/technique-notes-css-html/" style="font-size: 10px;">technique notes, css,html</a> <a href="/tags/technique-share/" style="font-size: 20px;">technique share</a>
+					</div>
+				</section>
+				
+				
+				
+
+				
+				
+				<section class="switch-part switch-part3">
+				
+					<div id="js-aboutme">Nothing can define me. I am just at the start point......</div>
+				</section>
+				
+			</div>
+		</div>
+	</header>				
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"></div>
+  		<h1 class="header-author js-mobile-header hide">lxkaka</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				<img lazy-src="http://7xorjs.com1.z0.glb.clouddn.com/10549664.jpeg" class="js-avatar">
+			</div>
+			<hgroup>
+			  <h1 class="header-author">lxkaka</h1>
+			</hgroup>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+					<li><a href="/archives">所有文章</a></li>
+		        
+		        <div class="clearfix"></div>
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/lxkaka" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://www.weibo.com/u/1876567532?wvr=5&" title="weibo">weibo</a>
+			        
+						<a class="facebook" target="_blank" href="https://www.facebook.com/linxiaoking" title="facebook">facebook</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+      <div class="body-wrap"><article id="post-uWSGI1" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/07/14/uWSGI1/" class="article-date">
+  	<time datetime="2017-07-13T16:20:24.000Z" itemprop="datePublished">2017-07-14</time>
+</a>
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      uWSI总结(重新编辑)
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+	<div class="article-tag tagcloud">
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/technique-share/">technique share</a></li></ul>
+	</div>
+
+        
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="uWSGI–一个WSGI-server"><a href="#uWSGI–一个WSGI-server" class="headerlink" title="uWSGI–一个WSGI server"></a>uWSGI–一个WSGI server</h1><ul>
+<li><p><strong>相关背景知识，从 WSGI 说起:</strong></p>
+<p>  Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分为两个部分：一为“服务器”或“网关”，另一为“应用程序”或“应用框架”。在处理一个WSGI请求时，服务器会为应用程序提供环境信息及一个回调函数（Callback Function）。当应用程序完成处理请求后，通过前述的回调函数，将结果回传给服务器。</p>
+<p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/uwsgi1.png" alt="uwsgi"></p>
+<p>  wsgi server可以理解为一个符合wsgi规范的web server，接收request请求，封装一系列环境变量，按照wsgi规范调用注册的wsgi app，最后将response返回给客户端。<br>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/req_process.png" alt="process"></p>
+<pre><code>a. 服务器创建socket，监听端口，等待客户端连接。
+b. 当有请求来时，服务器解析客户端信息放到环境变量environ中，并调用绑定的handler来处理请求。
+c. handler解析这个http请求，将请求信息例如method，path等放到environ中。
+d. wsgi handler再将一些服务器端信息也放到environ中，最后服务器信息，客户端信息，本次请求信息全部都保存到了环境变量environ中。
+e. wsgi handler 调用注册的wsgi app，并将environ和回调函数（start_response)传给wsgi app
+f. wsgi app 将reponse header/status/body 回传给wsgi handler
+g. 最终handler还是通过socket将response信息塞回给客户端。
+</code></pre></li>
+<li><p>CGI:</p>
+<p>  外部应用程序（CGI程序）与Web服务器之间的接口标准，是在CGI程序和Web服务器之间传递信息的规程。简单点说CGI就是规定Web server要传哪些数据、以什么样的格式传递给 CGI 程序。CGI方式在遇到连接请求（用户请求）先要创建cgi的子进程，激活一个CGI进程，然后处理请求，处理完后结束这个子进程。这就是fork-and-execute模式。所以用cgi方式的服务器有多少连接请求就会有多少cgi子进程，子进程反复加载是cgi性能低下的主要原因。当用户请求数量非常多时，会大量挤占系统的资源如内存，CPU时间等，造成效能低下。</p>
+</li>
+<li><p>FASTCGI：</p>
+<p>  FastCGI是从CGI发展改进而来的。Fastcgi会先启一个master，解析配置文件，初始化执行环境，然后再启动多个worker。当请求过来时，master会传递给一个worker，然后立即可以接受下一个请求。这样就避免了重复的劳动，效率自然是高。而且当worker不够用时，master可以根据配置预先启动几个worker等着。</p>
+</li>
+<li><p>uWSGI</p>
+<p>  uWSGI是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议。uWSGI，既不用wsgi协议也不用FastCGI协议，而是自创了一个uwsgi的协议，uwsgi协议是一个uWSGI服务器自有的协议，<br>  它是一个二进制协议,能够携带任意类型的信息，每一个uwsgi packet前4byte为传输信息类型描述，它与WSGI相比是两样东西。<br>  uWSGI 保留了 fastcgi 的优点，实现进程控制，预先设置好启动多个worker处理请求。</p>
+<p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/Nginx_uwsgi.jpg" alt="nginx-uwsgi"></p>
+<p>  nginx 通过 ngx_http_uwsgi_module模块把请求传递个 uWSGI 服务器。</p>
+<p>  示例配置    </p>
+  <figure class="highlight crmsh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">location</span> <span class="title">/ &#123;  	include</span> uwsgi_params;  	uwsgi_pass localhost:<span class="number">9000</span>;&#125;</div></pre></td></tr></table></figure>
+<p>  常用配置参数</p>
+  <figure class="highlight groovy"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">uwsgi_pass [<span class="string">protocol:</span><span class="comment">//]address;   </span></div><div class="line">设置uwsgi服务器的协议和地址，协议可是uwsgi或suwsgi（uwsgi over ssl）； </div><div class="line">地址可以是ip地址，域名，和可选的端口：</div><div class="line">uwsgi_pass <span class="string">localhost:</span><span class="number">9000</span>;</div><div class="line">uwsgi_pass <span class="string">uwsgi:</span><span class="comment">//localhost:9000; </span></div><div class="line">uwsgi_pass <span class="string">suwsgi:</span><span class="comment">//[2001:db8::1]:9090; </span></div><div class="line">也可是unix socket： </div><div class="line">uwsgi_pass <span class="string">unix:</span><span class="regexp">/tmp/</span>uwsgi.socket;</div><div class="line"></div><div class="line">uwsgi_read_timeout time;</div><div class="line"><span class="string">Default:</span>uwsgi_read_timeout <span class="number">60</span>s; </div><div class="line">定义从uwsgi服务器读取响应的超时时间，如果在超时时间内uwsgi服务器没有传输任何东西，连接会被断开。</div></pre></td></tr></table></figure>
+<p>  uwsgi_params 定义了传递到uWSGI服务器的参数，示例：</p>
+<pre><code>uwsgi_param  QUERY_STRING       $query_string;
+uwsgi_param  REQUEST_METHOD     $request_method;
+uwsgi_param  CONTENT_TYPE       $content_type;
+uwsgi_param  CONTENT_LENGTH     $content_length;
+uwsgi_param  REQUEST_URI        $request_uri;
+uwsgi_param  PATH_INFO          $document_uri;
+uwsgi_param  DOCUMENT_ROOT      $document_root;
+uwsgi_param  SERVER_PROTOCOL    $server_protocol;
+uwsgi_param  REMOTE_ADDR        $remote_addr;
+uwsgi_param  REMOTE_PORT        $remote_port;
+uwsgi_param  SERVER_PORT        $server_port;
+uwsgi_param  SERVER_NAME        $server_name;
+</code></pre><p>  <img src="http://7xorjs.com1.z0.glb.clouddn.com/nginx_uwsgi2.png" alt="nignx-uwsgi2"></p>
+</li>
+<li><p>uWSGI 常用配置项</p>
+<p>  <strong>socket or uwsgi-socket</strong><br>  指定uwsgi的客户端将要连接的socket的路径（使用UNIX socket的情况）或者地址（使用网络地址的情况）。你最多可以同时指定8个socket选项。当使用命令行变量时，可以使用“-s”这个缩写。<br>  <code>--socket /tmp/uwsgi.sock</code></p>
+<p>  以上配置将会绑定到 /tmp/uwsgi.sock 指定的UNIX socket</p>
+<p>  <strong>protocol</strong><br>  设置默认的通信协议（uwsgi，http，fastcgi）<br>  <code>--protocol &lt;protocol&gt;</code></p>
+<p>  <strong>processes or workers</strong><br>  为预先派生模式设置工作进程的数量。这个设置是app能实现简单并且安全的并发能力的基础。设置的工作进程越多，就能越快的处理请求。每一个工作进程都等同于一个系统进程，它消耗内存，所以需要小心设置工作进程的数量。如果设置的数量太多，就有可能是系统崩溃。<br>  <code>--processes 8</code></p>
+<p>  以上配置会产生8个工作进程</p>
+<p>  <strong>harakiri</strong><br>  这个选项会设置harakiri超时时间。如果一个请求花费的时间超过了这个harakiri超时时间，那么这个请求都会被丢弃，并且当前处理这个请求的工作进程会被回收再利用（即重启）。<br>  <code>--harakiri 60</code></p>
+<p>  这个设置会使uwsgi丢弃所有需要60秒才能处理完成的请求。<br>  harakiri-verbose<br>  当一个请求被harakiri杀掉以后，你将在uWSGI日志中得到一条消息。激活这个选项会打印出额外的信息（例如，在linux中会打印出当前的syscall）<br>  <code>--harakiri-verbose</code></p>
+<p>  以上配置会开启harakiri的额外信息。</p>
+<p>  <strong>daemonize</strong><br>  使进程在后台运行，并将日志打到指定的日志文件或者udp服务器–daemonize /var/log/uwsgi.log 这个指令会让uWSGI在后台运行并将日志打到 /var/log/uwsgi.log文件中。</p>
+<p>  <strong>buffer-size</strong><br>  设置用于uwsgi包解析的内部缓存区大小。默认是4k。如果接受一个拥有很多请求头的大请求，可以增加这个值到64k。<br>  <code>--buffer-size 32768</code></p>
+<p>  这个命令会允许uWSGI服务器接收最大为32k的uwsgi包，再大的包就会被拒绝。</p>
+<p>  <strong>auto-procname</strong><br>  这个选项将自动给uWSGI的进程设置一些有意义的名字，例如“uWSGI master”， “uWSGI worker 1”， “uWSGI worker 2”。</p>
+<p>  <strong>procname-prefix</strong><br>  这个选项为进程名指定前缀。</p>
+<p>  <code>--procname-prefix &lt;value&gt;</code></p>
+<p>  <strong>procname-prefix-spaced</strong><br>  用这个选项给进程名指定前缀时，前缀和进程名之间有空格分隔。</p>
+<p>  <code>--procname-prefix-spaced &lt;value&gt;</code></p>
+<p>  <strong>procname-append</strong><br>  这个选项为进程名增加指定的后缀。<br>  <code>--procname-append &lt;value&gt;</code></p>
+<p>  <strong>master</strong><br>  启动主进程。</p>
+<p>  <strong>max-requests</strong><br>  为每个工作进程设置请求数的上限。当一个工作进程处理的请求数达到这个值，那么该工作进程就会被回收重用（重启）。你可以使用这个选项来默默地对抗内存泄漏（尽管这类情况使用reload-on-as和reload-on-rss选项更有用）。</p>
+<p>  <code>[uwsgi]
+  max-requests = 1000</code><br>  上述配置设置工作进程没处理1000个请求就会被回收重用。</p>
+<p>  <strong>socket-timeout</strong><br>  为所有的socket操作设置内部超时时间（默认4秒）。<br>  <code>--socket-timeout 10</code></p>
+<p>  这个配置会结束那些处于不活动状态超过10秒的连接。</p>
+<p>  <strong>module [python plugin required]</strong><br>  加载指定的python WSGI模块（模块路径必须在PYTHONPATH里）</p>
+<p><img src="http://7xorjs.com1.z0.glb.clouddn.com/simple.png" alt="simple" title="简单架构实例"></p>
+</li>
+</ul>
+
+      
+    </div>
+    
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2017/07/17/django_signals/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption"><</strong>
+      <div class="article-nav-title">
+        
+          Django Signals小结
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/11/30/pageFormatNotes/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">页面外观样式笔记</div>
+      <strong class="article-nav-caption">></strong>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<div class="share">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">分享到：</span>
+		<a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+		<a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="http://v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+</div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2017 lxkaka
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<!-- 本站总访问量 <span id="busuanzi_value_site_pv"></span> 次, 访客数 <span id="busuanzi_value_site_uv" style=#'display:none'></span> 人次, 本文总阅读量 <span id="busuanzi_value_page_pv"></span> 次-->
+
+    </div>
+    
+
+
+  </div>
+</body>
+</html>
