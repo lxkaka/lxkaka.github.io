@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>从一个消费慢的例子深入理解 kafka rebalance - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="从一个消费慢的例子深入理解 kafka rebalance" />
+<meta property="og:description" content="消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/kafka-rebalance/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2021-11-20T11:23:33+08:00" />
+<meta property="article:modified_time" content="2021-11-20T11:23:33+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="从一个消费慢的例子深入理解 kafka rebalance"/>
+<meta name="twitter:description" content="消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/kafka-rebalance/" /><link rel="prev" href="https://lxkaka.wang/redis-lock/" /><link rel="next" href="https://lxkaka.wang/service-manage/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "从一个消费慢的例子深入理解 kafka rebalance",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/kafka-rebalance\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "kafka, rebalance, 消息队列","wordcount":  4467 ,
+        "url": "https:\/\/lxkaka.wang\/kafka-rebalance\/","datePublished": "2021-11-20T11:23:33+08:00","dateModified": "2021-11-20T11:23:33+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">从一个消费慢的例子深入理解 kafka rebalance</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a>&nbsp;<a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>backend</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-11-20">2021-11-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4467 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#重要概念">重要概念</a>
+          <ul>
+            <li><a href="#consumer-group">Consumer Group</a></li>
+            <li><a href="#coordinator">Coordinator</a></li>
+          </ul>
+        </li>
+        <li><a href="#rebalance-目的">Rebalance 目的</a></li>
+        <li><a href="#rebalance-时机">Rebalance 时机</a></li>
+        <li><a href="#rebalance-过程">Rebalance 过程</a></li>
+        <li><a href="#rebalance-问题">Rebalance 问题</a></li>
+        <li><a href="#rebalance-改进">Rebalance 改进</a>
+          <ul>
+            <li><a href="#static-membership">Static Membership</a></li>
+            <li><a href="#incremental-cooperative-rebalancing">Incremental Cooperative Rebalancing</a>
+              <ul>
+                <li><a href="#第一轮-rebalance">第一轮 Rebalance</a></li>
+                <li><a href="#第二轮-rebalance">第二轮 Rebalance</a></li>
+                <li><a href="#第三轮-rebalance">第三轮 Rebalance</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka 的使用问题时想要透过现象看到问题的本质，从而找到解决问题的办法。这就要求对 kafka 的设计和实现有这较为深刻的认识。在这篇文章里我们就以生产实际的例子来展开讨论 Kafka 在消费端中的一个重要设计 consumer group 的 rebalance。只有理解了 rebalance 我们才能对消息消费过程有着更全面的掌握。  <br>
+某一天我们收到消费端消费严重落后生产的告警。第一时间相关同学去看了 consumer group 的消费曲线监控，消费速率明显出现异常。下面这张示意图展示了这种情况。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/cosume%E5%AF%B9%E6%AF%94.png"
+        data-srcset="https://pics.lxkaka.wang/cosume%E5%AF%B9%E6%AF%94.png, https://pics.lxkaka.wang/cosume%E5%AF%B9%E6%AF%94.png 1.5x, https://pics.lxkaka.wang/cosume%E5%AF%B9%E6%AF%94.png 2x"
+        data-sizes="auto"
+        alt="consume-abnormal"
+        title="consume-abnormal" />
+我们能清楚的看到整个消费组在消费异常的时间段内经常出现消费停滞的情况如图上消费速率为 0。为什么消费会卡主呢？同事去看了相关服务的日志看到很多 <code>err kafka data maybe rebalancing</code>。看了这篇文章后消费卡主的问题自然就知道答案了。</p>
+<h3 id="重要概念">重要概念</h3>
+<p>为了说清楚 rebalance 有必要把最相关的重要概念回顾一下</p>
+<h4 id="consumer-group">Consumer Group</h4>
+<p>consumer group 是 kafka 提供的可扩展且具有容错性的消费者机制。既然是一个组，那么组内必然可以有多个消费者或消费者实例(consumer instance)，它们共享一个公共的 ID，即 group ID。组内的所有消费者协调在一起来消费 topic 下的所有分区。总结一下就是以下几个关键点。</p>
+<ul>
+<li>consumer group 下可以有一个或多个 consumer instance，consumer instance可以是一个进程，也可以是一个线程</li>
+<li>group.id 是一个字符串，唯一标识一个 consumer group</li>
+<li>consumer group 订阅的 topic 下的每个分区只能分配给某个 group 下的一个 consumer (当然该分区还可以被分配给其他 group)</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/cosumer-group.jpeg"
+        data-srcset="https://pics.lxkaka.wang/cosumer-group.jpeg, https://pics.lxkaka.wang/cosumer-group.jpeg 1.5x, https://pics.lxkaka.wang/cosumer-group.jpeg 2x"
+        data-sizes="auto"
+        alt="consumer-group"
+        title="consumer-group" /></p>
+<h4 id="coordinator">Coordinator</h4>
+<p>Group Coordinator 是一个服务，每个 Broker 在启动的时候都会启动一个该服务。Group Coordinator 的作用是用来存储 Group 的相关 Meta 信息，并将对应 Partition 的 Offset 信息记录到 Kafka 内置 Topic(__consumer_offsets)中。</p>
+<p>每个 Group 都会选择一个 Coordinator 来完成自己组内各 Partition 的 Offset 信息，选择的规则如下：</p>
+<p>1，计算 Group 对应在__consumer_offsets 上的 Partition<br>
+2，根据对应的 Partition 寻找该 Partition 的 leader 所对应的 Broker，该 Broker 上的 Group Coordinator 即就是该 Group 的 Coordinator<br>
+Partition 计算规则<br>
+<code>partition-Id(__consumer_offsets) = Math.abs(groupId.hashCode() % groupMetadataTopicPartitionCount)</code><br>
+其中groupMetadataTopicPartitionCount对应offsets.topic.num.partitions参数值，默认值是50个分区</p>
+<h3 id="rebalance-目的">Rebalance 目的</h3>
+<p>我们知道 topic 的 partition 已经根据策略分配给了 consumer group 下的各个 consumer。那么当有新的 consumer 加入或者老的 consumer 离开这个 partition 与 consumer 的分配关系就会发生变化，如果这个时候不进行重新调配，就可能出现新 consumer 无 partition 消费或者有 partition 无消费者的情况。那么这个重新调配指的就是 consumer 和 partition 的 rebalance。 <br>
+consumer默认提供了2种分配策略：</p>
+<p>range 策略：将单个 topic 的分区按顺序排列，然后把这些分区划分成固定大小的分区段并依次分配给每个 consumer。   <br>
+round-robin：把 topi c的所有分区按顺序排开，以轮询的方式配给每个 consumer。<br>
+下面给一个简单的例子，假设目前某个 consumer group A 有 2个 consumer C1 和 C2，当 C3 加入时，触发了 rebalance 条件，coordinator 会进行 rebalance，根据range 策略重新分配了 partition。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-example.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-example.jpeg, https://pics.lxkaka.wang/rebalance-example.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-example.jpeg 2x"
+        data-sizes="auto"
+        alt="rebalance-example"
+        title="rebalance-example" /></p>
+<h3 id="rebalance-时机">Rebalance 时机</h3>
+<p>Rebalance 在以下情况会触发</p>
+<ul>
+<li>consume group 中的成员个数发生变化。例如有新的 consumer 实例加入该消费组或者离开组</li>
+<li>订阅 Topic 的分区数发生变化</li>
+<li>取消订阅 Topic 或新增订阅 Topic</li>
+</ul>
+<h3 id="rebalance-过程">Rebalance 过程</h3>
+<p>kafka 中的重要设计也会随着版本的升级而优化。rebalance 也不例外，这里我们介绍的 kafka rebalance 流程以我们的线上版本 <code>1.1.1</code> 为例。</p>
+<ol>
+<li>
+<p>当前 consumer 准备加入 consumer group 或 GroupCoordinator 发生故障转移时，consumer 并不知道 GroupCoordinator 的 host 和 port，所以 consumer 会向 Kafka 集群中的任一 broker 节点发送 <code>FindCoordinatorRequest</code> 请求，收到请求的 broker 节点会返回 <code>ConsumerMetadataResponse</code> 响应，其中就包含了负责管理该 Consumer Group 的 GroupCoordinator 的地址</p>
+</li>
+<li>
+<p>当 consumer 通过 <code>FindCoordinatorRequest</code> 查找到其 Consumer Group 对应的 GroupCoordinator 之后，就会进入 Join Group 阶段</p>
+</li>
+<li>
+<p>Consumer 先向 GroupCoordinator 发送 <code>JoinGroupRequest</code> 请求，其中包含 consumer 的相关信息</p>
+</li>
+<li>
+<p>GroupCoordinator 收到 <code>JoinGroupRequest</code> 后会暂存该 consumer 信息，然后等待全部 consumer 的 <code>JoinGroupRequest</code> 请求。<code>JoinGroupRequest</code> 中的 session.timeout.ms 和 rebalance_timeout_ms（ max.poll.interval.ms）决定了 consumer 如果没有响应过多久会被踢出出组</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-joingroup.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-joingroup.jpeg, https://pics.lxkaka.wang/rebalance-joingroup.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-joingroup.jpeg 2x"
+        data-sizes="auto"
+        alt="joinggroup"
+        title="joinggroup" /></p>
+</li>
+<li>
+<p>GroupCoordinator 会根据全部 consumer 的 <code>JoinGroupRequest</code> 请求来确定 Consumer Group 中可用的 consumer，从中选取一个 consumer 成为 Group Leader，同时还会决定 partition 分配策略，最后会将这些信息封装成 <code>JoinGroupResponse</code> 返回给 Group Leader Consumer</p>
+</li>
+<li>
+<p>每个 consumer 都会收到 <code>JoinGroupResponse</code> 响应，但是只有 Group Leader 收到的 <code>JoinGroupResponse</code> 响应中封装的所有 consumer 信息以及 Group Leader 信息。当其中一个 consumer 确定了自己的 Group Leader后，会根据 consumer 信息、kafka 集群元数据以及 partition 分配策略计算 partition 的分片结果。其他非 Group Leader consumer 收到 JoinResponse 为空响应，也就不会进行任何操作，只是原地等待</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-joinres.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-joinres.jpeg, https://pics.lxkaka.wang/rebalance-joinres.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-joinres.jpeg 2x"
+        data-sizes="auto"
+        alt="joinres"
+        title="joinres" /></p>
+</li>
+<li>
+<p>接下来，所有 consumer 进入 Synchronizing Group State 阶段，所有 consumer 会向 GroupCoordinator 发送 <code>SyncGroupRequest</code>。其中，Group Leader Consumer 的 <code>SyncGroupRequest</code> 请求包含了 partition 分配结果，普通 consumer 的 <code>SyncGroupRequest</code> 为空请求</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-syncgroup.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-syncgroup.jpeg, https://pics.lxkaka.wang/rebalance-syncgroup.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-syncgroup.jpeg 2x"
+        data-sizes="auto"
+        alt="syncgroup"
+        title="syncgroup" /></p>
+</li>
+<li>
+<p>GroupCoordinator 接下来会将 partition 分配结果封装成 <code>SyncGroupResponse</code> 返回给所有 consumer, consumer 收到 <code>SyncGroupResponse</code> 后进行解析，就可以明确 partition 与 consumer 的映射关系</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-syncgroupres.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-syncgroupres.jpeg, https://pics.lxkaka.wang/rebalance-syncgroupres.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-syncgroupres.jpeg 2x"
+        data-sizes="auto"
+        alt="syncgroupres"
+        title="syncgroupres" /></p>
+</li>
+<li>
+<p>后续 consumer 还是会与 GroupCoordinator 保持定期的心跳(heartbeat.interval.ms)。当 rebalance 正在进行中 coordinator 会通过 hearbeat response 告诉 consumers 是否要 rejoin group 触发。即心跳响应中包含 IllegalGeneration 异常</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-heartbeat.jpeg"
+        data-srcset="https://pics.lxkaka.wang/rebalance-heartbeat.jpeg, https://pics.lxkaka.wang/rebalance-heartbeat.jpeg 1.5x, https://pics.lxkaka.wang/rebalance-heartbeat.jpeg 2x"
+        data-sizes="auto"
+        alt="heartbeat"
+        title="heartbeat" /></p>
+</li>
+</ol>
+<h3 id="rebalance-问题">Rebalance 问题</h3>
+<p>在整个 rebalance 的过程中，所有 partition 都会被回收，consumer 是无法消费任何 partition 的。Join 阶段会等待原先组内存活的成员发送 <code>JoinGroupRequest</code> 过来，如果原先组内的成员因为业务处理一直没有发送请求过来，服务端就会一直等待，直到超时。这个超时时间就是 max.poll.interval.ms 的值，默认是5分钟，因此这种情况下 rebalance 的耗时就会长达5分钟，导致所有消费者都无法进行正常消费，这对生产来说是个很大的问题。</p>
+<h3 id="rebalance-改进">Rebalance 改进</h3>
+<h4 id="static-membership">Static Membership</h4>
+<p>为了减少因为 consumer 短暂不可用造成的 rebalance，kafka 在 2.3 版本中引入了 Static Membership。<br>
+Static Membership 优化的核心是：</p>
+<ul>
+<li>在 consumer 端增加 group.instance.id 配置（group.instance.id 是 consumer 的唯一标识）。如果 consumer 启动的时候明确指定了 group.instance.id 配置值，consumer 会在 JoinGroup Request 中携带该值，表示该 consumer 为 static member。 为了保证 group.instance.id 的唯一性，我们可以考虑使用 hostname、ip 等。</li>
+<li>在 GroupCoordinator 端会记录 group.instance.id → member.id 的映射关系，以及已有的 partition 分配关系。当 GroupCoordinator 收到已知 group.instance.id 的 consumer 的 JoinGroup Request 时，不会进行 rebalance，而是将其原来对应的 partition 分配给它。
+Static Membership 可以让 consumer group 只在下面的 4 种情况下进行 rebalance：
+<ul>
+<li>有新 consumer 加入 consumer group</li>
+<li>Group Leader 重新加入 Group 时</li>
+<li>consumer 下线时间超过阈值（session.timeout.ms）</li>
+<li>GroupCoordinator 收到 static member 的 LeaveGroup Request</li>
+</ul>
+</li>
+</ul>
+<p>这样的话，在使用 Static Membership 场景下，只要在 consumer 重新启动的时候，不发送 LeaveGroup Request 且在 session.timeout.ms 时长内重启成功，就不会触发 rebalance。所以，这里推荐设置一个足够 consumer 重启的时长 session.timeout.ms，这样能有效降低因 consumer 短暂不可用导致的 reblance 次数。</p>
+<h4 id="incremental-cooperative-rebalancing">Incremental Cooperative Rebalancing</h4>
+<p>从名字中我们就能看出这个版本的 rebalance 过程两个关键词<strong>增量和协作</strong>，增量指的是原先版本的 rebalance 被分解成了多次小规模的 rebalance, 协作自然指的是 consumer 之间的关系。
+核心思想：</p>
+<ul>
+<li>consumer 比较新旧两个 partition 分配结果，只停止消费回收（revoke）的 partition，对于两次都分配给自己的 partition，consumer 不需要停止消费</li>
+<li>通过多轮的局部 rebalance 来最终实现全局的 rebalance<br>
+我们以文章开始的例子来理解一下这个版本的改进<br>
+首先 C1 -&gt; {P0, p3} C2 -&gt; {P1} C3 -&gt; {P2} 这是 consumer 和 partition 的分配关系，我们假设 C2 宕机超过了 <code>session.timeout.ms</code>, 此时 GroupCoordinator 会触发第一轮 rebalance</li>
+</ul>
+<h5 id="第一轮-rebalance">第一轮 Rebalance</h5>
+<ol>
+<li>GroupCoordinator 会在下一轮心跳响应中通知 C1 和 C3 发起第一轮 rebalance</li>
+<li>C1 和 C3 会将自己当前正在处理的 partition 信息封装到 <code>JoinGroupRequest</code> 中（metadata 字段）发往 GroupCoordinator：
+<ul>
+<li>C1 发送的 <code>JoinGroupRequest</code>（assigned: P0、P3)</li>
+<li>C3 发送的 <code>JoinGroupRequest</code>（assigned: P2）</li>
+</ul>
+</li>
+<li>假设 GroupCoordinator 在这里选择 1 作为 Group Leader，GroupCoordinator 会将 partition 目前的分配状态通过 JoinGroupResponse 发送给 C1</li>
+<li>C1 发现 P1 并未出现（处于 lost 状态），此时 C1 并不会立即解决当前的不平衡问题，返回的 partition 分配结果不变（同时会携带一个 delay 时间，<code>scheduled.rebalance.max.delay.ms</code>，默认 5 分钟）。GroupCoordinator 会根据 C1 的 <code>SyncGroupRequest</code>，生成 <code>SyncGroupResponse</code> 返回给两个存活的 consumer
+<ul>
+<li>C1 收到的 SyncGroup Response（delay，assigned: P0、P3，revoked：）</li>
+<li>C3 收到的 SyncGroup Response（delay，assigned: P2，revoked：）</li>
+</ul>
+</li>
+</ol>
+<p>到此为止，第一轮 rebalance 结束。整个 rebalance 过程中，C1 和 C3 并不会停止消费。</p>
+<h5 id="第二轮-rebalance">第二轮 Rebalance</h5>
+<ol>
+<li>在 <code>scheduled.rebalance.max.delay.ms</code> 这个时间段内，C2 故障恢复，重新加入到 consumer group 时，会向 GroupCoordinator 发送 JoinGroup Request，触发第二轮的 rebalance。GroupCoordinator 在下一次心跳响应中会通知 C1 和 C3 参与第二轮 rebalance</li>
+<li>C1 和 C3 在收到心跳之后，会发送 <code>JoinGroupRequest</code> 参与第二轮 rebalance：
+<ul>
+<li>C1 发送的 <code>JoinGroupRequest</code>（assigned: P0、P3）</li>
+<li>C3 发送的 <code>JoinGroupRequest</code>（assigned: P2)</li>
+</ul>
+</li>
+<li>在第二轮 rebalance 中，C1 依旧被选为 Group Leader，它会检查 delay 的时间（scheduled.rebalance.max.delay.ms）是否已经到了，如果没到，则依旧不会立即解决当前的不平衡问题，继续返回目前的分配结果，并且返回的 <code>SyncGroupResponse</code> 中更新了 delay 的剩余时间（remaining delay = delay - pass_time) 到此为止，第二轮 rebalance 结束。整个 rebalance 过程中，C1 和 C3 并不会停止消费。
+<ul>
+<li>C1 收到的 SyncGroup Response（remaining delay，assigned: P0、P3，revoked：）</li>
+<li>C2 收到的 SyncGroup Response（remaining delay，assigned:，revoked：）</li>
+<li>C3 收到的 SyncGroup Response（remaining delay，assigned: P2，revoked：）</li>
+</ul>
+</li>
+</ol>
+<h5 id="第三轮-rebalance">第三轮 Rebalance</h5>
+<ol>
+<li>当 remaining delay 时间到期之后，consumer 全部重新送 <code>JoinGroupRequest</code>，触发第三轮 rebalance
+<ul>
+<li>C1 发送的 <code>JoinGroupRequest</code>（assigned: P0、P3）</li>
+<li>C2 发送的 <code>JoinGroupRequest</code>（assigned: ）</li>
+<li>C3 发送的 <code>JoinGroupRequest</code>（assigned: P2</li>
+</ul>
+</li>
+<li>在此次 rebalance 中，C1 依旧被选为 Group Leader，它会发现 delay 已经到期了，开始解决不平衡的问题，对 partition 进行重新分配。最新的分配结果最终通过 <code>SyncGroupResponse</code> 返回到各个 consumer：<br>
+到此为止，第三轮 rebalance 结束。整个 rebalance 过程中，C1 和 C3 的消费都不会停止
+<ul>
+<li>C1 收到的 SyncGroup Response（assigned：P0、P3，revoked：）</li>
+<li>C2 收到的 SyncGroup Response（assigned：P1，revoked：）</li>
+<li>C3 收到的 SyncGroup Response（assigned：P2，revoked：）</li>
+</ul>
+</li>
+</ol>
+<p>下面这张图展示了上述的 Rebalance 过程<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rebalance-incremental.png"
+        data-srcset="https://pics.lxkaka.wang/rebalance-incremental.png, https://pics.lxkaka.wang/rebalance-incremental.png 1.5x, https://pics.lxkaka.wang/rebalance-incremental.png 2x"
+        data-sizes="auto"
+        alt="incremental"
+        title="incremental" /></p>
+<p>通过上述我们应该对 Kafka 的 Rebalance 有了比较完整的认识。我们现在来回答文章开始提出的消费卡主问题：消费端拿到了异常的消息，这样的消息业务上处理时间过超过了 <code>max.poll.interval.ms</code>, 从而触发了 rebalance, 在 rebalance 过程中所有消费者都暂停了消费。<br>
+为了解决这个问题我们首先优化业务逻辑尽可能提高处理消息速度，对异常消息做特殊处理；然后合理的设置 <code>max.poll.interval.ms</code> cover 住业务的处理时间。<br>
+为了尽可能减少 Rebalance 次数我们也要注意设置 <code>session.timeout.ms</code> 和 <code>heartbeat.interval.ms</code> 的值。一种推荐的方案 <code>session.timeout.ms</code> &gt;= 3 * <code>heartbeat.interval.ms</code>, 比如 session.timeout.ms = 6s; heartbeat.interval.ms = 2s。这样 consumer 如果宕机且 6s 之内未恢复， Coordinator 能够较快地定位已经挂掉的 consumer，把它踢出 Group。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-11-20</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/kafka-rebalance/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/kafka-rebalance/" data-title="从一个消费慢的例子深入理解 kafka rebalance" data-hashtags="kafka,rebalance,消息队列"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/kafka-rebalance/" data-hashtag="kafka"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/kafka-rebalance/" data-title="从一个消费慢的例子深入理解 kafka rebalance" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/kafka-rebalance/" data-title="从一个消费慢的例子深入理解 kafka rebalance"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/kafka-rebalance/" data-title="从一个消费慢的例子深入理解 kafka rebalance"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/kafka/">kafka</a>,&nbsp;<a href="/tags/rebalance/">rebalance</a>,&nbsp;<a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/redis-lock/" class="prev" rel="prev" title="Golang 实现的 Redis 分布式锁"><i class="fas fa-angle-left fa-fw"></i>Golang 实现的 Redis 分布式锁</a>
+            <a href="/service-manage/" class="next" rel="next" title="用 StatefulSet 实现同步服务和异步服务的管理">用 StatefulSet 实现同步服务和异步服务的管理<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

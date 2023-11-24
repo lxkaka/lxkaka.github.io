@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>infra - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/infra/</link>
+        <description>infra - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 20 Aug 2023 11:22:28 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/infra/" rel="self" type="application/rss+xml" /><item>
+    <title>AI 助力 Code Review 的高效方案</title>
+    <link>https://lxkaka.wang/llm-code-review/</link>
+    <pubDate>Sun, 20 Aug 2023 11:22:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/llm-code-review/</guid>
+    <description><![CDATA[背景 随着 LLM 的日益强大，我们可以借助 LLM 来提高多方面的生产效率。很多的应用场景我们就不在这里展开，其中一方面就是用来给程序员提效，比如大名鼎鼎的]]></description>
+</item><item>
+    <title>实时数据入湖的选型和实践</title>
+    <link>https://lxkaka.wang/cdc-stream/</link>
+    <pubDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/cdc-stream/</guid>
+    <description><![CDATA[Hudi 作为最热的数据湖技术框架之一，用于构建具有增量数据处理管道的流式数据湖。其核心的能力包括对象存储上数据行级别的快速更新和删除，增量查询 (Incremental queries,Time]]></description>
+</item><item>
+    <title>数据编排技术-Alluxio 的原理介绍</title>
+    <link>https://lxkaka.wang/alluxio-info/</link>
+    <pubDate>Thu, 22 Dec 2022 17:18:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/alluxio-info/</guid>
+    <description><![CDATA[在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、]]></description>
+</item><item>
+    <title>Python 应用接入 Prometheus 监控</title>
+    <link>https://lxkaka.wang/py-metrics/</link>
+    <pubDate>Fri, 29 Jul 2022 10:04:07 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/py-metrics/</guid>
+    <description><![CDATA[在这篇文章 我们介绍了 Prmetheus metrics 的基本类型和在 Golang 中的简单应用。我们知道在一个通过 Http 协议提供在线服务的应用中可以通过接口 /metrics 来 expose metrics，然后 promethues 可]]></description>
+</item><item>
+    <title>高效搭建后台系统的解决方案-amis</title>
+    <link>https://lxkaka.wang/amis-practice/</link>
+    <pubDate>Sat, 25 Jun 2022 10:50:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/amis-practice/</guid>
+    <description><![CDATA[最近需要搭建一个管理后台来给产品和运营同学使用。管理后台简单来说就是信息管理的工具需要提供增删改查的功能。从细节上来说这样的一个后台一般都会]]></description>
+</item><item>
+    <title>用 StatefulSet 实现同步服务和异步服务的管理</title>
+    <link>https://lxkaka.wang/service-manage/</link>
+    <pubDate>Sun, 26 Dec 2021 13:55:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/service-manage/</guid>
+    <description><![CDATA[一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别]]></description>
+</item><item>
+    <title>从一个消费慢的例子深入理解 kafka rebalance</title>
+    <link>https://lxkaka.wang/kafka-rebalance/</link>
+    <pubDate>Sat, 20 Nov 2021 11:23:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kafka-rebalance/</guid>
+    <description><![CDATA[消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka]]></description>
+</item><item>
+    <title>Elastic APM 补齐服务监控</title>
+    <link>https://lxkaka.wang/golang-apm/</link>
+    <pubDate>Sat, 17 Apr 2021 14:42:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-apm/</guid>
+    <description><![CDATA[在之前的文章介绍过服务可观测性。其中 tracing 扩展一下我们可以称之为 APM(Application Performance Monitoring)。在这篇文章里，我会具体介绍我们在 Golang 服务中的 APM 实践。 A]]></description>
+</item><item>
+    <title>Docker 核心原理</title>
+    <link>https://lxkaka.wang/docker-principle/</link>
+    <pubDate>Sat, 23 Jan 2021 12:34:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-principle/</guid>
+    <description><![CDATA[对 Docker 的使用大部分都比较熟悉，但是说到 docker 的实现原理很多人还是一知半解。我把在团队内部做的一次 Docker 核心原理分享总结到文章里，以供参考。 Docker 的优势 Build once,]]></description>
+</item><item>
+    <title>Kafka 和 Pulsar 存储结构对比</title>
+    <link>https://lxkaka.wang/kakfa-pulsar-storage/</link>
+    <pubDate>Sat, 26 Dec 2020 14:00:11 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kakfa-pulsar-storage/</guid>
+    <description><![CDATA[在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇文章 中我们提到过这两种消息队列，而在我们了解]]></description>
+</item></channel>
+</rss>

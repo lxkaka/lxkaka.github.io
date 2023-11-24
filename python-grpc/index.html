@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Python 和 Go 之间的 gRPC 交互 - lxkaka</title><meta name="Description" content="介绍 Python 服务和 Go 服务之间怎么使用 gRPC 通信"><meta property="og:title" content="Python 和 Go 之间的 gRPC 交互" />
+<meta property="og:description" content="介绍 Python 服务和 Go 服务之间怎么使用 gRPC 通信" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/python-grpc/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-08-22T10:33:59+08:00" />
+<meta property="article:modified_time" content="2020-08-22T10:33:59+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Python 和 Go 之间的 gRPC 交互"/>
+<meta name="twitter:description" content="介绍 Python 服务和 Go 服务之间怎么使用 gRPC 通信"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/python-grpc/" /><link rel="prev" href="https://lxkaka.wang/hexo2hugo/" /><link rel="next" href="https://lxkaka.wang/app-metrics/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Python 和 Go 之间的 gRPC 交互",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/python-grpc\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "gRPC, Python, Go","wordcount":  1465 ,
+        "url": "https:\/\/lxkaka.wang\/python-grpc\/","datePublished": "2020-08-22T10:33:59+08:00","dateModified": "2020-08-22T10:33:59+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "介绍 Python 服务和 Go 服务之间怎么使用 gRPC 通信"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Python 和 Go 之间的 gRPC 交互</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>backend</a>&nbsp;<a href="/categories/service/"><i class="far fa-folder fa-fw"></i>service</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-22">2020-08-22</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1465 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#grpc-简介">gRPC 简介</a></li>
+    <li><a href="#python-grpc">Python gRPC</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#1-python-环境">1. python 环境</a></li>
+            <li><a href="#2-grpc-依赖">2. gRPC 依赖</a></li>
+            <li><a href="#3-定义-proto-文件">3. 定义 proto 文件</a></li>
+            <li><a href="#4-生成代码">4. 生成代码</a></li>
+            <li><a href="#5-实现服务端">5. 实现服务端</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#go-grpc">Go gRPC</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#1-go-grpc-依赖">1. go gRPC 依赖</a></li>
+            <li><a href="#2-生成-go-pb-代码">2. 生成 Go pb 代码</a></li>
+            <li><a href="#3-客户端调用">3. 客户端调用</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#输出示例">输出示例</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>因为不同的业务场景，异构的业务系统十分常见。异构服务之间的同步通信方式的选择不外乎 HTTP 和 RPC 两种。RPC 方式可以像调用本地方法一样调用远程服务提供的方法，对客户端来说具体实现完全是透明的，服务之间的通信会变得更容易。
+对于 RPC 框架的选择，gRPC 当前已经是首选。</p>
+<h2 id="grpc-简介">gRPC 简介</h2>
+<blockquote>
+<p>gRPC是一个高性能、通用的开源RPC框架，其由Google主要面向移动应用开发并基于HTTP/2协议标准而设计，基于ProtoBuf(Protocol Buffers)序列化协议开发，且支持众多开发语言。</p>
+</blockquote>
+<ul>
+<li>
+<p>gRPC具有以下重要特征：</p>
+<ul>
+<li>强大的IDL特性<br>
+RPC使用ProtoBuf来定义服务，ProtoBuf是由Google开发的一种数据序列化协议，性能出众，得到了广泛的应用。</li>
+<li>支持多种语言<br>
+支持 C++、Java、Go、Python、Ruby、C#、Node.js、Android Java、Objective-C、PHP等编程语言。</li>
+<li>基于 HTTP/2 标准设计</li>
+</ul>
+<p>下面这张图来自于官方网站清晰的给我们展示了使用 gRPC 服务之间的交互流程<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/gRPC.png"
+        data-srcset="https://pics.lxkaka.wang/gRPC.png, https://pics.lxkaka.wang/gRPC.png 1.5x, https://pics.lxkaka.wang/gRPC.png 2x"
+        data-sizes="auto"
+        alt="grpc"
+        title="grpc" /></p>
+</li>
+<li>
+<p>gRPC使用流程</p>
+<ul>
+<li>定义标准的proto文件</li>
+<li>生成标准代码</li>
+<li>服务端使用生成的代码提供服务</li>
+<li>客户端使用生成的代码调用服务</li>
+</ul>
+</li>
+</ul>
+<p>在这里我们以我们实际业务场景 Python 服务和 Go 服务之间的交互来介绍一下 gRPC 的使用。</p>
+<h2 id="python-grpc">Python gRPC</h2>
+<h4 id="1-python-环境">1. python 环境</h4>
+<p>这里可以使用 <code>virtualenv</code> 来初始化一个干净的 Python 环境</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">pip3 install virtualenv
+# 使用 python3.7 创建虚拟环境
+virtualenv --python=python3.7 venv
+source venv/bin/activate
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="2-grpc-依赖">2. gRPC 依赖</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># grpcio 是启动 gRPC 服务的项目依赖
+pip install grpcio
+# gPRC tools 包含 protocol buffer 编译器和用于从 .proto 文件生成服务端和客户端代码的插件
+pip install grpcio-tools
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="3-定义-proto-文件">3. 定义 proto 文件</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-proto" data-lang="proto"><span class="n">syntax</span> <span class="o">=</span> <span class="s">&#34;proto3&#34;</span><span class="p">;</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="k">import</span> <span class="s">&#34;google/protobuf/empty.proto&#34;</span><span class="p">;</span><span class="err">
+</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="c1">// service 关键字定义提供的服务
+</span><span class="c1"></span><span class="kd">service</span> <span class="n">MyService</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="c1">// 定义一个探活方法
+</span><span class="c1"></span>  <span class="k">rpc</span> <span class="n">Health</span> <span class="p">(</span><span class="o">.</span><span class="n">google.protobuf.Empty</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="o">.</span><span class="n">google.protobuf.Empty</span><span class="p">){</span><span class="err">
+</span><span class="err"></span>  <span class="p">}</span><span class="err">
+</span><span class="err"></span>  <span class="c1">// 定义一个批量查询 user 的方法
+</span><span class="c1"></span>  <span class="k">rpc</span> <span class="n">User</span> <span class="p">(</span><span class="n">UserReq</span><span class="p">)</span> <span class="k">returns</span> <span class="p">(</span><span class="n">UserReply</span><span class="p">){</span><span class="err">
+</span><span class="err"></span>  <span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="c1">// message 关键字定义交互的数据结构
+</span><span class="c1"></span><span class="kd">message</span> <span class="nc">UserReq</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="k">repeated</span> <span class="kt">int32</span> <span class="n">userIDs</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">UserReply</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="kd">message</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="c1">// repeated 定义一个数组
+</span><span class="c1"></span>  <span class="k">repeated</span> <span class="n">User</span> <span class="n">data</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span><span class="err">
+</span><span class="err"></span><span class="kd">message</span> <span class="nc">User</span> <span class="p">{</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">name</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">int32</span> <span class="n">age</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span><span class="err">
+</span><span class="err"></span>  <span class="kt">string</span> <span class="n">email</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span><span class="err">
+</span><span class="err"></span><span class="p">}</span><span class="err">
+</span></code></pre></td></tr></table>
+</div>
+</div><h4 id="4-生成代码">4. 生成代码</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 使用 protoc 和相应的插件可以编译生成对应语言的代码
+# -I 指定 import 路径，可以指定多个 -I 参数，编译时按顺序查找，不指定默认当前目录
+python -m grpc_tools.protoc -I ./ --python_out=. --grpc_python_out=. ./api.proto
+</code></pre></td></tr></table>
+</div>
+</div><p>经过上述步骤，我们生成了这样两个文件<br>
+<code>api_pb2.py</code> 此文件包含每个 <code>message</code> 生成一个含有静态描述符的模块，，该模块与一个元类（metaclass）在运行时（runtime）被用来创建所需的Python数据访问类<br>
+<code>api_pb2_grpc.py</code> 此文件包含生成的 客户端(MyServiceStub)和服务端  (MyServiceServicer)的类。</p>
+<h4 id="5-实现服务端">5. 实现服务端</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span>
+
+<span class="kn">import</span> <span class="nn">grpc</span>
+<span class="kn">from</span> <span class="nn">api</span> <span class="kn">import</span> <span class="n">api_pb2_grpc</span><span class="p">,</span> <span class="n">api_pb2</span>
+<span class="kn">from</span> <span class="nn">api.api_pb2_grpc</span> <span class="kn">import</span> <span class="n">MyServiceServicer</span>
+<span class="kn">from</span> <span class="nn">service</span> <span class="kn">import</span> <span class="n">get_users</span>
+
+
+<span class="k">class</span> <span class="nc">Service</span><span class="p">(</span><span class="n">MyServiceServicer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">Health</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">def</span> <span class="nf">User</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;start to process request...&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">get_users</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">userIDs</span><span class="p">)</span>
+        <span class="n">users</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+            <span class="n">users</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">api_pb2</span><span class="o">.</span><span class="n">User</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">age</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">],</span> <span class="n">email</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">api_pb2</span><span class="o">.</span><span class="n">UserReply</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">users</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">serve</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;start grpc server====&gt;&#39;</span><span class="p">)</span>
+    <span class="n">server</span> <span class="o">=</span> <span class="n">grpc</span><span class="o">.</span><span class="n">server</span><span class="p">(</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">api_pb2_grpc</span><span class="o">.</span><span class="n">add_MyServiceServicer_to_server</span><span class="p">(</span><span class="n">Service</span><span class="p">(),</span> <span class="n">server</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">add_insecure_port</span><span class="p">(</span><span class="s1">&#39;[::]:50051&#39;</span><span class="p">)</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">server</span><span class="o">.</span><span class="n">wait_for_termination</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">()</span>
+    <span class="n">serve</span><span class="p">()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>到此，如果我们用 Python 客户端当然也能请求到服务端。因为我们这里介绍的是 Go 和 Python 的交互，这里就不 demo 了。</p>
+<h2 id="go-grpc">Go gRPC</h2>
+<p>我们这里 Go 服务作为客户端调用 Python 服务，同样需要根据 proto 文件生成代码，进而创建客户端发起 RPC。</p>
+<h4 id="1-go-grpc-依赖">1. go gRPC 依赖</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 安装 ptotobuf, 推荐使用 brew
+brew install protobuf
+# protoc go 插件安装
+go get -u github.com/golang/protobuf/protoc-gen-go
+# 这里安装在 GOPATH 下的 bin 目录，所以保证这个目录在 $PATH 中
+export PATH=&#34;$PATH:$(go env GOPATH)/bin&#34;
+# 代码 gprc 依赖安装
+go get -u google.golang.org/grpc
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="2-生成-go-pb-代码">2. 生成 Go pb 代码</h4>
+<p><code>protoc -I ./ --go_out=plugins=grpc:./ api.proto</code></p>
+<h4 id="3-客户端调用">3. 客户端调用</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;context&#34;</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;log&#34;</span>
+	<span class="s">&#34;time&#34;</span>
+
+	<span class="s">&#34;ginDemo/api&#34;</span>
+	<span class="s">&#34;google.golang.org/grpc&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="nx">address</span>     <span class="p">=</span> <span class="s">&#34;localhost:50051&#34;</span>
+	<span class="nx">defaultName</span> <span class="p">=</span> <span class="s">&#34;world&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">conn</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">Dial</span><span class="p">(</span><span class="nx">address</span><span class="p">,</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">WithInsecure</span><span class="p">(),</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">WithBlock</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;did not connect: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+	<span class="nx">c</span> <span class="o">:=</span> <span class="nx">api</span><span class="p">.</span><span class="nf">NewMyServiceClient</span><span class="p">(</span><span class="nx">conn</span><span class="p">)</span>
+
+	<span class="nx">ctx</span><span class="p">,</span> <span class="nx">cancel</span> <span class="o">:=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">WithTimeout</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nf">cancel</span><span class="p">()</span>
+	<span class="nx">r</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">User</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">api</span><span class="p">.</span><span class="nx">UserReq</span><span class="p">{</span><span class="nx">UserIDs</span><span class="p">:</span> <span class="p">[]</span><span class="kt">int32</span><span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}})</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;could not greet: %v&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;gprc result: %+v&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Data</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h2 id="输出示例">输出示例</h2>
+<p>Python 服务端输出示例   <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/python-grpc.png"
+        data-srcset="https://pics.lxkaka.wang/python-grpc.png, https://pics.lxkaka.wang/python-grpc.png 1.5x, https://pics.lxkaka.wang/python-grpc.png 2x"
+        data-sizes="auto"
+        alt="pyhton-grpc"
+        title="pyhton-grpc" /></p>
+<p>Go 客户端输出示例 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/go-grpc.png"
+        data-srcset="https://pics.lxkaka.wang/go-grpc.png, https://pics.lxkaka.wang/go-grpc.png 1.5x, https://pics.lxkaka.wang/go-grpc.png 2x"
+        data-sizes="auto"
+        alt="go-grpc"
+        title="go-grpc" /></p>
+<p>以 Python 服务和 Go 服务之间的 gRPC 通信就说到这里，希望对想使用 gRPC 的同学带来参考和启示。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-08-22</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/python-grpc/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/python-grpc/" data-title="Python 和 Go 之间的 gRPC 交互" data-hashtags="gRPC,Python,Go"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/python-grpc/" data-hashtag="gRPC"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/python-grpc/" data-title="Python 和 Go 之间的 gRPC 交互" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/python-grpc/" data-title="Python 和 Go 之间的 gRPC 交互"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/python-grpc/" data-title="Python 和 Go 之间的 gRPC 交互"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/grpc/">gRPC</a>,&nbsp;<a href="/tags/python/">Python</a>,&nbsp;<a href="/tags/go/">Go</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/hexo2hugo/" class="prev" rel="prev" title="Hexo 迁移 Hugo"><i class="fas fa-angle-left fa-fw"></i>Hexo 迁移 Hugo</a>
+            <a href="/app-metrics/" class="next" rel="next" title="Prometheus 监控业务指标">Prometheus 监控业务指标<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

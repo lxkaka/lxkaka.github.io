@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Elastic APM 补齐服务监控 - lxkaka</title><meta name="Description" content="自研 golang 服务框架使用 es apm 完善服务监控"><meta property="og:title" content="Elastic APM 补齐服务监控" />
+<meta property="og:description" content="自研 golang 服务框架使用 es apm 完善服务监控" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/golang-apm/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2021-04-17T14:42:45+08:00" />
+<meta property="article:modified_time" content="2021-04-17T14:42:45+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Elastic APM 补齐服务监控"/>
+<meta name="twitter:description" content="自研 golang 服务框架使用 es apm 完善服务监控"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/golang-apm/" /><link rel="prev" href="https://lxkaka.wang/golangci/" /><link rel="next" href="https://lxkaka.wang/kubelet-hash/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Elastic APM 补齐服务监控",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/golang-apm\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "apm, monitoring, es","wordcount":  2348 ,
+        "url": "https:\/\/lxkaka.wang\/golang-apm\/","datePublished": "2021-04-17T14:42:45+08:00","dateModified": "2021-04-17T14:42:45+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "自研 golang 服务框架使用 es apm 完善服务监控"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Elastic APM 补齐服务监控</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/golang/"><i class="far fa-folder fa-fw"></i>golang</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-04-17">2021-04-17</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2348 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#apm应用性能监控">APM(应用性能监控)</a></li>
+        <li><a href="#elastic-apm">Elastic APM</a>
+          <ul>
+            <li><a href="#es-apm-架构">ES APM 架构</a></li>
+            <li><a href="#数据模型">数据模型</a></li>
+          </ul>
+        </li>
+        <li><a href="#es-apm-实践">ES APM 实践</a>
+          <ul>
+            <li><a href="#middleware">middleware</a></li>
+            <li><a href="#gorm">gorm</a></li>
+            <li><a href="#redis">redis</a></li>
+          </ul>
+        </li>
+        <li><a href="#es-apm-部署">ES APM 部署</a>
+          <ul>
+            <li><a href="#elasticsearch-cluster">Elasticsearch cluster</a></li>
+            <li><a href="#apm-server-和-kibana">APM server 和 Kibana</a></li>
+          </ul>
+        </li>
+        <li><a href="#apm-结果">APM 结果</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在之前的<a href="https://www.lxkaka.wang/app-metrics/" target="_blank" rel="noopener noreffer">文章</a>介绍过服务可观测性。其中 <strong>tracing</strong> 扩展一下我们可以称之为 <strong>APM</strong>(Application Performance Monitoring)。在这篇文章里，我会具体介绍我们在 Golang 服务中的 APM 实践。</p>
+<h3 id="apm应用性能监控">APM(应用性能监控)</h3>
+<blockquote>
+<p>对于大部分应用程序来说性能都是很重要的一个因素，尤其对于比如网站、手机app等直接由用户访问的应用来说更是如此，因为性能较差的应用将会直接影响其用户体验。因此，能对应用进行性能监控变得非常重要，这将帮助我们找到性能瓶颈并优化。
+APM 是对应用程序性能和可用性的监视和管理。APM 努力检测和诊断复杂的应用程序性能问题，以维持预期的服务等级。</p>
+</blockquote>
+<p>目前主流的开源链路追踪实现 <code>Jaeger</code>, <code>SkyWalking</code>其实都实现了 APM 的部分目的。但这些方案各有优劣，使用成本也不太相同。今天在这里我们就介绍一下我们的实践 <code>Elastic APM</code>，相比其他方案 Elastic APM 具有支持框架和语音全面；监控数据全面; 查询方便；界面美观等等优点。</p>
+<h3 id="elastic-apm">Elastic APM</h3>
+<p>Elastic APM是一个 Elastic Stack 的应用性能监控（APM）系统，它能够：</p>
+<ol>
+<li>实时的监控软件服务和应用：为传入的请求，数据库查询，对缓存的调用，外部 HTTP 请求等收集有关响应时间的详细性能信息，使得可以轻松快速地找出并解决性能问题。</li>
+<li>自动收集未处理的错和异常以及它们的调用栈，让你能快速定位新错误并且跟踪错误出现的频率。</li>
+<li>收集机器级别以及特定 agent 的指标（比如 Java JVM 和 Go Runtime 的指标）。</li>
+<li>支持分布式追踪：使你能够在一个视图中分析整个服务架构的性能。</li>
+<li>支持真实用户监控（Real User Monitoring，RUM）：可捕获用户与客户端（例如Web浏览器）的交互。</li>
+</ol>
+<h4 id="es-apm-架构">ES APM 架构</h4>
+<p>Elastic APM 由四个组件组成：</p>
+<ul>
+<li>APM agents：以应用程序库的形式提供，收集程序中的性能监控数据并上报给APM server。</li>
+<li>APM Server：从 APM agents 接收数据、进行校验和处理后写入 Elasticsearch 特定的 APM 索引中。虽然 agent 也可以实现为：将数据收集处理后直接上报到ES，不这么做官方给出的理由：使 agent 保持轻量，防止某些安全风险以及提升 Elastic 组件的兼容性。</li>
+<li>Elasticsearch：用于存储性能指标数据并提供聚合功能。</li>
+<li>Kibana：可视化性能数据并帮助找到性能瓶颈。</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/es-apm-arch.png"
+        data-srcset="https://pics.lxkaka.wang/es-apm-arch.png, https://pics.lxkaka.wang/es-apm-arch.png 1.5x, https://pics.lxkaka.wang/es-apm-arch.png 2x"
+        data-sizes="auto"
+        alt="es-apm-arch"
+        title="es-apm-arch" /></p>
+<h4 id="数据模型">数据模型</h4>
+<p>Elastic APM agent从其检测（instrument）的应用程序中收集不同类型的数据，这些被称为事件，类型包括 span，transaction，错误和指标四种。</p>
+<ul>
+<li>Span 包含有关已执行的特定代码路径的信息。它们从活动的开始到结束进行度量，并且可以与其他span具有父/子关系。</li>
+<li>事务（Transaction） 是一种特殊的Span（没有父span，只能从中派生出子span，可以理解为“树”这种数据结构的根节点），具有与之关联的其他属性。可以将事务视为服务中最高级别的工作，比如服务中的请求等。</li>
+<li>错误(Error)：错误事件包含有关发生的原始异常或有关发生异常时创建的日志的信息。</li>
+<li>指标(Metric)：APM agent 自动获取基本的主机级别指标，包括系统和进程级别的 CPU 和内存指标。除此之外还可获取特定于代理的指标，例如 Java agent 中的JVM 指标和 Go agent 中的 Go Runtime 指标。</li>
+</ul>
+<h3 id="es-apm-实践">ES APM 实践</h3>
+<p>我们的 Golang web 服务使用了自研的微服务框架，为了使用 ES APM。我们做了如下的改造，下面列举出重点部分和部分代码示例</p>
+<h4 id="middleware">middleware</h4>
+<p>middleware 是在处理 Http Request 之前框架层面对 request 做的统一处理，比如实现 access log 记录；统一鉴权；trace 打点等。为了把 Http Request 纳入 apm，我们按照自己服务框架的中间件规范实现了 es apm middleware。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span><span class="lnt">89
+</span><span class="lnt">90
+</span><span class="lnt">91
+</span><span class="lnt">92
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="kn">package</span> <span class="nx">middleware</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+	<span class="s">&#34;fmt&#34;</span>
+	<span class="s">&#34;net/http&#34;</span>
+	<span class="s">&#34;strings&#34;</span>
+
+	<span class="s">&#34;go.elastic.co/apm&#34;</span>
+	<span class="s">&#34;go.elastic.co/apm/module/apmhttp&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">APM</span><span class="p">(</span><span class="nx">o</span> <span class="o">...</span><span class="nx">Option</span><span class="p">)</span> <span class="nx">bm</span><span class="p">.</span><span class="nx">HandlerFunc</span> <span class="p">{</span>
+	<span class="nx">m</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">middleware</span><span class="p">{</span>
+		<span class="nx">tracer</span><span class="p">:</span> <span class="nx">apm</span><span class="p">.</span><span class="nx">DefaultTracer</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">env</span><span class="p">.</span><span class="nx">AppID</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+		<span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nx">Service</span><span class="p">.</span><span class="nx">Name</span> <span class="p">=</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">ReplaceAll</span><span class="p">(</span><span class="nx">env</span><span class="p">.</span><span class="nx">AppID</span><span class="p">,</span> <span class="s">&#34;.&#34;</span><span class="p">,</span> <span class="s">&#34;_&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nx">Service</span><span class="p">.</span><span class="nx">Environment</span> <span class="p">=</span> <span class="nx">env</span><span class="p">.</span><span class="nx">DeployEnv</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">o</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">o</span> <span class="p">{</span>
+		<span class="nf">o</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">requestIgnorer</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">m</span><span class="p">.</span><span class="nx">requestIgnorer</span> <span class="p">=</span> <span class="nx">apmhttp</span><span class="p">.</span><span class="nf">NewDynamicServerRequestIgnorer</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">m</span><span class="p">.</span><span class="nx">handle</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">middleware</span> <span class="kd">struct</span> <span class="p">{</span>
+
+	<span class="nx">tracer</span>         <span class="o">*</span><span class="nx">apm</span><span class="p">.</span><span class="nx">Tracer</span>
+	<span class="nx">requestIgnorer</span> <span class="nx">apmhttp</span><span class="p">.</span><span class="nx">RequestIgnorerFunc</span>
+	<span class="c1">//setRouteMapOnce sync.Once
+</span><span class="c1"></span>	<span class="c1">//routeMap        map[string]map[string]routeInfo
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">middleware</span><span class="p">)</span> <span class="nf">handle</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">bm</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nf">Recording</span><span class="p">()</span> <span class="o">||</span> <span class="nx">m</span><span class="p">.</span><span class="nf">requestIgnorer</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nf">Next</span><span class="p">()</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">requestName</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">Method</span> <span class="o">+</span> <span class="s">&#34; &#34;</span> <span class="o">+</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span>
+	<span class="nx">tx</span><span class="p">,</span> <span class="nx">req</span> <span class="o">:=</span> <span class="nx">apmhttp</span><span class="p">.</span><span class="nf">StartTransaction</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">,</span> <span class="nx">requestName</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">Request</span> <span class="p">=</span> <span class="nx">req</span>
+	<span class="k">defer</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">End</span><span class="p">()</span>
+
+	<span class="nx">body</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nf">CaptureHTTPRequestBody</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">Context</span> <span class="p">=</span> <span class="nx">apm</span><span class="p">.</span><span class="nf">ContextWithTransaction</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">tx</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">v</span> <span class="o">:=</span> <span class="nb">recover</span><span class="p">();</span> <span class="nx">v</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">c</span><span class="p">.</span><span class="nf">AbortWithStatus</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusInternalServerError</span><span class="p">)</span>
+			<span class="nx">e</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nf">Recovered</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+			<span class="nx">e</span><span class="p">.</span><span class="nf">SetTransaction</span><span class="p">(</span><span class="nx">tx</span><span class="p">)</span>
+			<span class="nf">setContext</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">e</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span>
+			<span class="nx">e</span><span class="p">.</span><span class="nf">Send</span><span class="p">()</span>
+		<span class="p">}</span>
+
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Error</span>
+		<span class="nx">cerr</span> <span class="o">:=</span> <span class="nx">ecode</span><span class="p">.</span><span class="nf">Cause</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+		<span class="nx">message</span> <span class="o">:=</span> <span class="nx">cerr</span><span class="p">.</span><span class="nf">Message</span><span class="p">()</span>
+		<span class="k">if</span> <span class="nx">cerr</span><span class="p">.</span><span class="nf">Code</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">message</span> <span class="p">=</span> <span class="s">&#34;ok&#34;</span>
+		<span class="p">}</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">WriteHeader</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">)</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">Result</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;HTTP %d %s&#34;</span><span class="p">,</span> <span class="nx">cerr</span><span class="p">.</span><span class="nf">Code</span><span class="p">(),</span> <span class="nx">message</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">Sampled</span><span class="p">()</span> <span class="p">{</span>
+			<span class="nf">setContext</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tx</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Error</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">e</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">tracer</span><span class="p">.</span><span class="nf">NewError</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Error</span><span class="p">)</span>
+			<span class="nx">e</span><span class="p">.</span><span class="nf">SetTransaction</span><span class="p">(</span><span class="nx">tx</span><span class="p">)</span>
+			<span class="nf">setContext</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">e</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span>
+			<span class="nx">e</span><span class="p">.</span><span class="nx">Handled</span> <span class="p">=</span> <span class="kc">true</span>
+			<span class="nx">e</span><span class="p">.</span><span class="nf">Send</span><span class="p">()</span>
+		<span class="p">}</span>
+		<span class="nx">body</span><span class="p">.</span><span class="nf">Discard</span><span class="p">()</span>
+	<span class="p">}()</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">Next</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">setContext</span><span class="p">(</span><span class="nx">ctx</span> <span class="o">*</span><span class="nx">apm</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">c</span> <span class="o">*</span><span class="nx">bm</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">body</span> <span class="o">*</span><span class="nx">apm</span><span class="p">.</span><span class="nx">BodyCapturer</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetTag</span><span class="p">(</span><span class="s">&#34;region&#34;</span><span class="p">,</span> <span class="nx">env</span><span class="p">.</span><span class="nx">Region</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetTag</span><span class="p">(</span><span class="s">&#34;zone&#34;</span><span class="p">,</span> <span class="nx">env</span><span class="p">.</span><span class="nx">Zone</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetTag</span><span class="p">(</span><span class="s">&#34;hostname&#34;</span><span class="p">,</span> <span class="nx">env</span><span class="p">.</span><span class="nx">Hostname</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetTag</span><span class="p">(</span><span class="s">&#34;env&#34;</span><span class="p">,</span> <span class="nx">env</span><span class="p">.</span><span class="nx">DeployEnv</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetHTTPRequest</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetHTTPRequestBody</span><span class="p">(</span><span class="nx">body</span><span class="p">)</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetHTTPStatusCode</span><span class="p">(</span><span class="nx">ecode</span><span class="p">.</span><span class="nf">Cause</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Error</span><span class="p">).</span><span class="nf">Code</span><span class="p">())</span>
+	<span class="nx">ctx</span><span class="p">.</span><span class="nf">SetHTTPResponseHeaders</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">Header</span><span class="p">())</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="gorm">gorm</h4>
+<p>我们使用 <code>gorm</code> 操作 db, 对 gorm client 改造如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="kd">func</span> <span class="nf">NewMySQL</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Config</span><span class="p">)</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">gorm</span><span class="p">.</span><span class="nx">DB</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">db</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">apmgorm</span><span class="p">.</span><span class="nf">Open</span><span class="p">(</span><span class="s">&#34;mysql&#34;</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">DSN</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;orm: open error(%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">DB</span><span class="p">().</span><span class="nf">SetMaxIdleConns</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Idle</span><span class="p">)</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">DB</span><span class="p">().</span><span class="nf">SetMaxOpenConns</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Active</span><span class="p">)</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">DB</span><span class="p">().</span><span class="nf">SetConnMaxLifetime</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">IdleTimeout</span><span class="p">))</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">SetLogger</span><span class="p">(</span><span class="nx">ormLog</span><span class="p">{})</span>
+    <span class="o">...</span><span class="p">.</span> <span class="c1">// 省略其他部分
+</span><span class="c1"></span>    <span class="k">return</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="redis">redis</h4>
+<p>操作 redis, 我们对客户端改造如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="kd">type</span> <span class="nx">Redis</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Redis</span> <span class="o">*</span><span class="nx">redis</span><span class="p">.</span><span class="nx">Redis</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="nx">Redis</span><span class="p">)</span> <span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">commandName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="nx">reply</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">conn</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Redis</span><span class="p">.</span><span class="nf">Conn</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+	<span class="k">return</span> <span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">conn</span><span class="p">,</span> <span class="nx">commandName</span><span class="p">,</span> <span class="nx">args</span><span class="o">...</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="c1">// Do calls conn.Do(commandName, args...), and also reports the operation as a span to Elastic APM.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">conn</span> <span class="nx">redis</span><span class="p">.</span><span class="nx">Conn</span><span class="p">,</span> <span class="nx">commandName</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">args</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">(</span><span class="kd">interface</span><span class="p">{},</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">spanName</span> <span class="o">:=</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">ToUpper</span><span class="p">(</span><span class="nx">commandName</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">spanName</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+		<span class="nx">spanName</span> <span class="p">=</span> <span class="s">&#34;(flush pipeline)&#34;</span>
+	<span class="p">}</span>
+	<span class="nx">span</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">apm</span><span class="p">.</span><span class="nf">StartSpan</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">spanName</span><span class="p">,</span> <span class="s">&#34;db.redis&#34;</span><span class="p">)</span>
+	<span class="k">defer</span> <span class="nx">span</span><span class="p">.</span><span class="nf">End</span><span class="p">()</span>
+	<span class="k">return</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">commandName</span><span class="p">,</span> <span class="nx">args</span><span class="o">...</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="o">...</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>像 <code>grpc server</code>, <code>grpc client</code>, <code>http client</code> 等的改造可参照<a href="https://www.elastic.co/guide/en/apm/agent/go/current/builtin-modules.html#builtin-modules-apmgrpc" target="_blank" rel="noopener noreffer">官方例子</a>。</p>
+<h3 id="es-apm-部署">ES APM 部署</h3>
+<p>在上面我们介绍过 ES APM 的组件，要部署一个生产基本可用的 ES APM 至少部署清单应该如下</p>
+<ul>
+<li>APM Server 至少两个实例</li>
+<li>ElasticSearch 至少3实例组成的集群</li>
+<li>Kibana 一个实例
+ES APM 整体的部署成本的大头就是 Elasticsearch cluster。 建议以容器的方式部署，降低部署和运维成本。如果在 k8s 中部署，建议 es 实例配置好 <code>pod antiaffinity</code> 并且提前规划好存储容量。如果以 docker-compose 方式部署，每个 es 实例建议部署到单独的宿主机。
+下面是各个组件的 docker-compose yaml 配置文件，供大家参考</li>
+</ul>
+<blockquote>
+<p>Elasticsearch 对各种文件混合使用了 NioFs（ 注：非阻塞文件系统）和 MMapFs （ 注：内存映射文件系统）。配置的最大映射数量，以便有足够的虚拟内存可用于 mmapped 文件。可以在宿主机上设置：
+<code>sysctl -w vm.max_map_count=262144</code></p>
+</blockquote>
+<h4 id="elasticsearch-cluster">Elasticsearch cluster</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span><span class="lnt">89
+</span><span class="lnt">90
+</span><span class="lnt">91
+</span><span class="lnt">92
+</span><span class="lnt">93
+</span><span class="lnt">94
+</span><span class="lnt">95
+</span><span class="lnt">96
+</span><span class="lnt">97
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yml" data-lang="yml"><span class="k">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.7&#39;</span><span class="w">
+</span><span class="w"></span><span class="k">services</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">es01</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>docker.elastic.co/elasticsearch/elasticsearch<span class="p">:</span><span class="m">7.11.2</span><span class="w">
+</span><span class="w">    </span><span class="k">container_name</span><span class="p">:</span><span class="w"> </span>es01<span class="w">
+</span><span class="w">    </span><span class="k">deploy</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">resources</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">limits</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w">
+</span><span class="w">        </span><span class="k">reservations</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w">
+</span><span class="w">    </span><span class="k">environment</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- node.name=es01<span class="w">
+</span><span class="w">      </span>- network.host=<span class="m">0.0.0.0</span><span class="w">
+</span><span class="w">      </span>- network.publish_host=<span class="m">10.1.1.16</span><span class="w">
+</span><span class="w">      </span>- http.port=<span class="m">9205</span><span class="w">  
+</span><span class="w">      </span>- cluster.name=bdjs-es-docker-cluster<span class="w">
+</span><span class="w">      </span>- discovery.seed_hosts=<span class="m">10.1.1.17</span><span class="p">,</span><span class="w"> </span><span class="m">10.1.1.18</span><span class="w">
+</span><span class="w">      </span>- cluster.initial_master_nodes=es01<span class="p">,</span>es02<span class="p">,</span>es03<span class="w">
+</span><span class="w">      </span>- bootstrap.memory_lock=<span class="kc">true</span><span class="w">
+</span><span class="w">    </span><span class="k">ulimits</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">memlock</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">soft</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">        </span><span class="k">hard</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">    </span><span class="k">volumes</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- /data/apm/es/data<span class="p">:</span>/usr/share/elasticsearch/data<span class="w">
+</span><span class="w">    </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9205</span><span class="p">:</span><span class="m">9205</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9300</span><span class="p">:</span><span class="m">9300</span><span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.7&#39;</span><span class="w">
+</span><span class="w"></span><span class="k">services</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">es02</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>docker.elastic.co/elasticsearch/elasticsearch<span class="p">:</span><span class="m">7.11.2</span><span class="w">
+</span><span class="w">    </span><span class="k">container_name</span><span class="p">:</span><span class="w"> </span>es02<span class="w">
+</span><span class="w">    </span><span class="k">deploy</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">resources</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">limits</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w">
+</span><span class="w">        </span><span class="k">reservations</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w">
+</span><span class="w">    </span><span class="k">environment</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- node.name=es02<span class="w">
+</span><span class="w">      </span>- network.host=<span class="m">0.0.0.0</span><span class="w">
+</span><span class="w">      </span>- network.publish_host=<span class="m">10.1.1.17</span><span class="w">
+</span><span class="w">      </span>- http.port=<span class="m">9205</span><span class="w">      
+</span><span class="w">      </span>- cluster.name=bdjs-es-docker-cluster<span class="w">
+</span><span class="w">      </span>- discovery.seed_hosts=<span class="m">10.1.1.16</span><span class="p">,</span><span class="w"> </span><span class="m">10.1.1.18</span><span class="w">
+</span><span class="w">      </span>- cluster.initial_master_nodes=es01<span class="p">,</span>es02<span class="p">,</span>es03<span class="w">
+</span><span class="w">      </span>- bootstrap.memory_lock=<span class="kc">true</span><span class="w">
+</span><span class="w">    </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9205</span><span class="p">:</span><span class="m">9205</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9300</span><span class="p">:</span><span class="m">9300</span><span class="w">
+</span><span class="w">    </span><span class="k">ulimits</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">memlock</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">soft</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">        </span><span class="k">hard</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">    </span><span class="k">volumes</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- /data/apm/es/data<span class="p">:</span>/usr/share/elasticsearch/data<span class="w">
+</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.7&#39;</span><span class="w">
+</span><span class="w"></span><span class="k">services</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">es03</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>docker.elastic.co/elasticsearch/elasticsearch<span class="p">:</span><span class="m">7.11.2</span><span class="w">
+</span><span class="w">    </span><span class="k">container_name</span><span class="p">:</span><span class="w"> </span>es03<span class="w">
+</span><span class="w">    </span><span class="k">deploy</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">resources</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">limits</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w">
+</span><span class="w">        </span><span class="k">reservations</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;8&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>24000M<span class="w"> 
+</span><span class="w">    </span><span class="k">environment</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- node.name=es03<span class="w">
+</span><span class="w">      </span>- network.host=<span class="m">0.0.0.0</span><span class="w">
+</span><span class="w">      </span>- network.publish_host=<span class="m">10.1.1.18</span><span class="w">
+</span><span class="w">      </span>- http.port=<span class="m">9205</span><span class="w">
+</span><span class="w">      </span>- cluster.name=bdjs-es-docker-cluster<span class="w">
+</span><span class="w">      </span>- discovery.seed_hosts=<span class="m">10.1.1.16</span><span class="p">,</span><span class="m">10.1.1.17</span><span class="w">
+</span><span class="w">      </span>- cluster.initial_master_nodes=es01<span class="p">,</span>es02<span class="p">,</span>es03<span class="w">
+</span><span class="w">      </span>- bootstrap.memory_lock=<span class="kc">true</span><span class="w">
+</span><span class="w">     </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9205</span><span class="p">:</span><span class="m">9205</span><span class="w">
+</span><span class="w">      </span>- <span class="m">9300</span><span class="p">:</span><span class="m">9300</span><span class="w">
+</span><span class="w">    </span><span class="k">ulimits</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">memlock</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">soft</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">        </span><span class="k">hard</span><span class="p">:</span><span class="w"> </span>-<span class="m">1</span><span class="w">
+</span><span class="w">    </span><span class="k">volumes</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span>- /data/apm/es/data<span class="p">:</span>/usr/share/elasticsearch/data<span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><h4 id="apm-server-和-kibana">APM server 和 Kibana</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yml" data-lang="yml"><span class="k">version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;3.7&#39;</span><span class="w">
+</span><span class="w"></span><span class="k">services</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">kibana</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>docker.elastic.co/kibana/kibana<span class="p">:</span><span class="m">7.11.2</span><span class="w">
+</span><span class="w">    </span><span class="k">deploy</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">resources</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">limits</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>8000M<span class="w">
+</span><span class="w">        </span><span class="k">reservations</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>8000M<span class="w">
+</span><span class="w">    </span><span class="k">environment</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">ELASTICSEARCH_HOSTS</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;[&#34;http://10.1.1.16:9205&#34;,&#34;http://10.1.1.17:9205&#34;,&#34;http://10.1.1.18:9205&#34;]&#39;</span><span class="w">
+</span><span class="w">    </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- <span class="m">5601</span><span class="p">:</span><span class="m">5601</span><span class="w">
+</span><span class="w">    </span><span class="k">networks</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- elastic<span class="w">
+</span><span class="w">    </span><span class="k">healthcheck</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">interval</span><span class="p">:</span><span class="w"> </span>10s<span class="w">
+</span><span class="w">      </span><span class="k">retries</span><span class="p">:</span><span class="w"> </span><span class="m">20</span><span class="w">
+</span><span class="w">      </span><span class="k">test</span><span class="p">:</span><span class="w"> </span>curl<span class="w"> </span>--write-out<span class="w"> </span><span class="s1">&#39;HTTP %{http_code}&#39;</span><span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--output<span class="w"> </span>/dev/<span class="kc">null</span><span class="w"> </span>http<span class="p">:</span>//localhost<span class="p">:</span><span class="m">5601</span>/api/status<span class="w">
+</span><span class="w">
+</span><span class="w">  </span><span class="k">apm-server</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>docker.elastic.co/apm/apm-server<span class="p">:</span><span class="m">7.11.2</span><span class="w">
+</span><span class="w">    </span><span class="k">deploy</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">resources</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">limits</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>8000M<span class="w">
+</span><span class="w">        </span><span class="k">reservations</span><span class="p">:</span><span class="w">
+</span><span class="w">          </span><span class="k">cpus</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;2&#39;</span><span class="w">
+</span><span class="w">          </span><span class="k">memory</span><span class="p">:</span><span class="w"> </span>8000M<span class="w"> 
+</span><span class="w">    </span><span class="k">cap_add</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;CHOWN&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;DAC_OVERRIDE&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;SETGID&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;SETUID&#34;</span><span class="p">]</span><span class="w">
+</span><span class="w">    </span><span class="k">cap_drop</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;ALL&#34;</span><span class="p">]</span><span class="w">
+</span><span class="w">    </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- <span class="m">8200</span><span class="p">:</span><span class="m">8200</span><span class="w">
+</span><span class="w">    </span><span class="k">networks</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- elastic<span class="w">
+</span><span class="w">    </span><span class="k">command</span><span class="p">:</span><span class="w"> </span><span class="sd">&gt;
+</span><span class="sd">       apm-server -e</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>apm-server.rum.enabled=<span class="kc">true</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>setup.kibana.host=kibana<span class="p">:</span><span class="m">5601</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>setup.template.settings.index.number_of_replicas=<span class="m">0</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>apm-server.kibana.enabled=<span class="kc">true</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>apm-server.kibana.host=kibana<span class="p">:</span><span class="m">5601</span><span class="w">
+</span><span class="w">         </span>-E<span class="w"> </span>output.elasticsearch.hosts=<span class="p">[</span><span class="s2">&#34;10.1.1.16:9205&#34;</span><span class="p">,</span><span class="s2">&#34;10.1.1.17:9205&#34;</span><span class="p">,</span><span class="s2">&#34;10.1.1.18:9205&#34;</span><span class="p">]</span><span class="w">
+</span><span class="w">    </span><span class="k">healthcheck</span><span class="p">:</span><span class="w">
+</span><span class="w">      </span><span class="k">interval</span><span class="p">:</span><span class="w"> </span>10s<span class="w">
+</span><span class="w">      </span><span class="k">retries</span><span class="p">:</span><span class="w"> </span><span class="m">12</span><span class="w">
+</span><span class="w">      </span><span class="k">test</span><span class="p">:</span><span class="w"> </span>curl<span class="w"> </span>--write-out<span class="w"> </span><span class="s1">&#39;HTTP %{http_code}&#39;</span><span class="w"> </span>--fail<span class="w"> </span>--silent<span class="w"> </span>--output<span class="w"> </span>/dev/<span class="kc">null</span><span class="w"> </span>http<span class="p">:</span>//localhost<span class="p">:</span><span class="m">8200</span>/<span class="w"> 
+</span><span class="w"></span><span class="k">networks</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">elastic</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">driver</span><span class="p">:</span><span class="w"> </span>bridge<span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="apm-结果">APM 结果</h3>
+<p>下图是示例服务的 transactions 汇总的概览</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/apm-trans.png"
+        data-srcset="https://pics.lxkaka.wang/apm-trans.png, https://pics.lxkaka.wang/apm-trans.png 1.5x, https://pics.lxkaka.wang/apm-trans.png 2x"
+        data-sizes="auto"
+        alt="apm-trans"
+        title="apm-trans" /></p>
+<p>下图是某 gprc 请求的链路 timeline</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/apm-timelines.png"
+        data-srcset="https://pics.lxkaka.wang/apm-timelines.png, https://pics.lxkaka.wang/apm-timelines.png 1.5x, https://pics.lxkaka.wang/apm-timelines.png 2x"
+        data-sizes="auto"
+        alt="apm-timeline"
+        title="apm-timeline" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-04-17</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/golang-apm/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/golang-apm/" data-title="Elastic APM 补齐服务监控" data-hashtags="apm,monitoring,es"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/golang-apm/" data-hashtag="apm"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/golang-apm/" data-title="Elastic APM 补齐服务监控" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/golang-apm/" data-title="Elastic APM 补齐服务监控"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/golang-apm/" data-title="Elastic APM 补齐服务监控"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/apm/">apm</a>,&nbsp;<a href="/tags/monitoring/">monitoring</a>,&nbsp;<a href="/tags/es/">es</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/golangci/" class="prev" rel="prev" title="golangci-lint 提效代码 review"><i class="fas fa-angle-left fa-fw"></i>golangci-lint 提效代码 review</a>
+            <a href="/kubelet-hash/" class="next" rel="next" title="容器重启原理-Kubelet hash计算">容器重启原理-Kubelet hash计算<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

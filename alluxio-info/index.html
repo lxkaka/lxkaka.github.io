@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>数据编排技术-Alluxio 的原理介绍 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="数据编排技术-Alluxio 的原理介绍" />
+<meta property="og:description" content="在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/alluxio-info/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2022-12-22T17:18:15+08:00" />
+<meta property="article:modified_time" content="2022-12-22T17:18:15+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="数据编排技术-Alluxio 的原理介绍"/>
+<meta name="twitter:description" content="在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/alluxio-info/" /><link rel="prev" href="https://lxkaka.wang/limit-bbr/" /><link rel="next" href="https://lxkaka.wang/cdc-stream/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "数据编排技术-Alluxio 的原理介绍",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/alluxio-info\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "alluxio, 数据编排, 大数据, 机器学习","wordcount":  3001 ,
+        "url": "https:\/\/lxkaka.wang\/alluxio-info\/","datePublished": "2022-12-22T17:18:15+08:00","dateModified": "2022-12-22T17:18:15+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">数据编排技术-Alluxio 的原理介绍</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a>&nbsp;<a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a>&nbsp;<a href="/categories/%E5%AD%98%E5%82%A8/"><i class="far fa-folder fa-fw"></i>存储</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-12-22">2022-12-22</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3001 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#alluxio-简介">Alluxio 简介</a></li>
+        <li><a href="#alluxio-重要特性">Alluxio 重要特性</a></li>
+        <li><a href="#alluxio-架构">Alluxio 架构</a></li>
+        <li><a href="#数据流">数据流</a>
+          <ul>
+            <li><a href="#读">读</a></li>
+            <li><a href="#写">写</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、Apache HDFS。目前为了系统的可用性和稳定性计算和存储往往是分开部署，在这样的背景下对于大数据的读写性能和兼容性就会成为很大的挑战。于是我们看到了一种解决方案 <a href="https://www.alluxio.io/" target="_blank" rel="noopener noreffer">Alluxio</a>。</p>
+<h3 id="alluxio-简介">Alluxio 简介</h3>
+<blockquote>
+<p>Alluxio 是世界上第一个面向基于云的数据分析和人工智能的开源的数据编排技术。 它为数据驱动型应用和存储系统构建了桥梁, 将数据从存储层移动到距离数据驱动型应用更近的位置从而能够更容易被访问。 这还使得应用程序能够通过一个公共接口连接到许多存储系统。 Alluxio内存至上的层次化架构使得数据的访问速度能比现有方案快几个数量级。</p>
+</blockquote>
+<blockquote>
+<p>在大数据生态系统中，Alluxio 位于数据驱动框架或应用（如 Apache Spark、Presto、Tensorflow、Apache Hive 或 Apache Flink）和各种持久化存储系统（如 Amazon S3、Google Cloud Storage、OpenStack Swift、HDFS、IBM Cleversafe、EMC ECS、Ceph、NFS 、Minio和 Alibaba OSS）之间。 Alluxio 统一了存储在这些不同存储系统中的数据，为其上层数据驱动型应用提供统一的客户端 API 和全局命名空间。</p>
+</blockquote>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/alluxio-overview.png"
+        data-srcset="https://pics.lxkaka.wang/alluxio-overview.png, https://pics.lxkaka.wang/alluxio-overview.png 1.5x, https://pics.lxkaka.wang/alluxio-overview.png 2x"
+        data-sizes="auto"
+        alt="overview"
+        title="overview" /></p>
+<h3 id="alluxio-重要特性">Alluxio 重要特性</h3>
+<ol>
+<li>
+<p>统一数据访问接口 <br>
+Alluxio 通过挂载功能在不同的存储系统之间实现高效的数据管理。并且，透明命名在持久化这些对象到底层存储系统时可以保留这些对象的文件名和目录层次结构。如下图, 可将 HDFS、S3 的数据 mount 到 Alluxio 的随意目录下，这样就可以通过一个 API 访问不同的主流的持久化存储系统，这样也解决了存储系统的单一依赖性。</p>
+</li>
+<li>
+<p>内存速度 I/O<br>
+Alluxio 能够用作分布式共享缓存服务，这样与 Alluxio 通信的计算应用程序可以透明地缓存频繁访问的数据（尤其是从远程位置），以提供内存级 I/O 吞吐率。此外，Alluxio的层次化存储机制能够充分利用内存、固态硬盘或者磁盘，降低具有弹性扩张特性的数据驱动型应用的成本开销。</p>
+</li>
+<li>
+<p>简化数据管理<br>
+Alluxio 提供对多数据源的单点访问。除了连接不同类型的数据源之外，Alluxio 还允许用户同时连接同一存储系统的不同版本，如多个版本的 HDFS，并且无需复杂的系统配置和管理。</p>
+</li>
+<li>
+<p>应用程序部署简易<br>
+Alluxio 管理应用程序和文件或对象存储之间的通信，将应用程序的数据访问请求转换为底层存储接口的请求。Alluxio 与 Hadoop 兼容,现有的数据分析应用程序,如Spark 和 MapReduce 程序,无需更改任何代码就能在 Alluxio 上运行。</p>
+</li>
+<li>
+<p>智能多层缓存<br>
+Alluxio 集群能够充当底层存储系统中数据的读写缓存。可配置自动优化数据放置策略，以实现跨内存和磁盘（SSD/HDD）的性能和可靠性。缓存对用户是透明的，使用缓冲来保持与持久存储的一致性</p>
+</li>
+<li>
+<p>方便迁移可插拔<br>
+在容错方面，Alluxio 备份内存数据到底层存储系统。Alluxio 提供了通用接口以简化插入不同的底层存储系统。</p>
+</li>
+<li>
+<p>数据共享<br>
+Alluxio可以帮助实现跨计算、作业间的数据快速复用和共享。</p>
+</li>
+</ol>
+<p>对于用户应用程序和大数据计算框架来说，Alluxio 存储通常与计算框架并置。这种部署方式使 Alluxio 可以提供快速存储，促进作业之间的数据共享，无论它们是否在同一计算</p>
+<h3 id="alluxio-架构">Alluxio 架构</h3>
+<p>Alluxio 由 master、worker 、client 组成；</p>
+<ol>
+<li>master 支持1主多从的高可用架构，master 之前通过 raft 协议或 zookeeper 进行选主</li>
+<li>主 master 用于对外提供 RPC 服务和管理全局的元数据。这里面包含文件系统元数据（文件系统节点树）、数据块元数据（数据块位置）、以及 worker 元数据（存储空间等）</li>
+<li>备用 master 读取主 master 写入的 journa 日志，以保持与主 master 的状态同步。它们会对 journal 日志写入检查点，用于快速恢复。它们不处理来自 Alluxio 组件的任何请求</li>
+<li>worker 会定期向 master上报心跳</li>
+<li>worker 主要是管理存储资源和底层文件系统的操作，将远程文件存储到本地的内存/SSD/HDD 中</li>
+<li>硬件资源是有限的，worker 还需要根据策略，负责多级智能缓存，数据淘汰、数据过期删除</li>
+<li>Client 在应用侧，负责向 master 请求文件的元信息，然后从 worker 中取回文件数据；Client 不会直接访问远程存储</li>
+</ol>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/alluxio-arch.png"
+        data-srcset="https://pics.lxkaka.wang/alluxio-arch.png, https://pics.lxkaka.wang/alluxio-arch.png 1.5x, https://pics.lxkaka.wang/alluxio-arch.png 2x"
+        data-sizes="auto"
+        alt="arch"
+        title="arch" /></p>
+<h3 id="数据流">数据流</h3>
+<p>Alluxio 与计算集群部署在一起，持久化存储系统可以为远程存储系统或云存储。在底层存储和计算集群间，Alluxio是作为一个缓存层存在的。</p>
+<h4 id="读">读</h4>
+<ol>
+<li>
+<p>本地缓存命中<br>
+本地缓存命中发生在请求数据位于本地 Alluxio worker。举例说明，如果一个应用通过 Alluxio client 请求数据，client 向 Alluxio master 请求数据所在的worker。如果数据在本地可用，Alluxio client 使用“短路”读取来绕过 Alluxio worker，并直接通过本地文件系统读取文件。短路读取避免通过TCP套接字传输数据，并提供数据的直接访问。
+还要注意，Alluxio 除了内存之外还可以管理其他存储介质(例如SSD、HDD)，因此本地数据访问速度可能会因本地存储介质的不同而有所不同</p>
+</li>
+<li>
+<p>远程缓存命中<br>
+当请求的数据存储在 Alluxio 中，而不是存储在 client 的本地 worker 上时，client 将对具有数据的 worker 进行远程读取。client 完成读取后，会要求本地的worker（如果存在）创建一个copy，这样以后读取的时候可以在本地读取相同的数据。远程缓存击中提供了网络级别速度的数据读取。Alluxio 优先从远程 worker 读取数据，而不是从底层存储，因为 Alluxio worker 间的速度一般会快过 Alluxio workers 和底层存储的速度。</p>
+</li>
+<li>
+<p>缓存 miss<br>
+如果数据在 Alluxio 中找不到，则会发生缓存丢失，应用将不得不从底层存储读取数据。Alluxio client 会将数据读取请求委托给 worker（有限本地worker）。这个worker 会从底层存储读取数据并缓存。缓存丢失通常会导致最大的延迟，因为数据必须从底层存储获取。<br>
+当 client 只读取块的一部分或不按照顺序读取块时，client 将指示 worker 异步缓存整个块。异步缓存不会阻塞 client，但是如果 Alluxio 和底层存储系统之间的网络带宽是瓶颈，那么异步缓存仍然可能影响性能。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/alluxio-read.png"
+        data-srcset="https://pics.lxkaka.wang/alluxio-read.png, https://pics.lxkaka.wang/alluxio-read.png 1.5x, https://pics.lxkaka.wang/alluxio-read.png 2x"
+        data-sizes="auto"
+        alt="read"
+        title="read" /><br>
+图中绿色示意为命中本地缓存，蓝色为命中远程缓存，红色为缓存 miss</p>
+</li>
+</ol>
+<h4 id="写">写</h4>
+<p> 用户可以通过选择不同的写类型来配置应该如何写数据。写类型可以通过Alluxio API设置，也可以通过在客户机中配置属性Alluxio .user.file.writetype.default来设置。</p>
+<ol>
+<li>
+<p>写缓存 <br>
+当写类型设置为 <code>MUST_CACHE</code>，Alluxio client 将数据写入本地 Alluxio worker，而不会写入到底层存储。如果“短路”写可用，Alluxio client 直接写入到本地 RAM 的文件，绕过 Alluxio worker，避免网络传输。由于数据没有持久存储在 under storage 中，因此如果机器崩溃或需要释放数据以进行更新的写操作，数据可能会丢失。当可以容忍数据丢失时，MUST_CACHE 设置对于写临时数据非常有用。</p>
+</li>
+<li>
+<p>同步持久化写<br>
+使用 <code>CACHE_THROUGH</code> 写类型，数据被同步地写到一个Alluxio worker 和底层存储。Alluxio client 将写操作委托给本地 worker，而 worker 同时将对本地内存和底层存储进行写操作。由于底层存储的写入速度通常比本地存储慢，所以 client 的写入速度将与底层存储的速度相匹配。当需要数据持久化时，建议使用 CACHE_THROUGH 写类型。在本地还存了一份副本，以便可以直接从本地内存中读取数据。</p>
+</li>
+<li>
+<p>异步持久化写<br>
+Alluxio 提供了一个叫做<code>ASYNC_THROUGH</code> 的写类型。数据被同步地写入到一个 Alluxio worker，并异步地写入到底层存储。ASYNC_THROUGH 可以在持久化数据的同时以内存速度提供数据写入。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/alluxio-must-cache.png"
+        data-srcset="https://pics.lxkaka.wang/alluxio-must-cache.png, https://pics.lxkaka.wang/alluxio-must-cache.png 1.5x, https://pics.lxkaka.wang/alluxio-must-cache.png 2x"
+        data-sizes="auto"
+        alt="must-cahce"
+        title="must-cahce" /></p>
+<p>这张图示意了写缓存的流程，绿色示意为 bypass 机制，黑色和蓝色线表示数据缓存到 worker</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/alluxion-cache-through.png"
+        data-srcset="https://pics.lxkaka.wang/alluxion-cache-through.png, https://pics.lxkaka.wang/alluxion-cache-through.png 1.5x, https://pics.lxkaka.wang/alluxion-cache-through.png 2x"
+        data-sizes="auto"
+        alt="cache-through"
+        title="cache-through" />
+这张图展示了持久化写的过程</p>
+</li>
+</ol>
+<p>在这篇文章里我们介绍了 Alluxio 的基本原理，知道了 Alluxio 是什么东西。在后面的文章里我们再来介绍 Alluxio 在实际业务中的使用。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-12-22</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/alluxio-info/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/alluxio-info/" data-title="数据编排技术-Alluxio 的原理介绍" data-hashtags="alluxio,数据编排,大数据,机器学习"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/alluxio-info/" data-hashtag="alluxio"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/alluxio-info/" data-title="数据编排技术-Alluxio 的原理介绍" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/alluxio-info/" data-title="数据编排技术-Alluxio 的原理介绍"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/alluxio-info/" data-title="数据编排技术-Alluxio 的原理介绍"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/alluxio/">alluxio</a>,&nbsp;<a href="/tags/%E6%95%B0%E6%8D%AE%E7%BC%96%E6%8E%92/">数据编排</a>,&nbsp;<a href="/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/">大数据</a>,&nbsp;<a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/">机器学习</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/limit-bbr/" class="prev" rel="prev" title="系统自适应限流算法-BBR"><i class="fas fa-angle-left fa-fw"></i>系统自适应限流算法-BBR</a>
+            <a href="/cdc-stream/" class="next" rel="next" title="实时数据入湖的选型和实践">实时数据入湖的选型和实践<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

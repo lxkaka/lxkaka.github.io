@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>HSDB - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/hsdb/</link>
+        <description>HSDB - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 22 Apr 2020 10:07:34 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/hsdb/" rel="self" type="application/rss+xml" /><item>
+    <title>HSDB 告诉我们 Java 对象的内存地址</title>
+    <link>https://lxkaka.wang/hsdb-class/</link>
+    <pubDate>Wed, 22 Apr 2020 10:07:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/hsdb-class/</guid>
+    <description><![CDATA[我们都知道在 Java 中类的实例都是在 heap 中分配内存，也就是说实例对象都是存储在 heap 中。那么类对象是否也存在 heap 中呢? 为了找到这个问题的答案我们使用 HSDB(HotSpot Debugger) 来]]></description>
+</item><item>
+    <title>HSDB 告诉我们 Java 对象的内存地址</title>
+    <link>https://lxkaka.wang/hsdb-class/</link>
+    <pubDate>Wed, 22 Apr 2020 10:07:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/hsdb-class/</guid>
+    <description><![CDATA[我们都知道在 Java 中类的实例都是在 heap 中分配内存，也就是说实例对象都是存储在 heap 中。那么类对象是否也存在 heap 中呢? 为了找到这个问题的答案我们使用 HSDB(HotSpot Debugger) 来]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>服务治理 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/</link>
+        <description>服务治理 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 27 Feb 2022 16:37:33 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/" rel="self" type="application/rss+xml" /><item>
+    <title>算法服务稳定性优化之负载控制</title>
+    <link>https://lxkaka.wang/p2c1/</link>
+    <pubDate>Sun, 27 Feb 2022 16:37:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/p2c1/</guid>
+    <description><![CDATA[在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。]]></description>
+</item><item>
+    <title>用 StatefulSet 实现同步服务和异步服务的管理</title>
+    <link>https://lxkaka.wang/service-manage/</link>
+    <pubDate>Sun, 26 Dec 2021 13:55:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/service-manage/</guid>
+    <description><![CDATA[一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别]]></description>
+</item><item>
+    <title>Istio 实践</title>
+    <link>https://lxkaka.wang/istio-init/</link>
+    <pubDate>Fri, 25 Jan 2019 18:48:17 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/istio-init/</guid>
+    <description><![CDATA[在之前的文章中我们提到过, 服务拆分后，不同的服务之间必须进行交互才能实现特定的功能。在这里引入 service mesh 这个概念，service mesh 通常用于描述构成]]></description>
+</item><item>
+    <title>Istio 实践</title>
+    <link>https://lxkaka.wang/istio-init/</link>
+    <pubDate>Fri, 25 Jan 2019 18:48:17 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/istio-init/</guid>
+    <description><![CDATA[在之前的文章中我们提到过, 服务拆分后，不同的服务之间必须进行交互才能实现特定的功能。在这里引入 service mesh 这个概念，service mesh 通常用于描述构成]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Python 应用接入 Prometheus 监控 - lxkaka</title><meta name="Description" content="Python 应用的 metrics 如何上报给 Promethues"><meta property="og:title" content="Python 应用接入 Prometheus 监控" />
+<meta property="og:description" content="Python 应用的 metrics 如何上报给 Promethues" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/py-metrics/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2022-07-29T10:04:07+08:00" />
+<meta property="article:modified_time" content="2022-07-29T10:04:07+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Python 应用接入 Prometheus 监控"/>
+<meta name="twitter:description" content="Python 应用的 metrics 如何上报给 Promethues"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/py-metrics/" /><link rel="prev" href="https://lxkaka.wang/amis-practice/" /><link rel="next" href="https://lxkaka.wang/image-process/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Python 应用接入 Prometheus 监控",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/py-metrics\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "python, metrics, promethues","wordcount":  1378 ,
+        "url": "https:\/\/lxkaka.wang\/py-metrics\/","datePublished": "2022-07-29T10:04:07+08:00","dateModified": "2022-07-29T10:04:07+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "Python 应用的 metrics 如何上报给 Promethues"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Python 应用接入 Prometheus 监控</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a>&nbsp;<a href="/categories/monitor/"><i class="far fa-folder fa-fw"></i>monitor</a>&nbsp;<a href="/categories/%E5%AE%9E%E8%B7%B5/"><i class="far fa-folder fa-fw"></i>实践</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-07-29">2022-07-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1378 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#收集-metrics-的方式">收集 Metrics 的方式</a>
+              <ul>
+                <li><a href="#pull">Pull</a></li>
+                <li><a href="#push">Push</a></li>
+              </ul>
+            </li>
+            <li><a href="#推送监控指标">推送监控指标</a></li>
+            <li><a href="#拉取监控指标">拉取监控指标</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在<a href="https://www.lxkaka.wang/app-metrics/" target="_blank" rel="noopener noreffer">这篇文章</a> 我们介绍了 Prmetheus metrics 的基本类型和在 Golang 中的简单应用。我们知道在一个通过 Http 协议提供在线服务的应用中可以通过接口 <code>/metrics</code> 来 expose metrics，然后 promethues 可以通过定时 pull 的方式来抓取指标，这样可以实现服务的监控。那在一个不是通过 Http 接口来提供服务的应用我们如何做应用监控呢？比如在一个只从中间件中消费消息的 Python 应用怎么样通过 Promethues 实现应用监控就是在这篇文章中要介绍的内容。</p>
+<h4 id="收集-metrics-的方式">收集 Metrics 的方式</h4>
+<h5 id="pull">Pull</h5>
+<p>Prometheus 获取数据的方式只有拉取(PULL)，即 Prometheus 会以固定频率去请求每个 target 所提供的 http url来获取数据。这就需要每个服务端点提供 http 的接口来获取实时的数据。就对应我们上面提到的通过提供接口 <code>/metrics</code>。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/prome_pull.png"
+        data-srcset="https://pics.lxkaka.wang/prome_pull.png, https://pics.lxkaka.wang/prome_pull.png 1.5x, https://pics.lxkaka.wang/prome_pull.png 2x"
+        data-sizes="auto"
+        alt="prome_pull"
+        title="prome_pull" /></p>
+<h5 id="push">Push</h5>
+<p>并不是所有的应用都能提供 http 接口，为了兼容这种场景 Promethues 也通过增加组件 PushGateway 实现了应用主动推送的方式。
+PushGateway 本质上就是一个代理服务，独立部署。它没有数据抓取功能，只能被动的等待数据推送。应用把数据推送到 PushGateway 后，Prometheus 再从 PushGateway抓取。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/prome_push.png"
+        data-srcset="https://pics.lxkaka.wang/prome_push.png, https://pics.lxkaka.wang/prome_push.png 1.5x, https://pics.lxkaka.wang/prome_push.png 2x"
+        data-sizes="auto"
+        alt="prome_push"
+        title="prome_push" /></p>
+<h4 id="推送监控指标">推送监控指标</h4>
+<p>我们看推送的方式如何实现，以监控任务中某一阶段的耗时这样一个例子实践<br>
+首先我们依赖 Promethues 的 Python <a href="https://github.com/prometheus/client_python" target="_blank" rel="noopener noreffer">官方客户端</a>。</p>
+<p>示例代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">prometheus_client</span> <span class="kn">import</span> <span class="n">CollectorRegistry</span><span class="p">,</span> <span class="n">Histogram</span><span class="p">,</span> <span class="n">push_to_gateway</span>
+
+
+<span class="k">class</span> <span class="nc">Moni</span><span class="p">:</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">CollectorRegistry</span><span class="p">()</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">&#39;job_duration_seconds&#39;</span><span class="p">,</span> <span class="s1">&#39;duration of job&#39;</span><span class="p">,</span> <span class="n">labelnames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;job_name&#39;</span><span class="p">],</span>
+                  <span class="n">buckets</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">push_to_gateway</span><span class="p">(</span><span class="s1">&#39;http://localhost:9091&#39;</span><span class="p">,</span> <span class="n">job</span><span class="o">=</span><span class="s1">&#39;moni&#39;</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">run</span><span class="p">():</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">push</span><span class="p">()</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">job_run</span><span class="p">():</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">st</span>
+    <span class="n">Moni</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">job_name</span><span class="o">=</span><span class="s2">&#34;test_job&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s1">&#39;模拟 job 运行: &#39;</span><span class="p">,</span> <span class="n">duration</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">task</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;模拟任务开始运行...&#39;</span><span class="p">)</span>
+        <span class="n">job_run</span><span class="p">()</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">Moni</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">task</span><span class="p">()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>运行上面示例代码得到如下结果</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">/Users/lxkaka/bili/rubick-toys/venv/bin/python3 /Users/lxkaka/bili/rubick-worker/test_metrics.py
+模拟任务开始运行...
+模拟 job 运行:  0.1491992473602295
+模拟任务开始运行...
+模拟 job 运行:  9.469422817230225
+模拟任务开始运行...
+模拟 job 运行:  3.0821011066436768
+模拟任务开始运行...
+模拟 job 运行:  4.389142990112305
+模拟任务开始运行...
+模拟 job 运行:  6.255290985107422
+模拟任务开始运行...
+模拟 job 运行:  8.34602689743042
+模拟任务开始运行...
+模拟 job 运行:  0.5739247798919678
+模拟任务开始运行...
+模拟 job 运行:  5.111149072647095
+模拟任务开始运行...
+模拟 job 运行:  2.314656972885132
+模拟任务开始运行...
+模拟 job 运行:  3.758761405944824
+
+Process finished with <span class="nb">exit</span> code <span class="m">0</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>下面的图展示了在 PushGateway 中收集到的结果，可以看到 metrics 和上面输出完全一致</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/pushgw_result.png"
+        data-srcset="https://pics.lxkaka.wang/pushgw_result.png, https://pics.lxkaka.wang/pushgw_result.png 1.5x, https://pics.lxkaka.wang/pushgw_result.png 2x"
+        data-sizes="auto"
+        alt="pushgw-result"
+        title="pushgw-result" /></p>
+<p>此外 <code>prometheus_client</code> 提供了更方便的使用方式&ndash;装饰器，可以更优雅的实现指标监控，以上面的示例为例修改如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">h_label</span> <span class="o">=</span> <span class="n">Moni</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">job_name</span><span class="o">=</span><span class="s1">&#39;test_job&#39;</span><span class="p">)</span>
+
+<span class="nd">@h_label.time</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">job_run</span><span class="p">():</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>其他指标类型的装饰器比如</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">prometheus_client</span> <span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Gauge</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">&#39;my_failures&#39;</span><span class="p">,</span> <span class="s1">&#39;Description of counter&#39;</span><span class="p">)</span>
+<span class="nd">@c.count_exceptions</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+  <span class="k">pass</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span><span class="s1">&#39;my_inprogress_requests&#39;</span><span class="p">,</span> <span class="s1">&#39;Description of gauge&#39;</span><span class="p">)</span>
+<span class="nd">@g.track_inprogress</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">f</span><span class="p">():</span>
+  <span class="k">pass</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="拉取监控指标">拉取监控指标</h4>
+<p>在任务类型的应用中虽然没有现成的 Http server，但我们可以在任务进程中起一个子线程去启动一个 Http server, 这个 server 提供接口给 Promethues 拉取指标。
+在 <code>prometheus_client</code> 已经提供了 <code>start_http_server</code> 方法来启动一个后台 Http Server。
+使用示例如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># !/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">prometheus_client</span> <span class="kn">import</span> <span class="n">Histogram</span><span class="p">,</span> <span class="n">start_http_server</span>
+
+
+<span class="k">class</span> <span class="nc">Moni</span><span class="p">:</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">&#39;job_duration_seconds&#39;</span><span class="p">,</span> <span class="s1">&#39;duration of job&#39;</span><span class="p">,</span> <span class="n">labelnames</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;job_name&#39;</span><span class="p">],</span>
+                  <span class="n">buckets</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">])</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">start_http_server</span><span class="p">(</span><span class="mi">8000</span><span class="p">)</span>
+
+
+<span class="n">h_label</span> <span class="o">=</span> <span class="n">Moni</span><span class="o">.</span><span class="n">h</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">job_name</span><span class="o">=</span><span class="s1">&#39;test_job&#39;</span><span class="p">)</span>
+
+
+<span class="nd">@h_label.time</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">job_run</span><span class="p">():</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">task</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s1">&#39;模拟任务开始运行...&#39;</span><span class="p">)</span>
+        <span class="n">job_run</span><span class="p">()</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">Moni</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+    <span class="n">task</span><span class="p">()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>容器的 health check 配置上此端口，提高监控的可用性。
+查看接口，输出结果如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># HELP job_duration_seconds duration of job
+# TYPE job_duration_seconds histogram
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;1.0&#34;} 2.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;2.0&#34;} 2.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;3.0&#34;} 2.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;10.0&#34;} 10.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;20.0&#34;} 10.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;50.0&#34;} 10.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;100.0&#34;} 10.0
+job_duration_seconds_bucket{job_name=&#34;test_job&#34;,le=&#34;+Inf&#34;} 10.0
+job_duration_seconds_count{job_name=&#34;test_job&#34;} 10.0
+</code></pre></td></tr></table>
+</div>
+</div><p>在 Promethues 中查看抓取结果如下图所示</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/prome_result.png"
+        data-srcset="https://pics.lxkaka.wang/prome_result.png, https://pics.lxkaka.wang/prome_result.png 1.5x, https://pics.lxkaka.wang/prome_result.png 2x"
+        data-sizes="auto"
+        alt="prome-result"
+        title="prome-result" /></p>
+<p>此外，当我们的 Python 应用包含多个进程，上述的方式就不能 work 了。关于如何在多进程中 expose metrics 我们后续更新到文章中。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-07-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/py-metrics/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/py-metrics/" data-title="Python 应用接入 Prometheus 监控" data-hashtags="python,metrics,promethues"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/py-metrics/" data-hashtag="python"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/py-metrics/" data-title="Python 应用接入 Prometheus 监控" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/py-metrics/" data-title="Python 应用接入 Prometheus 监控"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/py-metrics/" data-title="Python 应用接入 Prometheus 监控"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/python/">Python</a>,&nbsp;<a href="/tags/metrics/">metrics</a>,&nbsp;<a href="/tags/promethues/">promethues</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/amis-practice/" class="prev" rel="prev" title="高效搭建后台系统的解决方案-amis"><i class="fas fa-angle-left fa-fw"></i>高效搭建后台系统的解决方案-amis</a>
+            <a href="/image-process/" class="next" rel="next" title="Golang 中实用的图片处理方法">Golang 中实用的图片处理方法<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

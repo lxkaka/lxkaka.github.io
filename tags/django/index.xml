@@ -1,0 +1,64 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Django - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/django/</link>
+        <description>Django - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 15 Aug 2018 13:59:54 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/django/" rel="self" type="application/rss+xml" /><item>
+    <title>Jaeger in Django</title>
+    <link>https://lxkaka.wang/jaeger/</link>
+    <pubDate>Wed, 15 Aug 2018 13:59:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/jaeger/</guid>
+    <description><![CDATA[注意：Jaeger是德语单词，猎人的意思，读做“耶格” 链路追踪背景 微服务的流行程度不需要我们多说，随着业务的扩张和规模的扩大，单体架构的支撑]]></description>
+</item><item>
+    <title>Jaeger in Django</title>
+    <link>https://lxkaka.wang/jaeger/</link>
+    <pubDate>Wed, 15 Aug 2018 13:59:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/jaeger/</guid>
+    <description><![CDATA[注意：Jaeger是德语单词，猎人的意思，读做“耶格” 链路追踪背景 微服务的流行程度不需要我们多说，随着业务的扩张和规模的扩大，单体架构的支撑]]></description>
+</item><item>
+    <title>Django中sentry怎么抓取异常</title>
+    <link>https://lxkaka.wang/analyse-sentry-capture-md/</link>
+    <pubDate>Fri, 13 Apr 2018 18:07:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/analyse-sentry-capture-md/</guid>
+    <description><![CDATA[Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，]]></description>
+</item><item>
+    <title>Django中sentry怎么抓取异常</title>
+    <link>https://lxkaka.wang/analyse-sentry-capture-md/</link>
+    <pubDate>Fri, 13 Apr 2018 18:07:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/analyse-sentry-capture-md/</guid>
+    <description><![CDATA[Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，]]></description>
+</item><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item><item>
+    <title>Django Signals小结</title>
+    <link>https://lxkaka.wang/django_signals/</link>
+    <pubDate>Mon, 17 Jul 2017 22:10:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django_signals/</guid>
+    <description><![CDATA[Signals 用处 django有一个“信号分配器”（signal dispatcher）使得当一些动作在框架的其他地方发生的时候，解耦的应用可以得到提醒。]]></description>
+</item><item>
+    <title>Django Signals小结</title>
+    <link>https://lxkaka.wang/django_signals/</link>
+    <pubDate>Mon, 17 Jul 2017 22:10:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django_signals/</guid>
+    <description><![CDATA[Signals 用处 django有一个“信号分配器”（signal dispatcher）使得当一些动作在框架的其他地方发生的时候，解耦的应用可以得到提醒。]]></description>
+</item></channel>
+</rss>

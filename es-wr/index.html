@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Elasticsearch 读写总结 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="Elasticsearch 读写总结" />
+<meta property="og:description" content="我们整个日志系统是使用 EFK 这套开源方案来搭建的，在以前的文章中我们有提到过。在这个体系中，最关键的组件当属 Elasticsearch, 它负责数据的存储和搜索。在这里我们" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/es-wr/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2019-09-29T14:39:15+08:00" />
+<meta property="article:modified_time" content="2019-09-29T14:39:15+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Elasticsearch 读写总结"/>
+<meta name="twitter:description" content="我们整个日志系统是使用 EFK 这套开源方案来搭建的，在以前的文章中我们有提到过。在这个体系中，最关键的组件当属 Elasticsearch, 它负责数据的存储和搜索。在这里我们"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/es-wr/" /><link rel="prev" href="https://lxkaka.wang/flannel/" /><link rel="next" href="https://lxkaka.wang/k8s-kafka/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Elasticsearch 读写总结",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/es-wr\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "elasticsearch","wordcount":  2868 ,
+        "url": "https:\/\/lxkaka.wang\/es-wr\/","datePublished": "2019-09-29T14:39:15+08:00","dateModified": "2019-09-29T14:39:15+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Elasticsearch 读写总结</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-09-29">2019-09-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2868 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#文档元数据">文档元数据</a>
+          <ul>
+            <li><a href="#倒排索引">倒排索引</a></li>
+            <li><a href="#分片">分片</a></li>
+            <li><a href="#文档路由到分片">文档路由到分片</a></li>
+          </ul>
+        </li>
+        <li><a href="#搜索过程">搜索过程</a>
+          <ul>
+            <li><a href="#查询阶段">查询阶段</a></li>
+            <li><a href="#取回阶段">取回阶段</a></li>
+          </ul>
+        </li>
+        <li><a href="#写入过程">写入过程</a>
+          <ul>
+            <li><a href="#主流程">主流程</a></li>
+            <li><a href="#详细过程">详细过程</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我们整个日志系统是使用 EFK 这套开源方案来搭建的，在以前的文章中我们有提到过。在这个体系中，最关键的组件当属 Elasticsearch, 它负责数据的存储和搜索。在这里我们总结一下 es 的读写原理。</p>
+<p>首先我们需要了解一下文档和分片的关系</p>
+<h3 id="文档元数据">文档元数据</h3>
+<p>在 es 中我们把存储的一条日志(记录)称为文档，一个文档不仅仅包含它的数据 ，也包含元数据 —— 有关文档的信息。 三个必须的元数据元素如下：</p>
+<ul>
+<li>_index
+文档在哪存放，_index 应该是因共同的特性被分组到一起的文档集合。比如相同格式的日志我们会放到同一个 index 中</li>
+<li>_type
+文档表示的对象类别，type 可以理解成是 index 的子类，不同的 type 包含的字段可能不同</li>
+<li>_id
+文档唯一标识, id 是一个字符串， 当它和 _index 以及 _type 组合就可以唯一确定 Elasticsearch 中的一个文档。 当创建一个新的文档，要么提供自己的 _id ，要么让 Elasticsearch 帮我们生成。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;_index&#34;</span><span class="p">:</span> <span class="s2">&#34;ingress-access-2019.09.39&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_type&#34;</span><span class="p">:</span> <span class="s2">&#34;_doc&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_id&#34;</span><span class="p">:</span> <span class="s2">&#34;IY6KfG0BRpn5jI2pyyVf&#34;</span><span class="p">,</span>
+  <span class="nt">&#34;_version&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&#34;_score&#34;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&#34;_source&#34;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&#34;input&#34;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;log&#34;</span>
+    <span class="p">},</span>
+    <span class="err">...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="倒排索引">倒排索引</h4>
+<p>传统的数据库每个字段存储单个值，但这对全文检索并不够。文本字段中的每个单词需要被搜索，对数据库意味着需要单个字段有索引多值(这里指单词)的能力。倒排索引就是这样一种数据结构，倒排索引由文档中所有不重复词的列表构成，对于其中每个词，有一个包含它的文档列表。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">Term  | Doc 1 | Doc 2 | Doc 3 | ...
+------------------------------------
+brown |   X   |       |  X    | ...
+fox   |   X   |   X   |  X    | ...
+quick |   X   |   X   |       | ...
+the   |   X   |       |  X    | ...
+</code></pre></td></tr></table>
+</div>
+</div><p>倒排索引相比特定词项出现过的文档列表，会包含更多其它信息。它会保存每一个词项出现过的文档总数， 在对应的文档中一个具体词项出现的总次数，词项在文档中的顺序，每个文档的长度，所有文档的平均长度，等等。这些统计信息允许 Elasticsearch 决定哪些词比其它词更重要，哪些文档比其它文档更重要。</p>
+<h4 id="分片">分片</h4>
+<p>一个索引可以存储超出单个节点硬件限制的大量数据。比如，一个具有10亿文档的索引占据1TB的磁盘空间，而任一节点可能没有这样大的磁盘空间来存储或者单个节点处理搜索请求，响应会太慢。为了解决这个问题，Elasticsearch 提供了将索引划分成多片的能力，这些片叫做分片。当创建一个索引的时候，可以指定你分片的数量。每个分片本身也是一个功能完善并且独立的“索引”，这个“索引” 可以被放置到集群中的任何节点上。
+分片之所以重要，主要有两方面的原因：</p>
+<ul>
+<li>允许水平分割/扩展容量</li>
+<li>允许并行操作，提高了性能/吞吐量</li>
+</ul>
+<h4 id="文档路由到分片">文档路由到分片</h4>
+<p>当索引一个文档的时候，文档会被存储到一个主分片中。 Elasticsearch 如何知道一个文档应该存放到哪个分片中呢？当我们创建文档时，它如何决定这个文档应当被存储在分片 1 还是分片 2 中呢？
+首先这肯定不会是随机的，否则将来要获取文档的时候我们就不知道从何处寻找了。实际上，这个过程是根据下面这个公式决定的：
+<code>shard = hash(routing) % number_of_primary_shards</code><br>
+routing 是一个可变值，默认是文档的 _id ，也可以设置成一个自定义的值。 routing 通过 hash 函数生成一个数字，然后这个数字再除以 number_of_primary_shards （主分片的数量）后得到 余数 。这个分布在 0 到 number_of_primary_shards-1 之间的余数，就是我们所寻求的文档所在分片的位置。
+这就解释了为什么我们要在创建索引的时候就确定好主分片的数量 并且永远不会改变这个数量, 因为如果数量变化了，那么所有之前路由的值都会无效，文档也再也找不到了。</p>
+<h3 id="搜索过程">搜索过程</h3>
+<h4 id="查询阶段">查询阶段</h4>
+<p>查询阶段包含以下三个步骤:</p>
+<ol>
+<li>客户端发送一个 search 请求到 Node 3 ， Node 3 会创建一个大小为 from + size 的空优先队列。</li>
+<li>Node 3 将查询请求转发到索引的每个主分片或副本分片中。每个分片在本地执行查询并添加结果到大小为 from + size 的本地有序优先队列中。</li>
+<li>每个分片返回各自优先队列中所有文档的 ID 和排序值给协调节点，也就是 Node 3 ，它合并这些值到自己的优先队列中来产生一个全局排序后的结果列表。
+当一个搜索请求被发送到某个节点时，这个节点就变成了协调节点。 这个节点的任务是广播查询请求到所有相关分片并将它们的响应整合成全局排序后的结果集合，这个结果集合会返回给客户端。</li>
+</ol>
+<p>第一步是广播请求到索引中每一个节点的分片拷贝，查询请求可以被某个主分片或某个副本分片处理， 这就是为什么更多的副本（当结合更多的硬件）能够增加搜索吞吐率。 协调节点将在之后的请求中轮询所有的分片拷贝来分摊负载。<br>
+每个分片在本地执行查询请求并且创建一个长度为 from + size 的优先队列—也就是说，每个分片创建的结果集足够大，均可以满足全局的搜索请求。 分片返回一个轻量级的结果列表到协调节点，它仅包含文档 ID 集合以及任何排序需要用到的值，例如 _score 。<br>
+协调节点将这些分片级的结果合并到自己的有序优先队列里，它代表了全局排序结果集合。至此查询过程结束。 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/query-es.png"
+        data-srcset="https://pics.lxkaka.wang/query-es.png, https://pics.lxkaka.wang/query-es.png 1.5x, https://pics.lxkaka.wang/query-es.png 2x"
+        data-sizes="auto"
+        alt="query-doc"
+        title="query-doc" /></p>
+<h4 id="取回阶段">取回阶段</h4>
+<p>取回阶段由以下步骤构成：</p>
+<ol>
+<li>协调节点辨别出哪些文档需要被取回并向相关的分片提交多个 GET 请求。</li>
+<li>每个分片加载并 丰富 文档，如果有需要的话，接着返回文档给协调节  点。</li>
+<li>一旦所有的文档都被取回了，协调节点返回结果给客户端。<br>
+协调节点首先决定哪些文档 确实 需要被取回。例如，如果我们的查询指定了 { &ldquo;from&rdquo;: 90, &ldquo;size&rdquo;: 10 } ，最初的90个结果会被丢弃，只有从第91个开始的10个结果需要被取回。这些文档可能来自和最初搜索请求有关的一个、多个甚至全部分片。</li>
+</ol>
+<p>协调节点会给持有相关文档的每个分片发送请求。分片加载文档体&ndash; _source 字段，如果有需要，用元数据丰富结果文档。 一旦协调节点接收到所有的结果文档，它就组装这些结果为单个响应返回给客户端。<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/retrieve-es.png"
+        data-srcset="https://pics.lxkaka.wang/retrieve-es.png, https://pics.lxkaka.wang/retrieve-es.png 1.5x, https://pics.lxkaka.wang/retrieve-es.png 2x"
+        data-sizes="auto"
+        alt="retrieve"
+        title="retrieve" /></p>
+<h3 id="写入过程">写入过程</h3>
+<h4 id="主流程">主流程</h4>
+<ol>
+<li>客户端向 Node 1 发送新建、索引或者删除请求。</li>
+<li>节点使用文档的 _id 确定文档属于分片 0 。请求会被转发到 Node 3(因为分片 0 的主分片目前被分配在 Node 3 上)。</li>
+<li>Node 3 在主分片上面执行请求。如果成功了，它将请求并行转发到 Node 1 和 Node 2 的副本分片上。一旦所有的副本分片都报告成功, Node 3 将向协调节点报告成功，协调节点向客户端报告成功。<br>
+在客户端收到成功响应时，文档变更已经在主分片和所有副本分片执行完成，变更是安全的。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/write-es.png"
+        data-srcset="https://pics.lxkaka.wang/write-es.png, https://pics.lxkaka.wang/write-es.png 1.5x, https://pics.lxkaka.wang/write-es.png 2x"
+        data-sizes="auto"
+        alt="write"
+        title="write" /></li>
+</ol>
+<h4 id="详细过程">详细过程</h4>
+<ol>
+<li>P0 收到 document, 同时将数据写入到 内存 buffer 和 translog 中</li>
+<li>每隔 1s 或 buffer 满时, buffer 中的数据会 refresh 到 segment 中, 而后进入os cache, 一旦 segment进入到 cache 中,其中的数据, 则可以被搜索到 <br>
+<code>refresh 时间可以手动设置, 也可以手动触发 refresh</code></li>
+<li>清空buffer, translog不处理</li>
+<li>随着 translog 不断增大, translog 每隔30分钟,或大到一定量时, 会触发commit操作
+<ul>
+<li>将 buffer 中内容刷新到 segment中, 并清空buffer</li>
+<li>将一个commit point 写入到磁盘文件中, 标识此次commit 对应的 segment</li>
+<li>执行 fsync 将 os cache 中的数据强制刷新到磁盘文件中</li>
+<li>删除 translog 文件</li>
+</ul>
+</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">|------------------||-------------------|
+| buffer in memory || translog in cache |   
+|------------------||-------------------|      
+                   ||
+                   || refresh
+                   \/
+|------------------||------------------|
+| segment in cache || translog in file |   
+|------------------||------------------|
+                   ||
+                   || flush
+                   \/
+|------------------||-------------------|
+| segment in disk  || del old translog  |   
+|------------------||-------------------|
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>服务宕机重启, translog 日志作用<br>
+translog 是先写入到 os cache 中, 然后每隔5s写入到磁盘文件中, 假如服务宕掉, 可能会失去5s数据, 也可以修改写入磁盘的时机, 但是可能会影响性能<br>
+translog 中记录的是数据操作信息, 在服务宕机重启时, 会读取 translog 磁盘文件, 然后将 translog 中的数据重新恢复到 segment中, 然后进行后续操作</li>
+<li>segment merge 过程<br>
+segment 持续生成, 会导致 segment 不断变多, 占用文件句柄, cpu 资源等等<br>
+es 后台有一个专门的程序负责合并 segment, 将小的 segment 合成大的 segment, 同时写一个 commit point, 标识 新的 segment file.<br>
+打开新的 segment 供查询使用, 删除旧的 segment, segment 合并过程中, 被标记位 deleted 的 document 不会被合并. 即: 在合并 segment时, 才将 document 真正物理删除<br>
+合并的 segment 可以使磁盘上已经 commit 的索引 也可以是内存中还未 commit 的索引。</li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-09-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/es-wr/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/es-wr/" data-title="Elasticsearch 读写总结" data-hashtags="elasticsearch"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/es-wr/" data-hashtag="elasticsearch"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/es-wr/" data-title="Elasticsearch 读写总结" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/es-wr/" data-title="Elasticsearch 读写总结"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/es-wr/" data-title="Elasticsearch 读写总结"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/elasticsearch/">elasticsearch</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/flannel/" class="prev" rel="prev" title="Flannel 在 k8s 中的使用"><i class="fas fa-angle-left fa-fw"></i>Flannel 在 k8s 中的使用</a>
+            <a href="/k8s-kafka/" class="next" rel="next" title="外部访问 k8s 中的 kafka 集群">外部访问 k8s 中的 kafka 集群<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

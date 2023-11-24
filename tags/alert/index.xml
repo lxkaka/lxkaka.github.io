@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>alert - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/alert/</link>
+        <description>alert - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 16 Jun 2018 09:15:39 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/alert/" rel="self" type="application/rss+xml" /><item>
+    <title>基于elastalert的监控报警系统</title>
+    <link>https://lxkaka.wang/elasalert/</link>
+    <pubDate>Sat, 16 Jun 2018 09:15:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elasalert/</guid>
+    <description><![CDATA[监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报]]></description>
+</item><item>
+    <title>基于elastalert的监控报警系统</title>
+    <link>https://lxkaka.wang/elasalert/</link>
+    <pubDate>Sat, 16 Jun 2018 09:15:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elasalert/</guid>
+    <description><![CDATA[监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报]]></description>
+</item></channel>
+</rss>

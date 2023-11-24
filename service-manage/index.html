@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>用 StatefulSet 实现同步服务和异步服务的管理 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="用 StatefulSet 实现同步服务和异步服务的管理" />
+<meta property="og:description" content="一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/service-manage/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2021-12-26T13:55:02+08:00" />
+<meta property="article:modified_time" content="2021-12-26T13:55:02+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="用 StatefulSet 实现同步服务和异步服务的管理"/>
+<meta name="twitter:description" content="一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/service-manage/" /><link rel="prev" href="https://lxkaka.wang/kafka-rebalance/" /><link rel="next" href="https://lxkaka.wang/locust/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "用 StatefulSet 实现同步服务和异步服务的管理",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/service-manage\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "服务治理, k8s","wordcount":  2610 ,
+        "url": "https:\/\/lxkaka.wang\/service-manage\/","datePublished": "2021-12-26T13:55:02+08:00","dateModified": "2021-12-26T13:55:02+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">用 StatefulSet 实现同步服务和异步服务的管理</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>backend</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-12-26">2021-12-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2610 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#精确实例数量">精确实例数量</a>
+          <ul>
+            <li><a href="#按比例随机">按比例随机</a></li>
+            <li><a href="#statefulset">StatefulSet</a></li>
+          </ul>
+        </li>
+        <li><a href="#容器多进程管理">容器多进程管理</a>
+          <ul>
+            <li><a href="#trap-捕捉信号">trap 捕捉信号</a></li>
+            <li><a href="#常用信号">常用信号</a></li>
+            <li><a href="#trap-使用">trap 使用</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别只是入口不一样。<br>
+在 Golang 服务里我们用 <code>goroutine</code> 非常容易的起两个入口；在 Python 服务里我们可以用多进程也容易实现。 <br>
+现在我们看另外一种场景，服务同样需要对外提供同步和异步入口，但是服务本身是计算密集型的且非常占用资源，典型的例子比如使用 GPU 的推理服务。首先推理服务启动时需要加载模型，而这一般需要很大的显存可能达到数个 G 甚至超过十个 G。但是我们的单张显卡显存当然是有上限的，就拿 T4 来说显存只有 15个G 可用，所以一个推理服务同时启动同步和异步可能显存就不够；影响更严重的一个问题是即使显存足够同时启动同步和异步服务，但是当同步和异步同时进行计算是，对显卡的计算资源会存在争夺的情况，那么这样计算速度可能会大大降低，严重降低了推理服务的性能。<br>
+为了解决上述问题一个很自然的办法就是同步和异步分别部署一套服务。对于一个这样的服务说是没问题的我们多加一个服务节点、一套 CI/CD 配置、一套服务配置、一套应用配置等就完成了。但是有这样需求的服务有多个，并且数目会持续增加，那么分别部署同步和异步的成本和服务维护的成本就急剧增加。   <br>
+在这篇文章里我就分享下我们的解决办法，如何在一个服务里(一个节点，一套配置)独立运行同步和异步实例。（这里的实例指的是在 K8s 中一个 deployment 里的一个 Pod）</p>
+<h3 id="精确实例数量">精确实例数量</h3>
+<p>一个服务的总实例数目是通过配置定义的。假如我们配置的服务实例数是 10，然后在这10个实例当中一部分是同步实例，一部分是异步实例。如何保证这些实例数量是按照我们要求分布的呢？</p>
+<h4 id="按比例随机">按比例随机</h4>
+<p>假如同步和异步的实例数比例是 <strong>4:6</strong>, 在服务启动脚本里我们可以生成一个 1-10 的随机整数然后跟同步实例数比例比较，如果小于等于 4 则以同步的方式启动实例，否则以异步的方式启动。 <br>
+示例脚本如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">  <span class="c1">#!/bin/bash</span>
+
+  <span class="c1"># 同步实例数比例(通过环境变量注入)</span>
+  <span class="nv">SYNCS</span><span class="o">=</span><span class="nv">$SYNC_RATE</span>
+
+  <span class="c1"># 默认启动同步实例</span>
+  <span class="k">if</span> <span class="o">[</span> -z <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nv">SYNCS</span><span class="o">=</span><span class="m">10</span>
+  <span class="k">fi</span>
+  <span class="nv">Rand</span><span class="o">=</span><span class="k">$((</span> <span class="o">(</span> RANDOM <span class="o">%</span> <span class="m">10</span> <span class="o">)</span>  <span class="o">+</span> <span class="m">1</span> <span class="k">))</span>
+
+  <span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$Rand</span><span class="s2">&#34;</span> -le <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="c1"># 启动grpc server(同步）</span>
+    python /data/app/grpc_server/server.py
+
+  <span class="k">else</span>
+    <span class="c1"># 启动任务进程(异步）</span>
+    python /data/app/start/__init__.py
+  <span class="k">fi</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>很明显随机启动无法准确的控制实例数量，尤其是总实例数目较少的时候实例分布偏差较大。</p>
+<h4 id="statefulset">StatefulSet</h4>
+<p>我们知道在 K8s 中除了常用的服务形式 <code>Deployment</code> 还有一种比较常用的服务形式是 <code>StatefulSet</code>, 后者相比前者来说最显著的一个区别是 <code>StatefulSet</code> 下的 <code>Pod</code> 名字是也有序号的。例如一个 StatefulSet 形式服务名是 web-service 且有 3个实例，那么 3个实例的名字分别是 web-service-0、web-service-1、web-service-2。<br>
+我们可以正好利用 StatefulSet 这种 Pod 按编号顺序启动的方式来控制同步和异步实例启动的数量。思路就是比如我们设置好了同步实例的数量，那么在每次实例启动的时候我们可以根据实例的编号和同步实例数做比较，如果编号比同步数小那么就以同步的方式启动实例，反之则以异步的方式启动。 <br>
+示例脚本如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">  <span class="c1">#!/bin/bash</span>
+
+  <span class="c1"># pod 编号</span>
+  <span class="nv">POD_NUM</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span> <span class="si">${</span><span class="nv">POD_NAME</span><span class="si">}</span> <span class="p">|</span> awk -F<span class="s1">&#39;-&#39;</span> <span class="s1">&#39;{print $NF}&#39;</span><span class="sb">`</span>
+  <span class="c1"># 同步实例数(通过环境变量注入)</span>
+  <span class="nv">SYNCS</span><span class="o">=</span><span class="nv">$SYNC_INSTANCE</span>
+
+  <span class="c1"># 默认同步方式(INSTANCE是期望的总实例数)</span>
+  <span class="k">if</span> <span class="o">[</span> -z <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nv">SYNCS</span><span class="o">=</span><span class="nv">$INSTANCE</span>
+  <span class="k">fi</span>
+
+  <span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$POD_NUM</span><span class="s2">&#34;</span> -lt <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+    <span class="c1"># 启动grpc server(同步）</span>
+    python /data/app/grpc_server/server.py
+
+  <span class="k">else</span>
+    <span class="c1"># 启动任务进程(异步）</span>
+    python /data/app/start/__init__.py
+  <span class="k">fi</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>所以通过上面的描述我们看到可以利用 <code>StatefulSet</code> 来精确控制同步和异步实例数量。</p>
+<h3 id="容器多进程管理">容器多进程管理</h3>
+<p>在我们上面的例子中因为服务同时包含了同步实例和异步实例，同步实例有暴露端口的需求而异步实例是没有对外暴露端口的，这样带来的矛盾就是如果服务配置了端口，则我们的基础平台会对异步服务配置的端口健康检查和服务注册，结果就是异步服务必然健康检查失败而启动失败。为了绕过基础平台的功能我们决定对服务不配置暴露端口，同步服务自己实现服务注册的功能。即我们在同步服务中除了启动服务进程之外，再启动一个服务注册管理进程，实现服务注册、服务心跳和服务注销功能。 <br>
+上面这个情况比较特殊，可能其他同学并不会遇到，我们拿这个例子是为了说明在 K8s 容器中有多个进程该怎么管理。上面说到除了服务进程之外，容器中还存在一个服务注册进程，这个进程必须实现在容器销毁的时候必须向注册中心注销服务实例。 <br>
+在 K8s 中，Pod 停止时 kubelet 会先给容器中的主进程发 SIGTERM 信号来通知进程进行 shutdown 以实现优雅停止，如果超时进程还未完全停止则会使用 SIGKILL 来强行终止。但是在我们的场景中我们的业务进程是在脚本中启动的，容器的启动入口使用了脚本，所以容器中的主进程并不是我们所希望的业务进程而是 shell 进程，导致业务进程收不到 SIGTERM 信号，自然就无法实现主动注销服务。 <br>
+我们利用 <code>trap</code> 来实现</p>
+<h4 id="trap-捕捉信号">trap 捕捉信号</h4>
+<p>通常trap都在脚本中使用，主要有2种功能：</p>
+<ol>
+<li>忽略信号。当运行中的脚本进程接收到某信号时(例如误按了CTRL+C)，可以将其忽略，免得脚本执行到一半就被终止</li>
+<li>捕捉到信号后做相应处理，比如清理创建的临时文件</li>
+</ol>
+<h4 id="常用信号">常用信号</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell">Signal     Value   Comment
+
+─────────────────────────────
+
+SIGHUP      <span class="m">1</span>      终止进程，特别是终端退出时，此终端内的进程都将被终止
+SIGINT      <span class="m">2</span>      中断进程，几乎等同于sigterm，会尽可能的释放执行clean-up，
+                   释放资源，保存状态等<span class="o">(</span>CTRL+C<span class="o">)</span>
+SIGQUIT     <span class="m">3</span>      从键盘发出杀死<span class="o">(</span>终止<span class="o">)</span>进程的信号
+SIGKILL     <span class="m">9</span>      强制杀死进程，该信号不可被捕捉和忽略，进程收到该信号后不会
+                   执行任何clean-up行为，所以资源不会释放，状态不会保存
+SIGTERM    <span class="m">15</span>      杀死<span class="o">(</span>终止<span class="o">)</span>进程，几乎等同于sigint信号，会尽可能的释放执行
+                   clean-up，释放资源，保存状态等
+SIGSTOP    <span class="m">19</span>      该信号是不可被捕捉和忽略的进程停止信息，收到信号后会进入stopped状态
+SIGTSTP    <span class="m">20</span>      该信号是可被忽略的进程停止信号<span class="o">(</span>CTRL+Z<span class="o">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="trap-使用">trap 使用</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">trap [-lp] [[arg] signal_spec ...]
+-l    打印信号名称以及信号名称对应的数字。
+-p    显示与每个信号关联的trap命令。
+
+参数
+arg：接收到信号时执行的命令或函数 
+signal_spec：信号名称或信号名称对应的数字  
+</code></pre></td></tr></table>
+</div>
+</div><p>通过上述介绍之后我们知道给容器多进程传递信号方式为：可以在 shell 中使用 trap 来捕获信号，当收到信号后触发回调函数来将信号通过 kill 传递给业务进程。<br>
+示例脚本如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-shell" data-lang="shell"><span class="cp">#!/bin/bash
+</span><span class="cp"></span>
+<span class="c1"># pod 编号</span>
+<span class="nv">POD_NUM</span><span class="o">=</span><span class="sb">`</span><span class="nb">echo</span> <span class="si">${</span><span class="nv">POD_NAME</span><span class="si">}</span> <span class="p">|</span> awk -F<span class="s1">&#39;-&#39;</span> <span class="s1">&#39;{print $NF}&#39;</span><span class="sb">`</span>
+<span class="c1"># 同步实例数</span>
+<span class="nv">SYNCS</span><span class="o">=</span><span class="nv">$SYNC_INSTANCE</span>
+
+<span class="k">if</span> <span class="o">[</span> -z <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="nv">SYNCS</span><span class="o">=</span><span class="nv">$INSTANCE</span>
+<span class="k">fi</span>
+
+<span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$POD_NUM</span><span class="s2">&#34;</span> -lt <span class="s2">&#34;</span><span class="nv">$SYNCS</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="c1"># 启动grpc server</span>
+  python /data/app/grpc_server/server.py <span class="p">&amp;</span> <span class="nv">pid1</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$!</span><span class="s2">&#34;</span>
+  python /data/app/grpc_server/register.py <span class="p">&amp;</span> <span class="nv">pid2</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$!</span><span class="s2">&#34;</span>
+  handle_sigterm<span class="o">()</span> <span class="o">{</span>
+    <span class="nb">echo</span> <span class="s2">&#34;[INFO] Received SIGTERM&#34;</span>
+    <span class="nb">kill</span> -SIGTERM <span class="nv">$pid1</span> <span class="nv">$pid2</span> <span class="c1"># 传递 SIGTERM 给业务进程</span>
+    <span class="nb">wait</span> <span class="nv">$pid1</span> <span class="nv">$pid2</span> <span class="c1"># 等待所有业务进程完全终止</span>
+  <span class="o">}</span>
+  <span class="nb">trap</span> handle_sigterm TERM <span class="c1"># 捕获 SIGTERM 信号并回调 handle_sigterm 函数</span>
+  <span class="nb">wait</span> <span class="c1"># 等待回调执行完，主进程再退出</span>
+
+<span class="k">else</span>
+  <span class="c1"># 启动任务进程</span>
+  python /data/app/start/__init__.py
+<span class="k">fi</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>下图是实现的效果</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/sync-async-instance.png"
+        data-srcset="https://pics.lxkaka.wang/sync-async-instance.png, https://pics.lxkaka.wang/sync-async-instance.png 1.5x, https://pics.lxkaka.wang/sync-async-instance.png 2x"
+        data-sizes="auto"
+        alt="sync-aysnc"
+        title="sync-aysnc" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-12-26</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/service-manage/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/service-manage/" data-title="用 StatefulSet 实现同步服务和异步服务的管理" data-hashtags="服务治理,k8s"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/service-manage/" data-hashtag="服务治理"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/service-manage/" data-title="用 StatefulSet 实现同步服务和异步服务的管理" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/service-manage/" data-title="用 StatefulSet 实现同步服务和异步服务的管理"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/service-manage/" data-title="用 StatefulSet 实现同步服务和异步服务的管理"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">服务治理</a>,&nbsp;<a href="/tags/k8s/">k8s</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/kafka-rebalance/" class="prev" rel="prev" title="从一个消费慢的例子深入理解 kafka rebalance"><i class="fas fa-angle-left fa-fw"></i>从一个消费慢的例子深入理解 kafka rebalance</a>
+            <a href="/locust/" class="next" rel="next" title="易于使用的性能测试工具-Locust">易于使用的性能测试工具-Locust<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

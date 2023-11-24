@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>容器重启原理-Kubelet hash计算 - lxkaka</title><meta name="Description" content="Kubelet 如何重启容器的原理分析"><meta property="og:title" content="容器重启原理-Kubelet hash计算" />
+<meta property="og:description" content="Kubelet 如何重启容器的原理分析" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/kubelet-hash/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2021-05-29T10:58:12+08:00" />
+<meta property="article:modified_time" content="2021-05-29T10:58:12+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="容器重启原理-Kubelet hash计算"/>
+<meta name="twitter:description" content="Kubelet 如何重启容器的原理分析"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/kubelet-hash/" /><link rel="prev" href="https://lxkaka.wang/golang-apm/" /><link rel="next" href="https://lxkaka.wang/rocksdb-lsm/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "容器重启原理-Kubelet hash计算",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/kubelet-hash\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "container, kubelet","wordcount":  2112 ,
+        "url": "https:\/\/lxkaka.wang\/kubelet-hash\/","datePublished": "2021-05-29T10:58:12+08:00","dateModified": "2021-05-29T10:58:12+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "Kubelet 如何重启容器的原理分析"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">容器重启原理-Kubelet hash计算</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/k8s/"><i class="far fa-folder fa-fw"></i>k8s</a>&nbsp;<a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-05-29">2021-05-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2112 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#syncpod">SyncPod</a></li>
+        <li><a href="#computepodactions">computePodActions</a></li>
+        <li><a href="#containerchanged">containerChanged</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在日常的开发工作中相信使用 Kubernetes 的同学们一定会偶尔收到容器重启的事件告警。由于应用层面的问题导致的容器重启相对容易排查，比如看容器的内存监控我们能确定是不是内存超过配置的 limit; 又或者看是不是应用有 panic 没有 recovery。 <br>
+一个正常的工作日我们突然连续收到多条容器重启告警，查看报警还是来自不同的应用。按照一般的排查思路先去查看监控，内存没有异常，使用值一直在 limit 之下；然后去看日志也没有找到任何 panic 或者其他错误。仔细一看这几个告警的应用都是来自同一个集群，这个时候猜测大概率和集群有关系，但是这个集群我们还有其他很多应用并没有发生容器重启，所以猜测应该不是集群本身的问题，那是不是和机器有关系呢？然后我把重启过的实例所在的 node ip 都筛选出来发现重启的应用都是集中在某几台机器。在这些节点上我去查看了一下 <code>kubelet</code>进程，发现 kubelet 在容器告警的时间段都重启了进程。在这种情况下基本就找到了容器重启的直接原因&ndash;<code>kubelet</code> 重启了。但是我们并没有更新实例，kubelet 重启怎么会把我们的容器重启呢？下面我们就介绍一下根本原因&ndash;<code>kubelet</code>计算容器的 hash 值。   <br>
+我们知道在 Kubernetes 中的节点上运行着 <code>kubelet</code> 进程，这个进程负责当前节点上所有 Pod 的生命周期。在这里我们从源码层面看看 kubelet 怎么实现容器的重启。</p>
+<h3 id="syncpod">SyncPod</h3>
+<p>我们首先看 <code>https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/kuberuntime/kuberuntime_manager.go</code> 中的 <code>SyncPod</code> 方法, 这个方法就是保证运行中的 Pod 与我们期望的配置时刻保持一致。
+通过以下步骤完成</p>
+<ol>
+<li>根据从 API Server 获得的 Pod Spec 以及当前 Pod 的 Status 计算所需要执行的 Actions</li>
+<li>在需要情况下 Kill 掉当前 Pod 的 sandbox</li>
+<li>根据需要（如重启）kill 掉 Pod 内的 containers</li>
+<li>根据需要创建 Pod 的 sandbox</li>
+<li>启动下一个 init container</li>
+<li>启动 Pod 内的 containers</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">kubeGenericRuntimeManager</span><span class="p">)</span> <span class="nf">SyncPod</span><span class="p">(</span><span class="nx">pod</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">,</span> <span class="nx">_</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">PodStatus</span><span class="p">,</span> <span class="nx">podStatus</span> <span class="o">*</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">PodStatus</span><span class="p">,</span> <span class="nx">pullSecrets</span> <span class="p">[]</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Secret</span><span class="p">,</span> <span class="nx">backOff</span> <span class="o">*</span><span class="nx">flowcontrol</span><span class="p">.</span><span class="nx">Backoff</span><span class="p">)</span> <span class="p">(</span><span class="nx">result</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">PodSyncResult</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Step 1: Compute sandbox and container changes.
+</span><span class="c1"></span>    <span class="c1">// 计算 pod 的
+</span><span class="c1"></span>	<span class="nx">podContainerChanges</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">computePodActions</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">)</span>
+	<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;computePodActions got %+v for pod %q&#34;</span><span class="p">,</span> <span class="nx">podContainerChanges</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+	<span class="k">if</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">CreateSandbox</span> <span class="p">{</span>
+		<span class="nx">ref</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">GetReference</span><span class="p">(</span><span class="nx">legacyscheme</span><span class="p">.</span><span class="nx">Scheme</span><span class="p">,</span> <span class="nx">pod</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">glog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;Couldn&#39;t make a ref to pod %q: &#39;%v&#39;&#34;</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">),</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">SandboxID</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+			<span class="nx">m</span><span class="p">.</span><span class="nx">recorder</span><span class="p">.</span><span class="nf">Eventf</span><span class="p">(</span><span class="nx">ref</span><span class="p">,</span> <span class="nx">v1</span><span class="p">.</span><span class="nx">EventTypeNormal</span><span class="p">,</span> <span class="nx">events</span><span class="p">.</span><span class="nx">SandboxChanged</span><span class="p">,</span> <span class="s">&#34;Pod sandbox changed, it will be killed and re-created.&#34;</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;SyncPod received new pod %q, will create a sandbox for it&#34;</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Step 2: Kill the pod if the sandbox has changed.
+</span><span class="c1"></span>    <span class="c1">// sandbox 有更新，需要 kill pod
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">KillPod</span> <span class="p">{</span>
+        <span class="o">...</span>
+
+		<span class="nx">killResult</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">killPodWithSyncResult</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">ConvertPodStatusToRunningPod</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">runtimeName</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">),</span> <span class="kc">nil</span><span class="p">)</span>
+		<span class="nx">result</span><span class="p">.</span><span class="nf">AddPodSyncResult</span><span class="p">(</span><span class="nx">killResult</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">killResult</span><span class="p">.</span><span class="nf">Error</span><span class="p">()</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">glog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;killPodWithSyncResult failed: %v&#34;</span><span class="p">,</span> <span class="nx">killResult</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">CreateSandbox</span> <span class="p">{</span>
+			<span class="nx">m</span><span class="p">.</span><span class="nf">purgeInitContainers</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="c1">// Step 3: kill any running containers in this pod which are not to keep.
+</span><span class="c1"></span>        <span class="c1">// kill 掉 pod 中不需要保留的容器
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">containerID</span><span class="p">,</span> <span class="nx">containerInfo</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">ContainersToKill</span> <span class="p">{</span>
+			<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Killing unwanted container %q(id=%q) for pod %q&#34;</span><span class="p">,</span> <span class="nx">containerInfo</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span> <span class="nx">containerID</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+			<span class="nx">killContainerResult</span> <span class="o">:=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">NewSyncResult</span><span class="p">(</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">KillContainer</span><span class="p">,</span> <span class="nx">containerInfo</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
+			<span class="nx">result</span><span class="p">.</span><span class="nf">AddSyncResult</span><span class="p">(</span><span class="nx">killContainerResult</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">killContainer</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">containerID</span><span class="p">,</span> <span class="nx">containerInfo</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span> <span class="nx">containerInfo</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span> <span class="kc">nil</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">killContainerResult</span><span class="p">.</span><span class="nf">Fail</span><span class="p">(</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ErrKillContainer</span><span class="p">,</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+				<span class="nx">glog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;killContainer %q(id=%q) for pod %q failed: %v&#34;</span><span class="p">,</span> <span class="nx">containerInfo</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span> <span class="nx">containerID</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">),</span> <span class="nx">err</span><span class="p">)</span>
+				<span class="k">return</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+    <span class="o">...</span>
+
+	<span class="c1">// Step 4: Create a sandbox for the pod if necessary.
+</span><span class="c1"></span>    <span class="c1">// 按需创建 sandbox
+</span><span class="c1"></span>	<span class="nx">podSandboxID</span> <span class="o">:=</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">SandboxID</span>
+	<span class="k">if</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">CreateSandbox</span> <span class="p">{</span>
+		<span class="kd">var</span> <span class="nx">msg</span> <span class="kt">string</span>
+		<span class="kd">var</span> <span class="nx">err</span> <span class="kt">error</span>
+
+		<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Creating sandbox for pod %q&#34;</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+		<span class="nx">createSandboxResult</span> <span class="o">:=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">NewSyncResult</span><span class="p">(</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">CreatePodSandbox</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+		<span class="nx">result</span><span class="p">.</span><span class="nf">AddSyncResult</span><span class="p">(</span><span class="nx">createSandboxResult</span><span class="p">)</span>
+		<span class="nx">podSandboxID</span><span class="p">,</span> <span class="nx">msg</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">createPodSandbox</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">Attempt</span><span class="p">)</span>
+        <span class="o">...</span>
+		<span class="p">}</span>
+        <span class="o">...</span>
+	<span class="p">}</span>
+
+    <span class="o">...</span>
+
+	<span class="c1">// Step 5: start the init container.
+</span><span class="c1"></span>    <span class="c1">// 启动 init 容器
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">container</span> <span class="o">:=</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">NextInitContainerToStart</span><span class="p">;</span> <span class="nx">container</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="c1">// Start the next init container.
+</span><span class="c1"></span>		<span class="nx">startContainerResult</span> <span class="o">:=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">NewSyncResult</span><span class="p">(</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">StartContainer</span><span class="p">,</span> <span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+		<span class="nx">result</span><span class="p">.</span><span class="nf">AddSyncResult</span><span class="p">(</span><span class="nx">startContainerResult</span><span class="p">)</span>
+
+        <span class="o">...</span>
+
+		<span class="k">if</span> <span class="nx">msg</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">startContainer</span><span class="p">(</span><span class="nx">podSandboxID</span><span class="p">,</span> <span class="nx">podSandboxConfig</span><span class="p">,</span> <span class="nx">container</span><span class="p">,</span> <span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">,</span> <span class="nx">pullSecrets</span><span class="p">,</span> <span class="nx">podIP</span><span class="p">,</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerTypeInit</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">startContainerResult</span><span class="p">.</span><span class="nf">Fail</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">msg</span><span class="p">)</span>
+			<span class="nx">utilruntime</span><span class="p">.</span><span class="nf">HandleError</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;init container start failed: %v: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">msg</span><span class="p">))</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Successfully started the container; clear the entry in the failure
+</span><span class="c1"></span>		<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Completed init container %q for pod %q&#34;</span><span class="p">,</span> <span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Step 6: start containers in podContainerChanges.ContainersToStart.
+</span><span class="c1"></span>    <span class="c1">// 根据 step1 结果启动容器
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">idx</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">podContainerChanges</span><span class="p">.</span><span class="nx">ContainersToStart</span> <span class="p">{</span>
+		<span class="nx">container</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Containers</span><span class="p">[</span><span class="nx">idx</span><span class="p">]</span>
+		<span class="nx">startContainerResult</span> <span class="o">:=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">NewSyncResult</span><span class="p">(</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">StartContainer</span><span class="p">,</span> <span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+		<span class="nx">result</span><span class="p">.</span><span class="nf">AddSyncResult</span><span class="p">(</span><span class="nx">startContainerResult</span><span class="p">)</span>
+
+        <span class="o">...</span>
+
+		<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">4</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Creating container %+v in pod %v&#34;</span><span class="p">,</span> <span class="nx">container</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">))</span>
+		<span class="k">if</span> <span class="nx">msg</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">startContainer</span><span class="p">(</span><span class="nx">podSandboxID</span><span class="p">,</span> <span class="nx">podSandboxConfig</span><span class="p">,</span> <span class="nx">container</span><span class="p">,</span> <span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">,</span> <span class="nx">pullSecrets</span><span class="p">,</span> <span class="nx">podIP</span><span class="p">,</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerTypeRegular</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+            <span class="o">...</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="computepodactions">computePodActions</h3>
+<p>在上面 <code>SyncPod 方法中我们可以看到 step 1 的 computePodActions 是决定容器是否需要重启的关键调用</code>，我们看看这个方法具体的逻辑</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="c1">// computePodActions checks whether the pod spec has changed and returns the changes if true.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">kubeGenericRuntimeManager</span><span class="p">)</span> <span class="nf">computePodActions</span><span class="p">(</span><span class="nx">pod</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Pod</span><span class="p">,</span> <span class="nx">podStatus</span> <span class="o">*</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">PodStatus</span><span class="p">)</span> <span class="nx">podActions</span> <span class="p">{</span>
+	<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">5</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Syncing Pod %q: %+v&#34;</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">),</span> <span class="nx">pod</span><span class="p">)</span>
+
+	<span class="nx">createPodSandbox</span><span class="p">,</span> <span class="nx">attempt</span><span class="p">,</span> <span class="nx">sandboxID</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">podSandboxChanged</span><span class="p">(</span><span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">)</span>
+	<span class="nx">changes</span> <span class="o">:=</span> <span class="nx">podActions</span><span class="p">{</span>
+		<span class="nx">KillPod</span><span class="p">:</span>           <span class="nx">createPodSandbox</span><span class="p">,</span>
+		<span class="nx">CreateSandbox</span><span class="p">:</span>     <span class="nx">createPodSandbox</span><span class="p">,</span>
+		<span class="nx">SandboxID</span><span class="p">:</span>         <span class="nx">sandboxID</span><span class="p">,</span>
+		<span class="nx">Attempt</span><span class="p">:</span>           <span class="nx">attempt</span><span class="p">,</span>
+		<span class="nx">ContainersToStart</span><span class="p">:</span> <span class="p">[]</span><span class="kt">int</span><span class="p">{},</span>
+		<span class="nx">ContainersToKill</span><span class="p">:</span>  <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerID</span><span class="p">]</span><span class="nx">containerToKillInfo</span><span class="p">),</span>
+	<span class="p">}</span>
+
+    <span class="c1">// 这里我们省略其他内容，直接看判断容器是否需要重启的核心逻辑
+</span><span class="c1"></span>
+	<span class="c1">// Number of running containers to keep.
+</span><span class="c1"></span>	<span class="nx">keepCount</span> <span class="o">:=</span> <span class="mi">0</span>
+	<span class="c1">// check the status of containers.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">idx</span><span class="p">,</span> <span class="nx">container</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Containers</span> <span class="p">{</span>
+		<span class="nx">containerStatus</span> <span class="o">:=</span> <span class="nx">podStatus</span><span class="p">.</span><span class="nf">FindContainerStatusByName</span><span class="p">(</span><span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">)</span>
+
+		<span class="c1">// Call internal container post-stop lifecycle hook for any non-running container so that any
+</span><span class="c1"></span>		<span class="c1">// allocated cpus are released immediately. If the container is restarted, cpus will be re-allocated
+</span><span class="c1"></span>		<span class="c1">// to it.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">containerStatus</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">State</span> <span class="o">!=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerStateRunning</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">internalLifecycle</span><span class="p">.</span><span class="nf">PostStopContainer</span><span class="p">(</span><span class="nx">containerStatus</span><span class="p">.</span><span class="nx">ID</span><span class="p">.</span><span class="nx">ID</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">glog</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;internal container post-stop lifecycle hook failed for container %v in pod %v with error %v&#34;</span><span class="p">,</span>
+					<span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">pod</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="c1">// If container does not exist, or is not running, check whether we
+</span><span class="c1"></span>		<span class="c1">// need to restart it.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">containerStatus</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">||</span> <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">State</span> <span class="o">!=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerStateRunning</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">ShouldContainerBeRestarted</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">container</span><span class="p">,</span> <span class="nx">pod</span><span class="p">,</span> <span class="nx">podStatus</span><span class="p">)</span> <span class="p">{</span>
+				<span class="nx">message</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;Container %+v is dead, but RestartPolicy says that we should restart it.&#34;</span><span class="p">,</span> <span class="nx">container</span><span class="p">)</span>
+				<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">3</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="nx">message</span><span class="p">)</span>
+				<span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToStart</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToStart</span><span class="p">,</span> <span class="nx">idx</span><span class="p">)</span>
+			<span class="p">}</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+		<span class="c1">// The container is running, but kill the container if any of the following condition is met.
+</span><span class="c1"></span>		<span class="nx">reason</span> <span class="o">:=</span> <span class="s">&#34;&#34;</span>
+		<span class="nx">restart</span> <span class="o">:=</span> <span class="nf">shouldRestartOnFailure</span><span class="p">(</span><span class="nx">pod</span><span class="p">)</span>
+        <span class="c1">// 计算容器的期望的 hash 和 当前 hash, 来判断是否需要重启容器
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">expectedHash</span><span class="p">,</span> <span class="nx">actualHash</span><span class="p">,</span> <span class="nx">changed</span> <span class="o">:=</span> <span class="nf">containerChanged</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">container</span><span class="p">,</span> <span class="nx">containerStatus</span><span class="p">);</span> <span class="nx">changed</span> <span class="p">{</span>
+			<span class="nx">reason</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;Container spec hash changed (%d vs %d).&#34;</span><span class="p">,</span> <span class="nx">actualHash</span><span class="p">,</span> <span class="nx">expectedHash</span><span class="p">)</span>
+			<span class="c1">// Restart regardless of the restart policy because the container
+</span><span class="c1"></span>			<span class="c1">// spec changed.
+</span><span class="c1"></span>			<span class="nx">restart</span> <span class="p">=</span> <span class="kc">true</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">liveness</span><span class="p">,</span> <span class="nx">found</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">livenessManager</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">containerStatus</span><span class="p">.</span><span class="nx">ID</span><span class="p">);</span> <span class="nx">found</span> <span class="o">&amp;&amp;</span> <span class="nx">liveness</span> <span class="o">==</span> <span class="nx">proberesults</span><span class="p">.</span><span class="nx">Failure</span> <span class="p">{</span>
+			<span class="c1">// If the container failed the liveness probe, we should kill it.
+</span><span class="c1"></span>			<span class="nx">reason</span> <span class="p">=</span> <span class="s">&#34;Container failed liveness probe.&#34;</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="c1">// Keep the container.
+</span><span class="c1"></span>			<span class="nx">keepCount</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+
+		<span class="c1">// We need to kill the container, but if we also want to restart the
+</span><span class="c1"></span>		<span class="c1">// container afterwards, make the intent clear in the message. Also do
+</span><span class="c1"></span>		<span class="c1">// not kill the entire pod since we expect container to be running eventually.
+</span><span class="c1"></span>		<span class="nx">message</span> <span class="o">:=</span> <span class="nx">reason</span>
+        <span class="c1">// 可以看到如果需要重启容器，则把容器 id 放到待启动 slice 里准备重启
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">restart</span> <span class="p">{</span>
+			<span class="nx">message</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;%s. Container will be killed and recreated.&#34;</span><span class="p">,</span> <span class="nx">message</span><span class="p">)</span>
+			<span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToStart</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToStart</span><span class="p">,</span> <span class="nx">idx</span><span class="p">)</span>
+		<span class="p">}</span>
+
+        <span class="c1">// 容器信息更新到待 kill 的 map 里
+</span><span class="c1"></span>		<span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToKill</span><span class="p">[</span><span class="nx">containerStatus</span><span class="p">.</span><span class="nx">ID</span><span class="p">]</span> <span class="p">=</span> <span class="nx">containerToKillInfo</span><span class="p">{</span>
+			<span class="nx">name</span><span class="p">:</span>      <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span>
+			<span class="nx">container</span><span class="p">:</span> <span class="o">&amp;</span><span class="nx">pod</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Containers</span><span class="p">[</span><span class="nx">idx</span><span class="p">],</span>
+			<span class="nx">message</span><span class="p">:</span>   <span class="nx">message</span><span class="p">,</span>
+		<span class="p">}</span>
+		<span class="nx">glog</span><span class="p">.</span><span class="nf">V</span><span class="p">(</span><span class="mi">2</span><span class="p">).</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;Container %q (%q) of pod %s: %s&#34;</span><span class="p">,</span> <span class="nx">container</span><span class="p">.</span><span class="nx">Name</span><span class="p">,</span> <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">ID</span><span class="p">,</span> <span class="nx">format</span><span class="p">.</span><span class="nf">Pod</span><span class="p">(</span><span class="nx">pod</span><span class="p">),</span> <span class="nx">message</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">keepCount</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">changes</span><span class="p">.</span><span class="nx">ContainersToStart</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">changes</span><span class="p">.</span><span class="nx">KillPod</span> <span class="p">=</span> <span class="kc">true</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">changes</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="containerchanged">containerChanged</h3>
+<p>在上个方法里我们看到 <code>containerChanged</code>的调用决定了容器是否需要重启，接下来我们看看如果计算容器的 hash 值</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-golang" data-lang="golang"><span class="kd">func</span> <span class="nf">containerChanged</span><span class="p">(</span><span class="nx">container</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Container</span><span class="p">,</span> <span class="nx">containerStatus</span> <span class="o">*</span><span class="nx">kubecontainer</span><span class="p">.</span><span class="nx">ContainerStatus</span><span class="p">)</span> <span class="p">(</span><span class="kt">uint64</span><span class="p">,</span> <span class="kt">uint64</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">expectedHash</span> <span class="o">:=</span> <span class="nx">kubecontainer</span><span class="p">.</span><span class="nf">HashContainer</span><span class="p">(</span><span class="nx">container</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nx">expectedHash</span><span class="p">,</span> <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">Hash</span><span class="p">,</span> <span class="nx">containerStatus</span><span class="p">.</span><span class="nx">Hash</span> <span class="o">!=</span> <span class="nx">expectedHash</span>
+<span class="p">}</span>
+
+<span class="nx">在文件</span><span class="s">`kubernetes/pkg/kubelet/container/helpers.go`</span> <span class="nx">中提供了计算</span> <span class="nx">hash</span> <span class="nx">的方法</span>
+<span class="c1">// HashContainer returns the hash of the container. It is used to compare
+</span><span class="c1">// the running container with its desired spec.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">HashContainer</span><span class="p">(</span><span class="nx">container</span> <span class="o">*</span><span class="nx">v1</span><span class="p">.</span><span class="nx">Container</span><span class="p">)</span> <span class="kt">uint64</span> <span class="p">{</span>
+	<span class="nx">hash</span> <span class="o">:=</span> <span class="nx">fnv</span><span class="p">.</span><span class="nf">New32a</span><span class="p">()</span>
+	<span class="nx">hashutil</span><span class="p">.</span><span class="nf">DeepHashObject</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="o">*</span><span class="nx">container</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">hash</span><span class="p">.</span><span class="nf">Sum32</span><span class="p">())</span>
+<span class="p">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>通过上述的代码的我们可以清楚的看到只要 <code>v1.Container</code> 这个 struct 里任何一个字段发生改变都会导致期望的容器 hash 值更新。</p>
+<p>下面这种图清晰总结了 <code>Kubelet</code> 重启容器的过程，详相信对照下图和上面的代码大家应该能很好的了解 Kubernetes 的容器重启过程。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kublet-restart.png"
+        data-srcset="https://pics.lxkaka.wang/kublet-restart.png, https://pics.lxkaka.wang/kublet-restart.png 1.5x, https://pics.lxkaka.wang/kublet-restart.png 2x"
+        data-sizes="auto"
+        alt="kubelet-restart"
+        title="kubelet-restart" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-05-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/kubelet-hash/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/kubelet-hash/" data-title="容器重启原理-Kubelet hash计算" data-hashtags="container,kubelet"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/kubelet-hash/" data-hashtag="container"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/kubelet-hash/" data-title="容器重启原理-Kubelet hash计算" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/kubelet-hash/" data-title="容器重启原理-Kubelet hash计算"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/kubelet-hash/" data-title="容器重启原理-Kubelet hash计算"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/container/">container</a>,&nbsp;<a href="/tags/kubelet/">kubelet</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/golang-apm/" class="prev" rel="prev" title="Elastic APM 补齐服务监控"><i class="fas fa-angle-left fa-fw"></i>Elastic APM 补齐服务监控</a>
+            <a href="/rocksdb-lsm/" class="next" rel="next" title="以 RocksDB 为代表的 LSM tree 的学习和总结">以 RocksDB 为代表的 LSM tree 的学习和总结<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>易于使用的性能测试工具-Locust - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="易于使用的性能测试工具-Locust" />
+<meta property="og:description" content="当我们对外提供服务的时候调用方经常会问这样一个问题：你们的服务能提供多大的 QPS？ 那么就要求我们在服务上线之前就应该清楚的知道服务的极限 QPS 是" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/locust/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2022-01-29T16:07:35+08:00" />
+<meta property="article:modified_time" content="2022-01-29T16:07:35+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="易于使用的性能测试工具-Locust"/>
+<meta name="twitter:description" content="当我们对外提供服务的时候调用方经常会问这样一个问题：你们的服务能提供多大的 QPS？ 那么就要求我们在服务上线之前就应该清楚的知道服务的极限 QPS 是"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/locust/" /><link rel="prev" href="https://lxkaka.wang/service-manage/" /><link rel="next" href="https://lxkaka.wang/p2c1/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "易于使用的性能测试工具-Locust",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/locust\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "压测, 性能","wordcount":  1622 ,
+        "url": "https:\/\/lxkaka.wang\/locust\/","datePublished": "2022-01-29T16:07:35+08:00","dateModified": "2022-01-29T16:07:35+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">易于使用的性能测试工具-Locust</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/service/"><i class="far fa-folder fa-fw"></i>service</a>&nbsp;<a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>backend</a>&nbsp;<a href="/categories/%E5%B7%A5%E7%A8%8B%E6%95%88%E7%8E%87/"><i class="far fa-folder fa-fw"></i>工程效率</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-01-29">2022-01-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1622 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#locust-优点">Locust 优点</a></li>
+        <li><a href="#locust-使用">Locust 使用</a>
+          <ul>
+            <li><a href="#安装">安装</a></li>
+            <li><a href="#使用示例">使用示例</a></li>
+            <li><a href="#重点方法">重点方法</a>
+              <ul>
+                <li><a href="#wait_time">wait_time</a></li>
+                <li><a href="#client">client</a></li>
+                <li><a href="#验证-response">验证 response</a></li>
+                <li><a href="#请求分组">请求分组</a></li>
+                <li><a href="#代码组织">代码组织</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#完整的示例">完整的示例</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>当我们对外提供服务的时候调用方经常会问这样一个问题：你们的服务能提供多大的 QPS？ 那么就要求我们在服务上线之前就应该清楚的知道服务的极限 QPS 是多少。大家都知道这个数值的得来就得靠压测。在这里我就给大家介绍一款简单易用并且自带可视化界面的压测工具-<a href="http://docs.locust.io/en/stable/what-is-locust.html" target="_blank" rel="noopener noreffer">Locust</a>。</p>
+<h3 id="locust-优点">Locust 优点</h3>
+<ul>
+<li>
+<p>测试场景脚本化
+Locust 采用 Python 脚本描述测试场景，对于最常见的HTTP(S)协议的系统，Locust 采用 Python 的 <code>requests</code> 库作为客户端，使得脚本编写大大简化。而对于其它协议类型的系统，Locust也提供了接口，只要我们能采用 Python 编写对应的请求客户端，就能方便地采用Locust实现压力测试。</p>
+</li>
+<li>
+<p>协程并发机制
+采用多线程来模拟多用户时，线程数会随着并发数的增加而增加，而线程之间的切换是需要占用资源的，IO 的阻塞和线程的 sleep 会不可避免的导致并发效率下降。Locust 的并发机制摒弃了进程和线程，采用协程（gevent）的机制。协程避免了系统级资源调度，由此可以大幅提高单机的并发能力。</p>
+</li>
+</ul>
+<h3 id="locust-使用">Locust 使用</h3>
+<h4 id="安装">安装</h4>
+<p>就和其他 Python 包一样，安装非常简单</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">pip install locust
+# check 版本
+locust -V
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="使用示例">使用示例</h4>
+<p>编写一个 locustfile，定义测试场景</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">locust</span> <span class="kn">import</span> <span class="n">HttpUser</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">between</span>
+
+<span class="c1"># 这个类是我们用来模拟发起请求的用户</span>
+<span class="c1"># 此类继承自 HttpUser, HttpUser 类包含的 client 属性就是一个用来发 Http 请求的 HttpSession</span>
+<span class="c1"># 当开始运行测试，locust 会给每个模拟的 user 创建一个此类的实例</span>
+<span class="k">class</span> <span class="nc">QuickstartUser</span><span class="p">(</span><span class="n">HttpUser</span><span class="p">):</span>
+    <span class="c1"># wait_time 定义了模拟用户的请求间隔时间，这里的含义是每个 user 会在一个请求结束后随机等 1-5s	</span>
+    <span class="n">wait_time</span> <span class="o">=</span> <span class="n">between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+
+    <span class="c1"># task 装饰架定义了模拟用户的行为，即发送什么样的 http 请求</span>
+    <span class="c1"># 每个 user 都会起一个 greenlet 执行这些方法</span>
+    <span class="nd">@task</span>
+    <span class="k">def</span> <span class="nf">hello_world</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;/hello&#34;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;/world&#34;</span><span class="p">)</span>
+
+    <span class="c1"># 这里的 3 是定义了这个待执行的行为相比上一个具有更高的优先级，或者说这个行为被执行的概率是上一个的 3 倍</span>
+    <span class="nd">@task</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">view_items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">item_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="s2">&#34;/item?id={item_id}&#34;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&#34;/item&#34;</span><span class="p">)</span>
+
+    <span class="c1"># 在每个 user 执行真的方法之前，定义的初始化操作，比如这里的模拟用户登录，那么后续用户就会保持响应的 session</span>
+    <span class="k">def</span> <span class="nf">on_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&#34;/login&#34;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;username&#34;</span><span class="p">:</span><span class="s2">&#34;foo&#34;</span><span class="p">,</span> <span class="s2">&#34;password&#34;</span><span class="p">:</span><span class="s2">&#34;bar&#34;</span><span class="p">})</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="重点方法">重点方法</h4>
+<h5 id="wait_time">wait_time</h5>
+<ul>
+<li>constant: 请求间隔固定时间</li>
+<li>between: 在最大值和最小值之间随机</li>
+<li>constant_throughput: 每秒触发固定次数 task</li>
+<li>constant_pacing: 固定秒数里执行一次 task(其实就是上面指标的倒数)</li>
+</ul>
+<h5 id="client">client</h5>
+<p>client  是 <code>HttpSession</code> 的一个实例， 我们可以理解成它就是 Python 包 <code>requests.Session</code> 的扩展版。所以我们完全可以按照使用 <code>requests</code>的方式使用 <code>client</code>。<br>
+例如 <br>
+<code>self.client.post(url=url, data=data_param, headers=headers, catch_response=True)</code></p>
+<h5 id="验证-response">验证 response</h5>
+<p>我们经常需要根据接口的实际返回内容来看某一次请求是否成功。下面的例子展示了在 locustfile 中如何定义测试的失败或者成功</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">with self.client.get(&#34;/&#34;, catch_response=True) as response:
+    if response.text != &#34;Success&#34;:
+        response.failure(&#34;Got wrong response&#34;)
+    elif response.elapsed.total_seconds() &gt; 0.5:
+        response.failure(&#34;Request took too long&#34;)
+</code></pre></td></tr></table>
+</div>
+</div><h5 id="请求分组">请求分组</h5>
+<p>经常会遇到某一个接口参数是动态的，比如根据 item id 查询 item <code>/item?id=abc&quot;</code>。 默认情况下测试统计数据里 id 不同则每个请求都单独展示，而这一般不是我们想要到结果，我们往往只关注这一个接口的统计情况，所以需要把这样的请求分组。我们可以通过参数 <code>name</code>进行请求分组  <br>
+例如</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># Statistics for these requests will be grouped under: /blog/?id=[id]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;/blog?id=</span><span class="si">%i</span><span class="s2">&#34;</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&#34;/blog?id=[id]&#34;</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h5 id="代码组织">代码组织</h5>
+<p>我们经常会压测很多项目，把这些 locustfile 组织到一起是一个很好的实践方式。
+下面是一种推荐方式
+* Project root</p>
+<pre><code>    * common/
+
+        * __init__.py
+
+        * auth.py
+
+        * config.py
+
+    * my_locustfiles/
+
+        * api.py
+
+        * website.py
+
+    * requirements.txt
+</code></pre>
+<h3 id="完整的示例">完整的示例</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># 用locust</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">locust</span> <span class="kn">import</span> <span class="n">HttpUser</span><span class="p">,</span> <span class="n">between</span><span class="p">,</span> <span class="n">task</span>
+
+<span class="n">logHandler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;../logs/test.log&#39;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logHandler</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">MyUser</span><span class="p">(</span><span class="n">HttpUser</span><span class="p">):</span>
+    <span class="n">wait_time</span> <span class="o">=</span> <span class="n">between</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+
+
+    <span class="nd">@task</span>
+    <span class="k">def</span> <span class="nf">my_task</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&#34;http://example.co/byp/api/interface/tts/task&#34;</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&#34;raw_params&#34;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&#34;biz_id&#34;</span><span class="p">:</span> <span class="s2">&#34;tts389693391320943355&#34;</span><span class="p">,</span>
+                <span class="s2">&#34;voice&#34;</span><span class="p">:</span> <span class="s2">&#34;db8&#34;</span><span class="p">,</span>
+                <span class="s2">&#34;method&#34;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&#34;logid&#34;</span><span class="p">:</span> <span class="s2">&#34;&#34;</span><span class="p">,</span>
+                <span class="s2">&#34;text&#34;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">&#34;阿Test正经比比&#34;</span>
+                <span class="p">],</span>
+                <span class="s2">&#34;format&#34;</span><span class="p">:</span> <span class="s2">&#34;wav&#34;</span><span class="p">,</span>
+                <span class="s2">&#34;sample_rate&#34;</span><span class="p">:</span> <span class="mi">22050</span><span class="p">,</span>
+                <span class="s2">&#34;volume&#34;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+                <span class="s2">&#34;speech_rate&#34;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&#34;pitch_rate&#34;</span><span class="p">:</span> <span class="mi">0</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span>
+        <span class="p">}</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">),</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">task_id</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;task_id&#39;</span><span class="p">]</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># logger.info(f&#39;task: {task_id} {time.time()}&#39;)</span>
+
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">res_url</span> <span class="o">=</span> <span class="s1">&#39;http://example.co/byp/api/interface/tts/task/result&#39;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">f</span><span class="s1">&#39;{res_url}?task_id={task_id}&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&#34;/result&#34;</span><span class="p">,</span> <span class="n">catch_response</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;task res:{task_id} {time.time()-st}&#39;</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="s1">&#39;state&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">success</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">))</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;{task_id}&#39;</span><span class="p">)</span>
+
+</code></pre></td></tr></table>
+</div>
+</div><p>在上面的这个 locustfile 里我们模拟的场景是用户提交任务立即返回，服务进行异步处理。在 10s 内如果能查询到任务结果我们认为对用户来说都是服务可用的。</p>
+<ul>
+<li>压测</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">$ locust -f locustfile.py
+[2022-01-26 19:15:18,393] MacBook-Pro-3.local/INFO/locust.main: Starting web interface at http://0.0.0.0:8089 (accepting connections from all network interfaces)
+[2022-01-26 19:15:18,399] MacBook-Pro-3.local/INFO/locust.main: Starting Locust 1.6.0
+[2022-01-26 19:15:37,970] MacBook-Pro-3.local/INFO/locust.runners: Spawning 50 users at the rate 30 users/s (0 users already running)...
+[2022-01-26 19:15:39,692] MacBook-Pro-3.local/INFO/locust.runners: All users spawned: MyUser: 50 (50 total running)
+[2022-01-26 19:15:48,024] MacBook-Pro-3.local/INFO/root: task res:ts392026726928003325 10.019779205322266
+[2022-01-26 19:15:48,044] MacBook-Pro-3.local/INFO/root: task res:ts392026726961557757 10.017950057983398
+
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>压测结果</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/locust-res.png"
+        data-srcset="https://pics.lxkaka.wang/locust-res.png, https://pics.lxkaka.wang/locust-res.png 1.5x, https://pics.lxkaka.wang/locust-res.png 2x"
+        data-sizes="auto"
+        alt="locust-res"
+        title="locust-res" /><br>
+我们通过多次调整 user 数找到了在不出现失败的情况下稳定的服务 QPS。</p>
+<p>其他场景或者需求可以查阅官方文档进一步探索。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-01-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/locust/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/locust/" data-title="易于使用的性能测试工具-Locust" data-hashtags="压测,性能"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/locust/" data-hashtag="压测"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/locust/" data-title="易于使用的性能测试工具-Locust" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/locust/" data-title="易于使用的性能测试工具-Locust"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/locust/" data-title="易于使用的性能测试工具-Locust"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E5%8E%8B%E6%B5%8B/">压测</a>,&nbsp;<a href="/tags/%E6%80%A7%E8%83%BD/">性能</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/service-manage/" class="prev" rel="prev" title="用 StatefulSet 实现同步服务和异步服务的管理"><i class="fas fa-angle-left fa-fw"></i>用 StatefulSet 实现同步服务和异步服务的管理</a>
+            <a href="/p2c1/" class="next" rel="next" title="算法服务稳定性优化之负载控制">算法服务稳定性优化之负载控制<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

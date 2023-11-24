@@ -1,0 +1,43 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>spark - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/spark/</link>
+        <description>spark - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/spark/" rel="self" type="application/rss+xml" /><item>
+    <title>实时数据入湖的选型和实践</title>
+    <link>https://lxkaka.wang/cdc-stream/</link>
+    <pubDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/cdc-stream/</guid>
+    <description><![CDATA[Hudi 作为最热的数据湖技术框架之一，用于构建具有增量数据处理管道的流式数据湖。其核心的能力包括对象存储上数据行级别的快速更新和删除，增量查询 (Incremental queries,Time]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item><item>
+    <title>在 IntelliJ 中使用 Zeppelin 提速数据开发</title>
+    <link>https://lxkaka.wang/zeppelin-intellij/</link>
+    <pubDate>Tue, 25 Feb 2020 11:46:10 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zeppelin-intellij/</guid>
+    <description><![CDATA[Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提]]></description>
+</item><item>
+    <title>在 IntelliJ 中使用 Zeppelin 提速数据开发</title>
+    <link>https://lxkaka.wang/zeppelin-intellij/</link>
+    <pubDate>Tue, 25 Feb 2020 11:46:10 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zeppelin-intellij/</guid>
+    <description><![CDATA[Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提]]></description>
+</item></channel>
+</rss>

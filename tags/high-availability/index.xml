@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>high availability - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/high-availability/</link>
+        <description>high availability - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/high-availability/" rel="self" type="application/rss+xml" /><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item></channel>
+</rss>

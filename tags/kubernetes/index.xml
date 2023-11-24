@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>kubernetes - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/kubernetes/</link>
+        <description>kubernetes - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/kubernetes/" rel="self" type="application/rss+xml" /><item>
+    <title>Kustomize &#43; Argo CD 优化发布流程</title>
+    <link>https://lxkaka.wang/gitops-argocd/</link>
+    <pubDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gitops-argocd/</guid>
+    <description><![CDATA[GitOps 相信不少人听说过，这种新的交付模式越来越受到大家的关注，包括我自己在内。今天在这篇文章里我结合我们的实际生产上遇到的痛点，讲讲我们在 GitOps 上的]]></description>
+</item><item>
+    <title>Kustomize &#43; Argo CD 优化发布流程</title>
+    <link>https://lxkaka.wang/gitops-argocd/</link>
+    <pubDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gitops-argocd/</guid>
+    <description><![CDATA[GitOps 相信不少人听说过，这种新的交付模式越来越受到大家的关注，包括我自己在内。今天在这篇文章里我结合我们的实际生产上遇到的痛点，讲讲我们在 GitOps 上的]]></description>
+</item><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item><item>
+    <title>kubectl 操作 Kubernetes 的权限控制</title>
+    <link>https://lxkaka.wang/kubeconfig/</link>
+    <pubDate>Fri, 15 Feb 2019 14:23:49 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kubeconfig/</guid>
+    <description><![CDATA[Kubernetes 集群的安全性的重要程度不用强调，当我们与集群交互时，不管是通过 kubernetes-dashborad 还是通过命令行工具 kubectl 都需要进行身份验证和鉴权。那么我们是怎么利用 k8s 本身提供]]></description>
+</item><item>
+    <title>kubectl 操作 Kubernetes 的权限控制</title>
+    <link>https://lxkaka.wang/kubeconfig/</link>
+    <pubDate>Fri, 15 Feb 2019 14:23:49 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kubeconfig/</guid>
+    <description><![CDATA[Kubernetes 集群的安全性的重要程度不用强调，当我们与集群交互时，不管是通过 kubernetes-dashborad 还是通过命令行工具 kubectl 都需要进行身份验证和鉴权。那么我们是怎么利用 k8s 本身提供]]></description>
+</item><item>
+    <title>生产环境搭建 kubernetes(11.3)</title>
+    <link>https://lxkaka.wang/k8s-init/</link>
+    <pubDate>Wed, 05 Dec 2018 18:51:56 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-init/</guid>
+    <description><![CDATA[直接进入正题，这篇文章讲述生产环境如何搭建 kubernets cluster。 我们使用 kubespray 使用搭建 k8s cluster。 至于其他搭建工具 kops, kubeadm 感兴趣的大家可以自己研究]]></description>
+</item><item>
+    <title>生产环境搭建 kubernetes(11.3)</title>
+    <link>https://lxkaka.wang/k8s-init/</link>
+    <pubDate>Wed, 05 Dec 2018 18:51:56 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-init/</guid>
+    <description><![CDATA[直接进入正题，这篇文章讲述生产环境如何搭建 kubernets cluster。 我们使用 kubespray 使用搭建 k8s cluster。 至于其他搭建工具 kops, kubeadm 感兴趣的大家可以自己研究]]></description>
+</item><item>
+    <title>Kubernetes 基础概念</title>
+    <link>https://lxkaka.wang/k8s-1/</link>
+    <pubDate>Thu, 25 Oct 2018 20:41:57 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-1/</guid>
+    <description><![CDATA[Kubernetes 概述 Kubernetes 是一个跨主机集群的 开源的容器调度平台，它可以自动化应用容器的部署、扩展和操作 , 提供以容器为中心的基础架构。 使用 Kubernetes, 可以快速高效地响应客]]></description>
+</item><item>
+    <title>Kubernetes 基础概念</title>
+    <link>https://lxkaka.wang/k8s-1/</link>
+    <pubDate>Thu, 25 Oct 2018 20:41:57 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-1/</guid>
+    <description><![CDATA[Kubernetes 概述 Kubernetes 是一个跨主机集群的 开源的容器调度平台，它可以自动化应用容器的部署、扩展和操作 , 提供以容器为中心的基础架构。 使用 Kubernetes, 可以快速高效地响应客]]></description>
+</item></channel>
+</rss>

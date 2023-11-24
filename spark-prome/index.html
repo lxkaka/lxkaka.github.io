@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>怎么使用 Promethues 监控 Spark 应用 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="怎么使用 Promethues 监控 Spark 应用" />
+<meta property="og:description" content="我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/spark-prome/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-03-27T10:51:13+08:00" />
+<meta property="article:modified_time" content="2020-03-27T10:51:13+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="怎么使用 Promethues 监控 Spark 应用"/>
+<meta name="twitter:description" content="我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/spark-prome/" /><link rel="prev" href="https://lxkaka.wang/zeppelin-intellij/" /><link rel="next" href="https://lxkaka.wang/hsdb-class/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "怎么使用 Promethues 监控 Spark 应用",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/spark-prome\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "promethues, spark, monitoring","wordcount":  1507 ,
+        "url": "https:\/\/lxkaka.wang\/spark-prome\/","datePublished": "2020-03-27T10:51:13+08:00","dateModified": "2020-03-27T10:51:13+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">怎么使用 Promethues 监控 Spark 应用</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-03-27">2020-03-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1507 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#spark-web">Spark Web</a></li>
+            <li><a href="#spark-history-server">Spark history server</a></li>
+          </ul>
+        </li>
+        <li><a href="#prometheus-sink-配置">Prometheus Sink 配置</a></li>
+        <li><a href="#依赖">依赖</a></li>
+        <li><a href="#prometheus-报警配置">Prometheus 报警配置</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从<a href="https://spark.apache.org/docs/latest/monitoring.html" target="_blank" rel="noopener noreffer">官方文档</a>上我们看到有这三种方式 <strong>Web UI</strong>, <strong>Metrics</strong>, <strong>其他辅助工具</strong>。<br>
+这里简单提一下 Web UI 提供的监控信息。</p>
+<h4 id="spark-web">Spark Web</h4>
+<p>每个SparkContext启动一个Web UI， 缺省接口为4040,用来显示应用的有用信息， 包括:</p>
+<ul>
+<li>scheduler stages 和 tasks列表</li>
+<li>RDD 大小和内存使用率的汇总</li>
+<li>环境变量(配置)</li>
+<li>运行中的 executor 的信息</li>
+</ul>
+<h4 id="spark-history-server">Spark history server</h4>
+<p>如果开启了 spark event log ，我们可以通过访问 spark histroy server 看到应用的信息，包括正在运行和已完成的应用。</p>
+<p>Web UI 上只提供应用的运行的状态和信息，但是当应用出现异常和失败，我们并不能及时知道。也就是说缺失失败报警的功能。
+Spark有一个基于 Dropwizard Metrics Library 的可配置的 metrics 系统，允许用户通过各种方式呈现 metrics， 如 HTTP, JMX 和 CSV 文件方式。我们可以通过 $SPARK_HOME/conf/metrics.properties 配置或者通过 spark.metrics.conf 指定一个自定义的配置文件. Spark metrics 根据不同的组件被解耦成不同的实例。每个实例中都可以可以配置多个 sinks 来接收 metrics。<br>
+包括以下实例:</p>
+<ul>
+<li>master: The Spark standalone master process.</li>
+<li>applications: A component within the master which reports on various applications.</li>
+<li>worker: A Spark standalone worker process.</li>
+<li>executor: A Spark executor.</li>
+<li>driver: The Spark driver process (the process in which your SparkContext is created).</li>
+<li>shuffleService: The Spark shuffle service.</li>
+<li>applicationMaster: The Spark ApplicationMaster when running on YARN.</li>
+</ul>
+<p>目前 Spark 支持的 sinks 全部在 org.apache.spark.metrics.sink package 里面，包括：</p>
+<ul>
+<li>ConsoleSink: 在控制台中显示 metrics.</li>
+<li>CSVSink: 以 CSV 文件的方式定期提供报告.</li>
+<li>JmxSink: 以 JMX 方式提供.</li>
+<li>MetricsServlet: 以 servlet 方式在 Spark UI 中提供 JSON 数据.</li>
+<li>GraphiteSink: 发送给 Graphite 节点.</li>
+<li>Slf4jSink: 记录到日志中.</li>
+<li>StatsdSink: 发送给 Statsd 节点.</li>
+</ul>
+<p>我们现在的监控报警系统核心是 Promethues，所以 Spark 的监控报警我们想的方案也是要基于 Prometheus。我们看到 Spark 支持的 sink 里有 jmx, 顺着这个思路我们可以采取 JMXSink + JmxExporter(<a href="https://github.com/prometheus/jmx_exporter">https://github.com/prometheus/jmx_exporter</a>) 的方式。另外一种思路更直接，我们可以自己开发一个 sink 把 metrics 推到 Prometheus。
+在调研的过程中发现别人也有使用 Prometheus 监控 Spark 的需求，于是发现了这样一个包 <a href="https://github.com/banzaicloud/spark-metrics">https://github.com/banzaicloud/spark-metrics</a>，自定义的 <strong>Prometheus Sink</strong>。<br>
+下面介绍一下怎么使用这样的 Prometheus Sink 监控 Spark。</p>
+<h3 id="prometheus-sink-配置">Prometheus Sink 配置</h3>
+<p>因为这里是利用 Prometheus 的 pushgateway，先把 metrics 推给 pushgateway, 所以配置文件里一定要配置 pushgateway 的地址。配置文件就是我们上面所说的 $SPARK_HOME/conf/metrics.properties 或者 spark.metrics.conf 配置的自定义配置文件</p>
+<ul>
+<li>
+<p>metrics.conf</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># Enable Prometheus for all instances by class name
+*.sink.prometheus.class=org.apache.spark.banzaicloud.metrics.sink.PrometheusSink
+# Prometheus pushgateway address
+*.sink.prometheus.pushgateway-address-protocol=http
+*.sink.prometheus.pushgateway-address=11.22.33.44:9091
+*.sink.prometheus.period=15
+#*.sink.prometheus.unit=&lt; unit&gt; - defaults to seconds (TimeUnit.SECONDS)
+#*.sink.prometheus.pushgateway-enable-timestamp=&lt;enable/disable metrics timestamp&gt; - defaults to false
+# Metrics name processing (version 2.3-1.1.0 +)
+#*.sink.prometheus.metrics-name-capture-regex=&lt;regular expression to capture sections metric name sections to be replaces&gt;
+#*.sink.prometheus.metrics-name-replacement=&lt;replacement captured sections to be replaced with&gt;
+#*.sink.prometheus.labels=&lt;labels in label=value format separated by comma&gt;
+# Support for JMX Collector (version 2.3-2.0.0 +)
+*.sink.prometheus.enable-dropwizard-collector=false
+*.sink.prometheus.enable-jmx-collector=true
+*.sink.prometheus.jmx-collector-config=/home/hadoop/jmxCollector.yaml
+
+# Enable HostName in Instance instead of Appid (Default value is false i.e. instance=${appid})
+*.sink.prometheus.enable-hostname-in-instance=true
+
+# Enable JVM metrics source for all instances by class name
+*.sink.jmx.class=org.apache.spark.metrics.sink.JmxSink
+*.source.jvm.class=org.apache.spark.metrics.source.JvmSource
+</code></pre></td></tr></table>
+</div>
+</div><p>这里需要特别注意的一点，默认情况下 dirver 和 executor 的 metrics 使用的命名空间是 application id, 例如 <code>metrics_application_1584587365518_0205_1_executor_bytesRead_Count</code>, 但因为这个 app id 是随着每个 Spark app 变的，我们往往关心的是所有 app 的 metrics， 所以这里我们通过配置 <strong>sprak.metrics.namespace</strong> 来达到目的，可以修改成 app 的名字 <strong>${spark.app.name}</strong> 或是一个固定值。</p>
+</li>
+<li>
+<p>jmxCollector 配置<br>
+可以配置收集或不收集哪些对象的指标，这个配置文件可以灵活选择目录。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml"><span class="k">lowercaseOutputName</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w"></span><span class="k">lowercaseOutputLabelNames</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span><span class="w"></span><span class="k">whitelistObjectNames</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;*:*&#34;</span><span class="p">]</span><span class="w">
+</span><span class="w"></span><span class="k">blacklistObjectNames</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;java.lang:*&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;kafka.consumer:*&#34;</span><span class="p">]</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="依赖">依赖</h3>
+<p>我们知道添加 Spark 的第三方依赖包，我们可以在 spark-submit 通过 &ndash;package 指定<br>
+例如 <br>
+<code>spark-submit --master yarn --package com.banzaicloud:spark-metrics_2.11:2.4-1.0.5 --class Test</code><br>
+为了全局生效和省去命令行配置我们把相关的依赖都添加到 Spark 的 CLass Path 下, 这里列出所有需要的依赖包的中央仓库地址。版本可以换根据自己使用的 Spark 版本调整。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">https<span class="p">:</span>//repo1.maven.org/maven2/com/banzaicloud/spark-metrics_2<span class="m">.11</span>/<span class="m">2.4-1.0.5</span>/spark-metrics_2<span class="m">.11-2.4-1.0.5</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/io/prometheus/simpleclient/<span class="m">0.8.1</span>/simpleclient<span class="m">-0.8.1</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/io/prometheus/simpleclient_dropwizard/<span class="m">0.8.1</span>/simpleclient_dropwizard<span class="m">-0.8.1</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/io/prometheus/simpleclient_pushgateway/<span class="m">0.8.1</span>/simpleclient_pushgateway<span class="m">-0.8.1</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/io/prometheus/simpleclient_common/<span class="m">0.8.1</span>/simpleclient_common<span class="m">-0.8.1</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/io/prometheus/jmx/collector/<span class="m">0.12.0</span>/collector<span class="m">-0.12.0</span>.jar<span class="w">
+</span><span class="w"></span>https<span class="p">:</span>//repo1.maven.org/maven2/org/yaml/snakeyaml/<span class="m">1.26</span>/snakeyaml<span class="m">-1.26</span>.jar<span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="prometheus-报警配置">Prometheus 报警配置</h3>
+<p>当我们完成上述步骤后，我们应该就能在 Promethues pushgateway 中看到 spark 应用的 metrics, 那么 prometheus 中自然也会收集到 metrics。
+通过其中的一些指标我们可以监控和告警包括 stage, executor, app 等的执行，如果有失败我们就你能及时收到告警，从而能快速处理。   <br>
+下面是 Prometheus  部分告警规则的示例配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yaml" data-lang="yaml">- <span class="k">name</span><span class="p">:</span><span class="w"> </span>spark<span class="w">
+</span><span class="w"></span><span class="k">rules</span><span class="p">:</span><span class="w">
+</span><span class="w"></span>- <span class="k">alert</span><span class="p">:</span><span class="w"> </span>spark<span class="w"> </span>executor<span class="w"> </span>fail<span class="w">
+</span><span class="w">    </span><span class="k">expr</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;{__name__=~&#39;metrics_application.+applicationMaster_numExecutorsFailed_Value&#39;} &gt; 0&#34;</span><span class="w">
+</span><span class="w">    </span><span class="k">for</span><span class="p">:</span><span class="w"> </span>1m<span class="w">
+</span><span class="w">    </span><span class="k">labels</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">severity</span><span class="p">:</span><span class="w"> </span>critical<span class="w">
+</span><span class="w">    </span><span class="k">annotations</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark {{ $labels.__name__ }} 大于 0, 达到 {{ $value }}&#34;</span><span class="w">
+</span><span class="w">    </span><span class="k">description</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark executor 有失败应用&#34;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>- <span class="k">alert</span><span class="p">:</span><span class="w"> </span>spark<span class="w"> </span>stage<span class="w"> </span>fail<span class="w">
+</span><span class="w">    </span><span class="k">expr</span><span class="p">:</span><span class="w"> </span>metrics_zaihui_driver_DAGScheduler_stage_failedStages_Value<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w">
+</span><span class="w">    </span><span class="k">for</span><span class="p">:</span><span class="w"> </span>1m<span class="w">
+</span><span class="w">    </span><span class="k">labels</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">severity</span><span class="p">:</span><span class="w"> </span>critical<span class="w">
+</span><span class="w">    </span><span class="k">annotations</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span><span class="k">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark 应用 {{ $labels.app_name }} failed stage 达到 {{ $value }}&#34;</span><span class="w">
+</span><span class="w">    </span><span class="k">description</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark 应用有 stage 失败&#34;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span>- <span class="k">alert</span><span class="p">:</span><span class="w"> </span>spark<span class="w"> </span>app<span class="w"> </span>run<span class="w"> </span>fail<span class="w">
+</span><span class="w">    </span><span class="k">expr</span><span class="p">:</span><span class="w"> </span>delta(metrics_zaihui_driver_LiveListenerBus_listenerProcessingTime_org_apache_spark_HeartbeatReceiver_Count<span class="p">[</span>5m<span class="p">]</span>)<span class="w"> </span>==<span class="w"> </span><span class="m">0</span><span class="w">
+</span><span class="w">        </span><span class="k">for</span><span class="p">:</span><span class="w"> </span>5m<span class="w">
+</span><span class="w">        </span><span class="k">labels</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">severity</span><span class="p">:</span><span class="w"> </span>critical<span class="w">
+</span><span class="w">        </span><span class="k">group</span><span class="p">:</span><span class="w"> </span>alert-admin<span class="w">
+</span><span class="w">        </span><span class="k">annotations</span><span class="p">:</span><span class="w">
+</span><span class="w">        </span><span class="k">summary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark 应用 {{ $labels.app_name }} 5min 之内没有心跳，应用可能已经挂掉&#34;</span><span class="w">
+</span><span class="w">        </span><span class="k">description</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;spark 应用挂掉，请注意&#34;</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-03-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/spark-prome/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/spark-prome/" data-title="怎么使用 Promethues 监控 Spark 应用" data-hashtags="promethues,spark,monitoring"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/spark-prome/" data-hashtag="promethues"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/spark-prome/" data-title="怎么使用 Promethues 监控 Spark 应用" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/spark-prome/" data-title="怎么使用 Promethues 监控 Spark 应用"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/spark-prome/" data-title="怎么使用 Promethues 监控 Spark 应用"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/promethues/">promethues</a>,&nbsp;<a href="/tags/spark/">spark</a>,&nbsp;<a href="/tags/monitoring/">monitoring</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/zeppelin-intellij/" class="prev" rel="prev" title="在 IntelliJ 中使用 Zeppelin 提速数据开发"><i class="fas fa-angle-left fa-fw"></i>在 IntelliJ 中使用 Zeppelin 提速数据开发</a>
+            <a href="/hsdb-class/" class="next" rel="next" title="HSDB 告诉我们 Java 对象的内存地址">HSDB 告诉我们 Java 对象的内存地址<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

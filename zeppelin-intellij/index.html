@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>在 IntelliJ 中使用 Zeppelin 提速数据开发 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="在 IntelliJ 中使用 Zeppelin 提速数据开发" />
+<meta property="og:description" content="Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/zeppelin-intellij/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-02-25T11:46:10+08:00" />
+<meta property="article:modified_time" content="2020-02-25T11:46:10+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="在 IntelliJ 中使用 Zeppelin 提速数据开发"/>
+<meta name="twitter:description" content="Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/zeppelin-intellij/" /><link rel="prev" href="https://lxkaka.wang/mysql-lock/" /><link rel="next" href="https://lxkaka.wang/spark-prome/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "在 IntelliJ 中使用 Zeppelin 提速数据开发",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/zeppelin-intellij\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "数据开发, zeppelin, spark","wordcount":  1389 ,
+        "url": "https:\/\/lxkaka.wang\/zeppelin-intellij\/","datePublished": "2020-02-25T11:46:10+08:00","dateModified": "2020-02-25T11:46:10+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">在 IntelliJ 中使用 Zeppelin 提速数据开发</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-02-25">2020-02-25</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1389 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#zeppelin-原理">Zeppelin 原理</a>
+          <ul>
+            <li><a href="#notebook">Notebook</a></li>
+            <li><a href="#interpreter">Interpreter</a></li>
+          </ul>
+        </li>
+        <li><a href="#zeppelin-依赖配置">Zeppelin 依赖配置</a>
+          <ul>
+            <li><a href="#通过-sprakdep-动态加载">通过 <code>%sprak.dep</code> 动态加载</a></li>
+            <li><a href="#web-ui-通过-interpreter-设置">Web UI 通过 Interpreter 设置</a></li>
+          </ul>
+        </li>
+        <li><a href="#intellij-big-data-tools">Intellij Big Data Tools</a>
+          <ul>
+            <li><a href="#环境配置">环境配置</a></li>
+          </ul>
+        </li>
+        <li><a href="#开发示例">开发示例</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><a href="https://zeppelin.apache.org/" target="_blank" rel="noopener noreffer">Apache Zeppelin</a> 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提供丰富的可视化图形库，不限于 SparkSQL，后端支持 HBase、Flink 等大数据系统以插件扩展的方式，并支持 Spark、Python、JDBC、Markdown、Shell 等各种常用 Interpreter，这使得开发者可以方便地使用 SQL，SCALA, Python 等其他语言 在 Zeppelin 中做数据开发。
+我们在用 Scala 基于 Spark 做数据开发的时候，代码调试是必不可少的，这个过程可能是反复多次的，最基本的要求就是我们得有完整的 Spark 环境。随之而来的是需要在本地搭建和维护这样的环境，当我们有实时数据的需求的时候可能会需要用到其他的组件比如 kafka。本地环境和不方便就会成为开发的一个大问题。此外很多场景我们可能只是需要调试一段代码或一个小的模块，如果我们想达到这个“块级别”的调试不借助别的工具就很难实现。
+在这里我们介绍一下如何使用 Zeppelin 来解决上述的痛点，帮助我们有效提高开发效率。</p>
+<h3 id="zeppelin-原理">Zeppelin 原理</h3>
+<p>在此之前，我们有必要了解 Zeppelin 的工作原理。我们最关心的是两个模块 Notebook 和 Interpreter.</p>
+<h4 id="notebook">Notebook</h4>
+<ul>
+<li>Notebook 可以理解成多个代码片段的交互式容器</li>
+<li>一个 Notebook 可以包含不同语言写成的代码片段</li>
+<li>Notebook 可以导入导出，对于一个 Notebook下的所有代码片段可以一起执行、停止和删除的操作</li>
+</ul>
+<h4 id="interpreter">Interpreter</h4>
+<p>解释器是 Zeppelin 的语言后端。例如，在 Zeppelin 中使用 scala 代码，您需要一个 scala 解释器、使用 Python 需要 Python 的解释器，每个解释器都属于一个解释器组。相同解释器组中的解释器可以互相引用。例如 Spark、SparkSQL、Pyspark、SparkR 都属于同一个解释器组，同一个实例中他们之间可以相互引用，RDD 也可以共享，在用户发起执行请求时 Zeppelin Server 会通过代码中的 repl 找到相应的解释器，调用解释器的 interpreter 方法执行，Zeppelin Server 会通过 WebSocket 实时的把进度反馈到web前端。
+架构图如下<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zeppelin-arch.jpeg"
+        data-srcset="https://pics.lxkaka.wang/zeppelin-arch.jpeg, https://pics.lxkaka.wang/zeppelin-arch.jpeg 1.5x, https://pics.lxkaka.wang/zeppelin-arch.jpeg 2x"
+        data-sizes="auto"
+        alt="zeppelin-arch"
+        title="zeppelin-arch" />
+解释器有两种启动形式，本地或者远程，本地解释器通过 classLoader 动态加载到 JVM 直接调用，远程解释器会在本地重启一个进程，启动一个Thrift Server 通过 Thrift 远程调用,以 Spark 插件为例, Spark 插件本身就是一个常驻的 Spark 任务，在 Spark 的 Driver 端启动一个 Thirft Server，然后通过 Thirft 和 Zeppelin Server 进行通信,接受执行 SQL、Scala、Python等任务、反馈执行进度等。</p>
+<h3 id="zeppelin-依赖配置">Zeppelin 依赖配置</h3>
+<p>我们想要让代码跑起来，代码所用到依赖必须在 Zeppelin 中先配置好。这里有两种方式可以来加载依赖包。(以 Spark interpreter 示例), 包括如下功能</p>
+<ul>
+<li>从 maven 仓库加载</li>
+<li>从本地文件系统加载</li>
+<li>添加指定的仓库地址</li>
+</ul>
+<h4 id="通过-sprakdep-动态加载">通过 <code>%sprak.dep</code> 动态加载</h4>
+<p>当我们的代码需要用到第三方库时,不需要手动下载包和重启 Zepplin, 可以通过 <code>spark.dep</code>实现动态加载</p>
+<p>使用示例如下</p>
+<pre><code>```
+%spark.dep
+z.reset() // clean up previously added artifact and repository
+
+// add maven repository
+z.addRepo(&quot;RepoName&quot;).url(&quot;RepoURL&quot;)
+
+// add maven snapshot repository
+z.addRepo(&quot;RepoName&quot;).url(&quot;RepoURL&quot;).snapshot()
+
+// add credentials for private maven repository
+z.addRepo(&quot;RepoName&quot;).url(&quot;RepoURL&quot;).username(&quot;username&quot;).password(&quot;password&quot;)
+
+// add artifact from filesystem
+z.load(&quot;/path/to.jar&quot;)
+
+// add artifact from maven repository, with no dependency
+z.load(&quot;groupId:artifactId:version&quot;).excludeAll()
+
+// add artifact recursively
+z.load(&quot;groupId:artifactId:version&quot;)
+
+// add artifact recursively except comma separated GroupID:ArtifactId list
+z.load(&quot;groupId:artifactId:version&quot;).exclude(&quot;groupId:artifactId,groupId:artifactId, ...&quot;)
+
+// exclude with pattern
+z.load(&quot;groupId:artifactId:version&quot;).exclude(*)
+z.load(&quot;groupId:artifactId:version&quot;).exclude(&quot;groupId:artifactId:*&quot;)
+z.load(&quot;groupId:artifactId:version&quot;).exclude(&quot;groupId:*&quot;)
+
+// local() skips adding artifact to spark clusters (skipping sc.addJar())
+z.load(&quot;groupId:artifactId:version&quot;).local()
+```
+</code></pre>
+<h4 id="web-ui-通过-interpreter-设置">Web UI 通过 Interpreter 设置</h4>
+<ul>
+<li>
+<p>配置依赖的源<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/add-repo.png"
+        data-srcset="https://pics.lxkaka.wang/add-repo.png, https://pics.lxkaka.wang/add-repo.png 1.5x, https://pics.lxkaka.wang/add-repo.png 2x"
+        data-sizes="auto"
+        alt="add-repo"
+        title="add-repo" /></p>
+</li>
+<li>
+<p>加载依赖到相应的 interpreter
+配置包的 artifact、group和版本信息或者本地路径<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/add-jar.png"
+        data-srcset="https://pics.lxkaka.wang/add-jar.png, https://pics.lxkaka.wang/add-jar.png 1.5x, https://pics.lxkaka.wang/add-jar.png 2x"
+        data-sizes="auto"
+        alt="add-jar"
+        title="add-jar" /></p>
+</li>
+</ul>
+<h3 id="intellij-big-data-tools">Intellij Big Data Tools</h3>
+<p>在依赖配置好后，我们就可以创建 Notebook 开始开发了，但是有一点遗憾在 Zeppelin 的 Notebook 中编写代码并没有 IDE 中的代码提示等帮助我们提高开发效率的功能。所幸的是 IntelliJ IDEA 2019.2 及以后的版本提供了插件 <a href="https://plugins.jetbrains.com/plugin/12494-big-data-tools" target="_blank" rel="noopener noreffer"><strong>Big Data tools</strong></a>。这个插件集成了 Zeppelin, Spark等，我们使用 Zeppelin 搭配 Big data tools 插件即可以实现高效的本地数据开发和调试。</p>
+<h4 id="环境配置">环境配置</h4>
+<ul>
+<li>Intellij 安装插件
+<ul>
+<li>Big Data Tools</li>
+<li>Scala</li>
+</ul>
+</li>
+<li>创建 project</li>
+<li>配置 Zeppelin 连接<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zeppelin-conn.png"
+        data-srcset="https://pics.lxkaka.wang/zeppelin-conn.png, https://pics.lxkaka.wang/zeppelin-conn.png 1.5x, https://pics.lxkaka.wang/zeppelin-conn.png 2x"
+        data-sizes="auto"
+        alt="zeppelin-conn"
+        title="zeppelin-conn" /></li>
+</ul>
+<h3 id="开发示例">开发示例</h3>
+<ul>
+<li>
+<p>创建 Notebook 和调试
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/exam-run.png"
+        data-srcset="https://pics.lxkaka.wang/exam-run.png, https://pics.lxkaka.wang/exam-run.png 1.5x, https://pics.lxkaka.wang/exam-run.png 2x"
+        data-sizes="auto"
+        alt="exaam-run"
+        title="exaam-run" /></p>
+</li>
+<li>
+<p>输出结果
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/exam-out.png"
+        data-srcset="https://pics.lxkaka.wang/exam-out.png, https://pics.lxkaka.wang/exam-out.png 1.5x, https://pics.lxkaka.wang/exam-out.png 2x"
+        data-sizes="auto"
+        alt="exam-out"
+        title="exam-out" /></p>
+</li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-02-25</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/zeppelin-intellij/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/zeppelin-intellij/" data-title="在 IntelliJ 中使用 Zeppelin 提速数据开发" data-hashtags="数据开发,zeppelin,spark"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/zeppelin-intellij/" data-hashtag="数据开发"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/zeppelin-intellij/" data-title="在 IntelliJ 中使用 Zeppelin 提速数据开发" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/zeppelin-intellij/" data-title="在 IntelliJ 中使用 Zeppelin 提速数据开发"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/zeppelin-intellij/" data-title="在 IntelliJ 中使用 Zeppelin 提速数据开发"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E6%95%B0%E6%8D%AE%E5%BC%80%E5%8F%91/">数据开发</a>,&nbsp;<a href="/tags/zeppelin/">zeppelin</a>,&nbsp;<a href="/tags/spark/">spark</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/mysql-lock/" class="prev" rel="prev" title="MySQL InnoDB 加锁实践分析"><i class="fas fa-angle-left fa-fw"></i>MySQL InnoDB 加锁实践分析</a>
+            <a href="/spark-prome/" class="next" rel="next" title="怎么使用 Promethues 监控 Spark 应用">怎么使用 Promethues 监控 Spark 应用<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

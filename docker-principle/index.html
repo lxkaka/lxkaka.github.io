@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Docker 核心原理 - lxkaka</title><meta name="Description" content="docker的关键实现总结和学习"><meta property="og:title" content="Docker 核心原理" />
+<meta property="og:description" content="docker的关键实现总结和学习" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/docker-principle/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2021-01-23T12:34:00+08:00" />
+<meta property="article:modified_time" content="2021-01-23T12:34:00+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Docker 核心原理"/>
+<meta name="twitter:description" content="docker的关键实现总结和学习"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/docker-principle/" /><link rel="prev" href="https://lxkaka.wang/kakfa-pulsar-storage/" /><link rel="next" href="https://lxkaka.wang/gprc-balancer/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Docker 核心原理",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/docker-principle\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "docker, 原理, linux","wordcount":  3497 ,
+        "url": "https:\/\/lxkaka.wang\/docker-principle\/","datePublished": "2021-01-23T12:34:00+08:00","dateModified": "2021-01-23T12:34:00+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "docker的关键实现总结和学习"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Docker 核心原理</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E5%9F%BA%E7%A1%80/"><i class="far fa-folder fa-fw"></i>基础</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-23">2021-01-23</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3497 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 7 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#docker-的优势">Docker 的优势</a></li>
+    <li><a href="#架构">架构</a></li>
+    <li><a href="#实现原理">实现原理</a>
+      <ul>
+        <li><a href="#namespace">Namespace</a>
+          <ul>
+            <li><a href="#网络模式">网络模式</a>
+              <ul>
+                <li><a href="#其他网络模式">其他网络模式</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li><a href="#cgroups">Cgroups</a></li>
+        <li><a href="#文件驱动">文件驱动</a>
+          <ul>
+            <li><a href="#容器文件系统层级示例">容器文件系统层级示例</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#多阶段构建">多阶段构建</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>对 Docker 的使用大部分都比较熟悉，但是说到 docker 的实现原理很多人还是一知半解。我把在团队内部做的一次 Docker 核心原理分享总结到文章里，以供参考。</p>
+<h2 id="docker-的优势">Docker 的优势</h2>
+<blockquote>
+<p>Build once, Run anywhere
+上面这句话很精辟的总结了 docker 的优点。我从下面几点具体描述 docker 带给开发者的能力</p>
+</blockquote>
+<ul>
+<li>应用标准化
+无论什么语言开发的应用，我们都能用 dockerfile 和构建脚本方便的进行应用构建打包，代码库 + 构建 + registry 统一了 CI/CD 流程，也提升了效率。</li>
+<li>环境一致
+由于应用和依赖全部构建成镜像，做到了一次构建多次交付，无论是开发，测试还是上线环境都是一致的。大大提高了开发效率</li>
+<li>应用隔离
+由于通过 docker 部署的应用，容器之间相互隔离，并且能按需分配资源。大大提高了运维效率和资源利用率</li>
+</ul>
+<h2 id="架构">架构</h2>
+<p>Docker使用了 C/S 体系架构，Docker 客户端与 Docker 守护进程通信，Docker 守护进程负责构建，运行和分发 Docker 容器。Docker 客户端和守护进程可以在同一个系统上运行，也可以将Docker客户端连接到远程Docker守护进程。
+我们日常在命令行的操作 <code>docker build, docker push, docker pull, docke build</code> 等等操作都是客户端通过 rest api 请求与 Docker 守护进程交互。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/docker-cs.png"
+        data-srcset="https://pics.lxkaka.wang/docker-cs.png, https://pics.lxkaka.wang/docker-cs.png 1.5x, https://pics.lxkaka.wang/docker-cs.png 2x"
+        data-sizes="auto"
+        alt="docker-cs"
+        title="docker-cs" /></p>
+<h2 id="实现原理">实现原理</h2>
+<p>下面我们就介绍一下 Docker 在实现隔离，资源控制，文件系统等关键部分所采用的的技术</p>
+<h3 id="namespace">Namespace</h3>
+<p><a href="https://man7.org/linux/man-pages/man7/namespaces.7.html" target="_blank" rel="noopener noreffer">Linux manaul page</a> 很好的介绍了 namespace 的作用。
+namespace提供了一种内核级别隔离系统资源的方法，通过将系统的全局资源放在不同的 namespace 中，来实现资源隔离的目的。不同 namespace 的进程拥有相互隔离的系统资源。
+这里指的资源隔离包含以下这些：</p>
+<ul>
+<li>Mount: 隔离文件系统挂载点</li>
+<li>UTS: 隔离主机名和域名信息</li>
+<li>IPC: 隔离进程间通信</li>
+<li>PID: 隔离进程的 ID</li>
+<li>Network: 隔离网络资源</li>
+<li>User: 隔离用户和用户组<br>
+通过下面的 <code>clone</code> 系统调用可以创建新的进程，参数 <code>flags</code> 控制创建的进程所属的 namespace, 多个 <code>flags</code> 可以同时创建多个 namespace。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">int clone(int (*child_func)(void *), void *child_stack, int flags, void *arg);
+</code></pre></td></tr></table>
+</div>
+</div><p>我们知道容器本质上就是隔离的进程，Docker 在创建容器的时候就是使用 namespace 来实现了容器与容器，容器与宿主机的隔离。
+每个进程都有一个 /proc/[pid]/ns 的目录，里面保存了该进程所在对应 namespace 的链接, 我们来查看某个容器也就是某一个进程对应的 namespace 文件描述</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:~# ls -l /proc/23204/ns
+total 0
+lrwxrwxrwx 1 root root 0 Jan  9 13:51 cgroup -&gt; &#39;cgroup:[4026531835]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:11 ipc -&gt; &#39;ipc:[4026532341]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:11 mnt -&gt; &#39;mnt:[4026532339]&#39;
+lrwxrwxrwx 1 root root 0 Jul  9  2020 net -&gt; &#39;net:[4026532344]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:11 pid -&gt; &#39;pid:[4026532342]&#39;
+lrwxrwxrwx 1 root root 0 Jan  9 13:51 pid_for_children -&gt; &#39;pid:[4026532342]&#39;
+lrwxrwxrwx 1 root root 0 Jan  9 13:51 user -&gt; &#39;user:[4026531837]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:11 uts -&gt; &#39;uts:[4026532340]&#39;
+</code></pre></td></tr></table>
+</div>
+</div><p>每个文件都是对应 namespace 的文件描述符，方括号里面的值是 namespace 的 inode，如果两个进程所在的 namespace 一样，那么它们列出来的 inode 是一样的。
+我们对比一下另外一个宿主机上的进程</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:~# ls -l /proc/20/ns
+total 0
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 cgroup -&gt; &#39;cgroup:[4026531835]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 ipc -&gt; &#39;ipc:[4026531839]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 mnt -&gt; &#39;mnt:[4026531840]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 net -&gt; &#39;net:[4026531993]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 pid -&gt; &#39;pid:[4026531836]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 pid_for_children -&gt; &#39;pid:[4026531836]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 user -&gt; &#39;user:[4026531837]&#39;
+lrwxrwxrwx 1 root root 0 Jan 20 12:19 uts -&gt; &#39;uts:[4026531838]&#39;
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到进程，文件系统，网络，进程通信，主机名都是不同的 namespace。</p>
+<h4 id="网络模式">网络模式</h4>
+<p>Docker 虽然可以通过命名空间创建一个隔离的网络环境，但是如果我们的应用需要对外提供服务，不能与外界进行通信是没有意义的。Docker 提供了多种网络模式来实现容器和外部的通信。
+我们重点介绍一下 docker 默认的网络模式 <code>bridge</code>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/docker-bridge.png"
+        data-srcset="https://pics.lxkaka.wang/docker-bridge.png, https://pics.lxkaka.wang/docker-bridge.png 1.5x, https://pics.lxkaka.wang/docker-bridge.png 2x"
+        data-sizes="auto"
+        alt="docker-bridge"
+        title="docker-bridge" /></p>
+<p>守护进程会创建一对对等虚拟设备接口 veth pair，将其中一个接口设置为容器的 eth0 接口（容器的网卡），另一个接口放置在宿主机的命名空间中，以类似 vethxxx 这样的名字命名，从而将宿主机上的所有容器都连接到这个内部网络上。虚拟网桥的工作方式和物理交换机类似，这样主机上的所有容器就通过交换机连在了一个二层网络中。</p>
+<ul>
+<li>容器访问外部网络<br>
+请求通过 veth pair 到达 docker0 处，docker0 网桥开启了IP forwarding功能，将请求发送至宿主机eth0；
+宿主机处理请求时，使用 SNAT 规则，将源地址替换成了宿主机 ip，然后把报文转发出去</li>
+<li>外部访问容器
+docker run -p 时，docker 实际是在 iptables 做了DNAT规则，实现端口转发功能。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># iptables -t nat -L
+Chain DOCKER (2 references)
+target     prot opt source               destination
+RETURN     all  --  anywhere             anywhere
+DNAT       tcp  --  anywhere             anywhere             tcp dpt:8888 to:172.17.0.4:8888
+</code></pre></td></tr></table>
+</div>
+</div><p>外部请求访问访问地址为 宿主机ip:8888，网络包到达 eth0;
+命中 iptables dnat 规则，把宿主机ip:8888 替换成 容器ip:8888;
+宿主机把报文通过 veth pair 传递到容器 eth0</p>
+<h5 id="其他网络模式">其他网络模式</h5>
+<ul>
+<li>Host 模式
+和宿主机共用一个 Network Namespace。容器将不会虚拟出自己的网卡，配置自己的 IP 等，而是使用宿主机的 IP 和端口。但是，容器的其他方面，如文件系统、进程列表等还是和宿主机隔离的</li>
+<li>Contanier 模式
+这个模式指定新创建的容器和已经存在的一个容器共享一个 Network Namespace，而不是和宿主机共享。新创建的容器不会创建自己的网卡，配置自己的 IP，而是和一个指定的容器共享 IP、端口范围等</li>
+<li>None 模式
+使用none模式，Docker 容器拥有自己的 Network Namespace，但是，并不为Docker 容器进行任何网络配置。也就是说，这个 Docker 容器没有网卡、IP、路由等信息。需要我们自己为 Docker 容器添加网卡、配置 IP 等</li>
+</ul>
+<h3 id="cgroups">Cgroups</h3>
+<p>通过 Linux Namespace 为新创建的进程隔离了文件系统、网络并与宿主机器之间的进程相互隔离，但是 Namespace 并不能够为我们提供物理资源上的隔离，比如 CPU 或者内存。所以 Docker 还借助了 Linux Cgroups 来达到上述目的。
+CGroup 全称 Linux Control Group， 是 Linux 内核的一个功能，用来限制，控制与分离一个进程组群的资源（如CPU、内存、磁盘输入输出等)
+一组按照某种标准划分的进程，其表示了某进程组，Cgroups 中的资源控制都是以控制组为单位实现，一个进程可以加入到某个控制组。而资源的限制是定义在这个组上，简单点说，cgroup 的呈现就是一个目录带一系列的可配置文件。
+理解 cgroups 的几个关键字</p>
+<ul>
+<li>cgroup 进程组
+进程按照某种标准组织成一个控制组，资源的控制定义在这个组上，新加入的进程就继承该组的配置。比如 docker 启动的容器都加入 docker 这个进程组</li>
+<li>subsystem 子系统
+cgroups 为每种可以控制的资源定义了一个子系统(即资源控制器)</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:~# lssubsys
+cpuset # 分配单独的 cpu 节点或者内存节点
+cpu,cpuacct # 限制进程的 cpu 使用率;cpu 使用统计
+blkio # 限制进程的块设备 io
+memory # 限制进程的 memory 使用量
+devices # 控制进程能够访问某些设备
+freezer # 挂起或者恢复 cgroups 中的进程。
+net_cls,net_prio # 可以标记 cgroups 中进程的网络数据包，对数据包进行控制
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>hierarch 层级关系
+由一系列控制组以一个树状结构排列而成，hierarch 通过绑定对应的子系统进行资源调度。hierarch 中的 cgroup 节点可以包含零或多个子节点，子节点继承父节点的属性。整个系统可以有多个hierarchy。</li>
+</ul>
+<p>配置示例<br>
+<code>docker run -d --cpus=0.1 --memory=100MB busybox</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:/sys/fs/cgroup/cpu/docker/ee43bb16af9947ed9e8498ad42c859318e001365043e4cda410f68b4a0d79378# cat cpu.cfs_quota_us
+10000
+
+root@lxkaka-server:/sys/fs/cgroup/memory/docker/ee43bb16af9947ed9e8498ad42c859318e001365043e4cda410f68b4a0d79378# cat memory.limit_in_bytes
+104857600
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="文件驱动">文件驱动</h3>
+<p>Docker 中的每一个镜像都是由一系列只读的层组成的，Dockerfile 中的每一个命令都会在已有的只读层上创建一个新的层。当镜像被 docker run 命令创建时就会在镜像的最上层添加一个可写的层，也就是容器层，所有对于运行时容器的修改其实都是对这个容器读写层的修改。容器和镜像的区别就在于，所有的镜像都是只读的，而每一个容器其实等于镜像加上一个可读写的层，也就是同一个镜像可以对应多个容器。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/docker-image.png"
+        data-srcset="https://pics.lxkaka.wang/docker-image.png, https://pics.lxkaka.wang/docker-image.png 1.5x, https://pics.lxkaka.wang/docker-image.png 2x"
+        data-sizes="auto"
+        alt="docker-image"
+        title="docker-image" /></p>
+<p>这种分层的逻辑是什么呢？
+这就是docker 里文件驱动的职责，负责镜像和容器的文件系统组织。<br>
+目前 docker 默认的文件驱动是 <code>overlay2</code>, 它是基于 Linux OverlayFS 的，下面这张图映射了 docker 容器的文件层级结构和 OverlayFS 的对应关系。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/docker-overlay.png"
+        data-srcset="https://pics.lxkaka.wang/docker-overlay.png, https://pics.lxkaka.wang/docker-overlay.png 1.5x, https://pics.lxkaka.wang/docker-overlay.png 2x"
+        data-sizes="auto"
+        alt="overlay2"
+        title="overlay2" /></p>
+<p>OverlayFS 是一种堆叠文件系统，它依赖并建立在其它的文件系统之上，不直接参与磁盘空间结构的划分，仅将原来文件系统中不同目录和文件进行 merge。用户看到就是这个 merged 目录。这些被处理的每个目录都被称为层，视图统一的过程则称为联合挂载。多个目录进行层叠，肯定具有上下层关系，OverlayFS 将下层的目录称为lowerdir，上层的目录称为upperdir，被暴露的统一视图目录称为 merged。</p>
+<h4 id="容器文件系统层级示例">容器文件系统层级示例</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:~# docker inspect a2b1e73dda7f
+...
+&#34;GraphDriver&#34;: {
+    &#34;Data&#34;: {
+        &#34;LowerDir&#34;: &#34;/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3-init/diff:/var/lib/docker/overlay2/2c24c0bcddaf45a0442e2aa1f061e5a10ac0bb327519c4c7ddc11ecb85878bb1/diff:/var/lib/docker/overlay2/4c689dd9bd8baaff479edf0549e7888b754bf9a635d354e4a7f1531bf946f936/diff:/var/lib/docker/overlay2/84b84a32ceb721075356a9f9d4e8f8c3272a3a440f732a639993293a221236cd/diff:/var/lib/docker/overlay2/fd803c843f13047fd21fda7270a8bec065a4ba62310f95aa5524ec3156755e25/diff:/var/lib/docker/overlay2/fe43a13d9aa35f8b6038d26db6fa83bbd9a108fa59e9599e520505e9b028105d/diff:/var/lib/docker/overlay2/ec929233dc85f54a5b13e906dc1ebd20328fefdebfe2a411a06b6551c501928c/diff&#34;,
+        &#34;MergedDir&#34;: &#34;/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3/merged&#34;,
+        &#34;UpperDir&#34;: &#34;/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3/diff&#34;,
+        &#34;WorkDir&#34;: &#34;/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3/work&#34;
+    },
+    &#34;Name&#34;: &#34;overlay2&#34;
+},
+...
+</code></pre></td></tr></table>
+</div>
+</div><p>我们可以看到 lowerdir 包含了多层，每个镜像层目录中包含了一个文件 link，文件内容则是当前层对应的短标识符；lower 文件指向了其所有的父层，其文件内容则是父层id的短标识符；镜像层的内容则存放在 diff 目录
+lowerdir 某层示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:/var/lib/docker/overlay2/2c24c0bcddaf45a0442e2aa1f061e5a10ac0bb327519c4c7ddc11ecb85878bb1# ls
+diff  link  lower  work
+root@lxkaka-server:/var/lib/docker/overlay2/2c24c0bcddaf45a0442e2aa1f061e5a10ac0bb327519c4c7ddc11ecb85878bb1# ls
+diff  link  lower  work
+root@lxkaka-server:/var/lib/docker/overlay2/2c24c0bcddaf45a0442e2aa1f061e5a10ac0bb327519c4c7ddc11ecb85878bb1# cat link
+5NC3EXCFR4DKUVKSTJQNDVB3SWroot@lxkaka-server:/var/lib/docker/overlay2/2c24c0bcddaf45a0442e2aa1f061e5a10ac0bb327519c4c7ddc11ecb85878bb1# cat lower
+l/XJFQUCXRFOKWIS2NCRBGZOQ573:l/AOHICFFE7WZQDQIZIGXPZSUVPN:l/4DLC3KZMRJUW4GUIU3PIACENJB:l/55TW2N2I52PI5IQD7U5PCZ5H4O:l/5R5RBP6MZNORLVMAOJHVTWMWRN
+</code></pre></td></tr></table>
+</div>
+</div><p>查看容器层</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">root@lxkaka-server:/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3# ls diff
+root
+root@lxkaka-server:/var/lib/docker/overlay2/77a2b28678d5406b8184e213a725bac51e4bb0132cb2c2c7928c9805bbeb57e3# ls merged/
+bin  boot  data  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+
+# 进入到对应的容器
+root@a2b1e73dda7f:/# ls
+bin  boot  data  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+</code></pre></td></tr></table>
+</div>
+</div><p>我们可以看到容器的目录结构和 <code>merged</code> 是一致的。</p>
+<h2 id="多阶段构建">多阶段构建</h2>
+<p>在文章的最后我们介绍比较实用的优化构建的方法，多阶段构建
+下面的 dockerfile 是一个简单的 golang 应用构建过程</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">FROM golang:1.15.6-alpine3.12
+
+RUN mkdir -p /src
+WORKDIR /src
+COPY src/ .
+RUN go build -o app .
+EXPOSE 8000
+ENTRYPOINT [&#34;./app&#34;]
+</code></pre></td></tr></table>
+</div>
+</div><p>对于这个例子来说我们其实只需要构建后的二进制包，其他文件包括 golang 我们都是不需要的。
+我们可以把上述构建成两个阶段，可以大大减小构建后的镜像大小</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">FROM golang:1.15.6-alpine3.12 as builder
+
+RUN mkdir -p /src
+WORKDIR /src
+COPY src/ .
+RUN go build -o app .
+
+FROM alpine:3.12
+
+COPY --from=builder /src/ .
+EXPOSE 8000
+ENTRYPOINT [&#34;./app&#34;]
+</code></pre></td></tr></table>
+</div>
+</div><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">$ docker image ls
+REPOSITORY                                        TAG                 IMAGE ID            CREATED             SIZE
+app-test                                          v2                  0fde852a1af1        4 seconds ago       13MB
+app-test                                          v1                  9d528c34a9f9        15 seconds ago      306MB
+</code></pre></td></tr></table>
+</div>
+</div><p>v2 是多阶段构建出来的可以看到相比 v1 体积减小了20多倍。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-01-23</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/docker-principle/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/docker-principle/" data-title="Docker 核心原理" data-hashtags="docker,原理,linux"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/docker-principle/" data-hashtag="docker"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/docker-principle/" data-title="Docker 核心原理" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/docker-principle/" data-title="Docker 核心原理"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/docker-principle/" data-title="Docker 核心原理"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/docker/">docker</a>,&nbsp;<a href="/tags/%E5%8E%9F%E7%90%86/">原理</a>,&nbsp;<a href="/tags/linux/">linux</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/kakfa-pulsar-storage/" class="prev" rel="prev" title="Kafka 和 Pulsar 存储结构对比"><i class="fas fa-angle-left fa-fw"></i>Kafka 和 Pulsar 存储结构对比</a>
+            <a href="/gprc-balancer/" class="next" rel="next" title="gRPC 一致性 Hash balancer 实现">gRPC 一致性 Hash balancer 实现<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

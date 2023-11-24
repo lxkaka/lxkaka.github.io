@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>搭建微信公众号服务小记 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="搭建微信公众号服务小记" />
+<meta property="og:description" content="需求 说起来都是泪。平时工作生活中习惯不好，脏话有点多了，比如 卧槽，沙比这种。虽然我认为这样的词在说的时候完全只是当语气词来用，但毕竟是脏话" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/build-wechat-service/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2018-03-12T19:43:51+08:00" />
+<meta property="article:modified_time" content="2018-03-12T19:43:51+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="搭建微信公众号服务小记"/>
+<meta name="twitter:description" content="需求 说起来都是泪。平时工作生活中习惯不好，脏话有点多了，比如 卧槽，沙比这种。虽然我认为这样的词在说的时候完全只是当语气词来用，但毕竟是脏话"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/build-wechat-service/" /><link rel="prev" href="https://lxkaka.wang/redis-ha/" /><link rel="next" href="https://lxkaka.wang/analyse-sentry-capture-md/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "搭建微信公众号服务小记",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/build-wechat-service\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "backend, wechat, deploy","wordcount":  1894 ,
+        "url": "https:\/\/lxkaka.wang\/build-wechat-service\/","datePublished": "2018-03-12T19:43:51+08:00","dateModified": "2018-03-12T19:43:51+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">搭建微信公众号服务小记</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-03-12">2018-03-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1894 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#需求">需求</a></li>
+    <li><a href="#实现">实现</a>
+      <ul>
+        <li><a href="#本地开发">本地开发</a></li>
+        <li><a href="#申请公众号">申请公众号</a></li>
+        <li><a href="#服务部署">服务部署</a></li>
+        <li><a href="#用docker-compose管理多个容器应用">用docker-compose管理多个容器应用</a></li>
+        <li><a href="#nginx配置">Nginx配置</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="需求">需求</h2>
+<p>说起来都是泪。平时工作生活中习惯不好，脏话有点多了，比如 卧槽，沙比这种。虽然我认为这样的词在说的时候完全只是当语气词来用，但毕竟是脏话。所以，女朋友受不了，必须要纠正这样的恶习（她也会说脏话）。她说得记录我们说的次数，然后统计出来，我说好啊，每个月还要按照统计数发红包。于是，在这样的背景下我就想那就写个页面记录和展示吧。转念一下，这样需要女朋友这样的小白用户输入网址，提交表单不是太友好，于是想到了她经常用微信那不如搞一个微信公众号，除了这个功能还可以添加其他功能。So, 需求定下来了~~</p>
+<h2 id="实现">实现</h2>
+<p>那么按照需求（文档）拆解了一下工作：</p>
+<pre><code>1. 本地开发，测试  
+2. 申请公众号
+3. 部署服务
+4. 调试运行
+5. 优化流程
+</code></pre>
+<h3 id="本地开发">本地开发</h3>
+<ul>
+<li>
+<p>web框架选用Tornado，因为Tornado本身就是 Web server + Web application 框架，并且自带异步库和协程库。而我选用Django或Flask这样的web 框架，还需要搭建web server比如uWSGI, gunicorn。     </p>
+</li>
+<li>
+<p>存储用MongoDB和Redis</p>
+</li>
+<li>
+<p>用Docker部署(轻松的迁移，维护和部署)</p>
+<p>Dockerfile示例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">FROM python:3.6
+
+EXPOSE 8888
+
+ENV TZ Asia/Shanghai
+RUN echo $TZ &gt; /etc/timezone &amp;&amp; \
+    apt-get update &amp;&amp; apt-get install -y tzdata &amp;&amp; \
+    rm /etc/localtime &amp;&amp; \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime &amp;&amp; \
+    dpkg-reconfigure -f noninteractive tzdata &amp;&amp; \
+    apt-get clean
+
+# ENV PIP_INDEX_URL http://mirrors.aliyun.com/pypi/simple
+# ENV PIP_TRUSTED_HOST mirrors.aliyun.com
+
+RUN mkdir -p /var/www/lxkaka
+WORKDIR /var/www/lxkaka
+COPY requirements.txt /var/www/lxkaka
+RUN pip install -r requirements.txt
+
+COPY ./lxkaka/ /var/www/lxkaka/
+CMD python server.py
+</code></pre></td></tr></table>
+</div>
+</div><p>服务器相关配置统一写到server.conf，示例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">port=8888
+
+APPID = &#34;wxxxxxxxxxxxxx&#34;
+TOKEN = &#34;lxkaka&#34;
+AES_KEY = &#34;121234nmngvlkghkhlghghh&#34;
+</code></pre></td></tr></table>
+</div>
+</div><p>Tornado服务启动示例:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># app启动和入口</span>
+<span class="k">class</span> <span class="nc">Application</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">Application</span><span class="p">):</span>
+<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="sa">r</span><span class="s1">&#39;/debug/&#39;</span><span class="p">,</span> <span class="n">DebugHandler</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">settings</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">blog_title</span><span class="o">=</span><span class="s1">&#39;lxkaka&#39;</span><span class="p">,</span>
+        <span class="n">xsrf_cookies</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">cookie_secret</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="n">login_url</span><span class="o">=</span><span class="s1">&#39;/auth/login&#39;</span><span class="p">,</span>
+        <span class="n">debug</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">Application</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">handlers</span><span class="p">,</span> <span class="o">**</span><span class="n">settings</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">tornado</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">parse_config_file</span><span class="p">(</span><span class="s1">&#39;server.conf&#39;</span><span class="p">)</span>
+    <span class="n">tornado</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">parse_command_line</span><span class="p">()</span>
+    <span class="n">http_server</span> <span class="o">=</span> <span class="n">tornado</span><span class="o">.</span><span class="n">httpserver</span><span class="o">.</span><span class="n">HTTPServer</span><span class="p">(</span><span class="n">Application</span><span class="p">())</span>
+    <span class="n">http_server</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+    <span class="n">tornado</span><span class="o">.</span><span class="n">ioloop</span><span class="o">.</span><span class="n">IOLoop</span><span class="o">.</span><span class="n">current</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+  
+<span class="c1"># 接口处理</span>
+<span class="k">class</span> <span class="nc">DebugHandler</span><span class="p">(</span><span class="n">tornado</span><span class="o">.</span><span class="n">web</span><span class="o">.</span><span class="n">RequestHandler</span><span class="p">):</span>
+    <span class="n">async</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;APPID&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">APPID</span><span class="p">,</span>
+            <span class="s1">&#39;TOKEN&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">TOKEN</span><span class="p">,</span>
+            <span class="s1">&#39;author&#39;</span><span class="p">:</span> <span class="s1">&#39;lxkaka&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span> 
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="申请公众号">申请公众号</h3>
+<ul>
+<li><a href="https://mp.weixin.qq.com/">https://mp.weixin.qq.com/</a><br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7.jpeg"
+        data-srcset="https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7.jpeg, https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7.jpeg 1.5x, https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7.jpeg 2x"
+        data-sizes="auto"
+        alt="申请公众号"
+        title="申请公众号" /></li>
+<li>公众号关键配置<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B.jpeg"
+        data-srcset="https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B.jpeg, https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B.jpeg 1.5x, https://pics.lxkaka.wang/%E5%85%AC%E4%BC%97%E5%8F%B7%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B.jpeg 2x"
+        data-sizes="auto"
+        alt="公众号配"
+        title="公众号配" /></li>
+</ul>
+<h3 id="服务部署">服务部署</h3>
+<ul>
+<li>
+<p>方案1 利用FTP推送代码
+配置简单，直接可利用IDE的deploy功能一键发布代码</p>
+<ul>
+<li>安装vsftpd<br>
+<code>sudo apt-get install vsftpd</code></li>
+<li>创建FTP用户<br>
+为FTP创建特定用户，一是为了避免匿名用户登录，二是禁止用户越权访问其它文件目录内容。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 新建用户以及对应的用户目录，禁止登录系统
+sudo useradd -d /home/[username] -s /sbin/nologin -m [username]
+# 更改密码
+sudo passwd [username]
+# 调整权限
+sudo chmod a-w /home/[username]
+# 创建data目录，避免500错误。
+# data目录为ftp上传目录
+sudo mkdir /home/[username]/data
+sudo chown -R [username]:[username] /home/[username]/data
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>ftp配置文件
+vsftpd的配置文件在/etc/vsftpd.conf
+关键配置修改如下：</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># Allow anonymous FTP? (Disabled by default).
+anonymous_enable=NO
+# 配置文件末尾添加
+userlist_deny=NO
+userlist_enable=YES
+userlist_file=/etc/vsftpd.allowed_users
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>创建文件 /etc/vsftpd.allowed_users，写入用户名</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 创建并写入用户名
+vim /etc/vsftpd.allowed_users
+# 重启ftp服务
+sudo service vsftpd restart
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>客户端配置<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/ftp-client.png"
+        data-srcset="https://pics.lxkaka.wang/ftp-client.png, https://pics.lxkaka.wang/ftp-client.png 1.5x, https://pics.lxkaka.wang/ftp-client.png 2x"
+        data-sizes="auto"
+        alt="ftp客户端"
+        title="ftp客户端" /></li>
+</ul>
+</li>
+<li>
+<p>方案2 用git+git-hook发布和自动部署</p>
+<ul>
+<li>搭建git服务器</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 新建远程仓库文件夹
+mkdir /home/lxkaka/server-repo
+# 初始化远程仓库
+git init --bare
+# 在本地repo添加origin 地址
+git remote add origin git@ip(或者host):/home/lxkaka/server-repo 
+</code></pre></td></tr></table>
+</div>
+</div><p>至此本地开发测试完成，可直接push代码到远程仓库</p>
+<ul>
+<li>配置git hook
+在/home/lxkaka/servr-repo/hooks下面存在许多hook的例子，配置post-update hook就能满足需求<br>
+在此目录下<br>
+<code>vim post-update</code><br>
+# 写入以下脚本
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-sh" data-lang="sh"><span class="cp">#!/bin/sh
+</span><span class="cp"></span>#
+<span class="c1"># An example hook script to prepare a packed repository for use over</span>
+<span class="c1"># dumb transports.</span>
+#
+<span class="c1"># To enable this hook, rename this file to &#34;post-update&#34;.</span>
+
+<span class="nb">unset</span> GIT_DIR
+<span class="c1"># 代码库</span>
+<span class="nv">DIR</span><span class="o">=</span>/home/lxkaka/server/
+<span class="nb">cd</span> <span class="nv">$DIR</span>
+<span class="c1"># 更新代码</span>
+git pull origin master
+
+docker-compose -f docker-compose.yml up --build -d
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>查看 post-update是否有x权限, 没有添加</p>
+<p><code>chmod +x post-update</code></p>
+</li>
+</ul>
+<h3 id="用docker-compose管理多个容器应用">用docker-compose管理多个容器应用</h3>
+<p>这里有web服务容器，redis容器，mongo容器。通过编写docker-compose.yml来关联不同的容器为一个项目(project)。
+Compose 中有两个重要的概念：<br>
+服务 (service)：一个应用的容器，实际上可以包括若干运行相同镜像的容器实例。<br>
+项目 (project)：由一组关联的应用容器组成的一个完整业务单元，在 docker-compose.yml 文件中定义。</p>
+<p>Compose 的默认管理对象是项目，通过子命令对项目中的一组容器进行便捷地生命周期管理。
+docker-compose.yml示例如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-yml" data-lang="yml"><span class="k">mongo</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">restart</span><span class="p">:</span><span class="w"> </span>always<span class="w">
+</span><span class="w">  </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>mongo<span class="p">:</span><span class="m">3.4.9</span><span class="w">
+</span><span class="w">  </span><span class="k">volumes</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- ./data/db<span class="p">:</span>/data/db<span class="w">
+</span><span class="w"></span><span class="k">redis</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">restart</span><span class="p">:</span><span class="w"> </span>always<span class="w">
+</span><span class="w">  </span><span class="k">image</span><span class="p">:</span><span class="w"> </span>redis<span class="p">:</span><span class="m">4.0.2</span><span class="w">
+</span><span class="w"></span><span class="k">lxkaka</span><span class="p">:</span><span class="w">
+</span><span class="w">  </span><span class="k">restart</span><span class="p">:</span><span class="w"> </span>always<span class="w">
+</span><span class="w">  </span><span class="k">build</span><span class="p">:</span><span class="w"> </span>.<span class="w">
+</span><span class="w">  </span><span class="k">links</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- mongo<span class="w">
+</span><span class="w">    </span>- redis<span class="w">
+</span><span class="w">  </span><span class="k">environment</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- PIP_INDEX_URL=http<span class="p">:</span>//mirrors.aliyun.com/pypi/simple<span class="w">
+</span><span class="w">    </span>- PIP_TRUSTED_HOST=mirrors.aliyun.com<span class="w">
+</span><span class="w">  </span><span class="k">ports</span><span class="p">:</span><span class="w">
+</span><span class="w">    </span>- <span class="s2">&#34;8888:8888&#34;</span><span class="w">
+</span></code></pre></td></tr></table>
+</div>
+</div><h3 id="nginx配置">Nginx配置</h3>
+<p>最重要的是虚拟主机部分的配置，这里有三种服务，通过不同的location匹配到不同的服服务。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">server {
+        listen 80;
+        server_name www.lxkaka.wang lxkaka.wang;
+
+        charset utf-8;
+
+        root /home/lxkaka/blog;
+        # Add index.php to the list if you are using PHP
+        index index.html index.htm index.nginx-debian.html;
+
+       location = / {
+               root /home/lxkaka/blog;
+               index index.html index.htm;
+               autoindex on;
+       }
+
+        # pass the gallery request to node server listening on 127.0.0.1:3000
+        location /gallery {
+                proxy_pass http://127.0.0.1:3000/;
+        }
+
+
+        listen 443 ssl http2; # managed by Certbot
+        ssl_certificate /etc/letsencrypt/live/lxkaka.wang/fullchain.pem; # managed by Certbot
+        ssl_certificate_key /etc/letsencrypt/live/lxkaka.wang/privkey.pem; # managed by Certbot
+        include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+
+        # Allow file uploads
+        client_max_body_size 50M;
+        location ^~ /api/ {
+            proxy_pass_header Server;
+            proxy_set_header Host $http_host;
+            proxy_redirect off;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Scheme $scheme;
+            proxy_pass http://127.0.0.1:8888/;
+        }
+    }
+</code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-03-12</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/build-wechat-service/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/build-wechat-service/" data-title="搭建微信公众号服务小记" data-hashtags="backend,wechat,deploy"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/build-wechat-service/" data-hashtag="backend"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/build-wechat-service/" data-title="搭建微信公众号服务小记" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/build-wechat-service/" data-title="搭建微信公众号服务小记"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/build-wechat-service/" data-title="搭建微信公众号服务小记"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/backend/">backend</a>,&nbsp;<a href="/tags/wechat/">wechat</a>,&nbsp;<a href="/tags/deploy/">deploy</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/redis-ha/" class="prev" rel="prev" title="Redis高可用简要梳理"><i class="fas fa-angle-left fa-fw"></i>Redis高可用简要梳理</a>
+            <a href="/analyse-sentry-capture-md/" class="next" rel="next" title="Django中sentry怎么抓取异常">Django中sentry怎么抓取异常<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

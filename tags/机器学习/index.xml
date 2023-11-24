@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>机器学习 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/</link>
+        <description>机器学习 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 22 Dec 2022 17:18:15 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="self" type="application/rss+xml" /><item>
+    <title>数据编排技术-Alluxio 的原理介绍</title>
+    <link>https://lxkaka.wang/alluxio-info/</link>
+    <pubDate>Thu, 22 Dec 2022 17:18:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/alluxio-info/</guid>
+    <description><![CDATA[在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、]]></description>
+</item></channel>
+</rss>

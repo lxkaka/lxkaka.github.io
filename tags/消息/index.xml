@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>消息 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%B6%88%E6%81%AF/</link>
+        <description>消息 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 22 Apr 2022 14:28:39 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%B6%88%E6%81%AF/" rel="self" type="application/rss+xml" /><item>
+    <title>消息系统方案设计之站内消息和事件提醒</title>
+    <link>https://lxkaka.wang/msg-system/</link>
+    <pubDate>Fri, 22 Apr 2022 14:28:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/msg-system/</guid>
+    <description><![CDATA[消息系统可以说是每个应用不可缺少的系统。从功能上来说一个消息系统至少有两大部分组成 消息的存储 消息的通知 消息系统的复杂程度和用户规模和业务规模]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>容器中使用 GPU 的基础环境搭建 - lxkaka</title><meta name="Description" content="在 docker 中使用 nvidia gpu 需要的基础环境"><meta property="og:title" content="容器中使用 GPU 的基础环境搭建" />
+<meta property="og:description" content="在 docker 中使用 nvidia gpu 需要的基础环境" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/docker-nvidia/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-10-24T13:09:02+08:00" />
+<meta property="article:modified_time" content="2020-10-24T13:09:02+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="容器中使用 GPU 的基础环境搭建"/>
+<meta name="twitter:description" content="在 docker 中使用 nvidia gpu 需要的基础环境"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/docker-nvidia/" /><link rel="prev" href="https://lxkaka.wang/app-metrics/" /><link rel="next" href="https://lxkaka.wang/golang-context/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "容器中使用 GPU 的基础环境搭建",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/docker-nvidia\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "docker, nvidia, gpu","wordcount":  1082 ,
+        "url": "https:\/\/lxkaka.wang\/docker-nvidia\/","datePublished": "2020-10-24T13:09:02+08:00","dateModified": "2020-10-24T13:09:02+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "在 docker 中使用 nvidia gpu 需要的基础环境"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">容器中使用 GPU 的基础环境搭建</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>backend</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-24">2020-10-24</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1082 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#nvidia-驱动">Nvidia 驱动</a></li>
+        <li><a href="#cuda-驱动">CUDA 驱动</a></li>
+        <li><a href="#nvidia-docker2">nvidia-docker2</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在 Linux 服务器上使用 GPU 跑深度学习的模型很正常不过。如果我们想用 docker 实现同样的需求，就需要做些额外的工作。本质上就是我们要在容器里能看到并且使用宿主机上的显卡。
+在这篇文章里我们就介绍一下 docker 使用 GPU 的环境搭建。</p>
+<h3 id="nvidia-驱动">Nvidia 驱动</h3>
+<p>某些命令以 Ubuntu 作为示例。
+首先宿主机上必现安装 Nvidia 驱动。这里推荐从 Nvidia 官网下载脚本安装，安装和卸载都比较方便并且适用于任何 Linux 发行版，包括 CentOS，Ubuntu 等。
+NVIDIA Telsa GPU 的 Linux 驱动在安装过程中需要编译 kernel module，系统需提前安装 gcc 和编译 Linux Kernel Module 所依赖的包，例如 kernel-devel-$(uname -r) 等。</p>
+<ul>
+<li>
+<p>安装 gcc 和 kernel-dev(如果没有)
+<code>sudo apt install gcc kernel-dev -y</code></p>
+</li>
+<li>
+<p>访问<a href="https://www.nvidia.com/Download/Find.aspx" target="_blank" rel="noopener noreffer">官网</a>下载</p>
+</li>
+<li>
+<p>选择操作系统和安装包，并单击【SEARCH】搜寻驱动，选择要下载的驱动版本
+![nvdriver]https://pics.lxkaka.wang/nvdriver.png)</p>
+</li>
+<li>
+<p>下载对应版本安装脚本
+在宿主机上执行<br>
+<code>wget https://www.nvidia.com/content/DriverDownload-March2009/confirmation.php?url=/tesla/450.80.02/NVIDIA-Linux-x86_64-450.80.02.run&amp;lang=us&amp;type=Tesla</code></p>
+</li>
+<li>
+<p>安装
+执行脚本安装
+<code>chmod +x NVIDIA-Linux-x86_64-450.80.02.run &amp;&amp; ./NVIDIA-Linux-x86_64-450.80.02.run</code></p>
+</li>
+<li>
+<p>验证
+使用如下命令验证是否安装成功
+<code>nvidia-smi</code>
+如果输出类似下图则驱动安装成功。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/nvsmi.png"
+        data-srcset="https://pics.lxkaka.wang/nvsmi.png, https://pics.lxkaka.wang/nvsmi.png 1.5x, https://pics.lxkaka.wang/nvsmi.png 2x"
+        data-sizes="auto"
+        alt="nvsmi"
+        title="nvsmi" /></p>
+</li>
+</ul>
+<h3 id="cuda-驱动">CUDA 驱动</h3>
+<blockquote>
+<p>CUDA（Compute Unified Device Architecture）是显卡厂商 NVIDIA 推出的运算平台。CUDA™ 是一种由 NVIDIA 推出的通用并行计算架构，该架构使 GPU 能够解决复杂的计算问题。它包含了 CUDA 指令集架构（ISA）以及 GPU 内部的并行计算引擎。
+这里安装的方式和显卡驱动安装类似。</p>
+</blockquote>
+<ul>
+<li>
+<p>访问<a href="https://developer.nvidia.com/cuda-toolkit-archive" target="_blank" rel="noopener noreffer">官网</a>下载</p>
+</li>
+<li>
+<p>下载对应版本如下图<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/cudadirver.png"
+        data-srcset="https://pics.lxkaka.wang/cudadirver.png, https://pics.lxkaka.wang/cudadirver.png 1.5x, https://pics.lxkaka.wang/cudadirver.png 2x"
+        data-sizes="auto"
+        alt="cudadriver"
+        title="cudadriver" /></p>
+</li>
+<li>
+<p>配置环境变量
+<code>echo 'export PATH=/usr/local/cuda/bin:$PATH' | sudo tee /etc/profile.d/cuda.sh</code>
+<code>source /etc/profile</code></p>
+</li>
+</ul>
+<h3 id="nvidia-docker2">nvidia-docker2</h3>
+<p>docker 的安装这里就不展开了，具体查看<a href="https://docs.docker.com/engine/install/ubuntu/" target="_blank" rel="noopener noreffer">官方文档</a>非常详细。
+这里我们就直接介绍安装 nvidia-docker2.<br>
+既然叫 nvidia-docker2 就有 nvidia-docker1 就是它的 1.0 版本目前已经废弃了，所以注意不要装错。<br>
+这里先简单说一下 nvidia-docker2 的原理
+nvidia-docker2 的依赖由下几部分组成</p>
+<ul>
+<li>libnvidia-container</li>
+<li>nvidia-container-toolkit</li>
+<li>nvidia-container-runtime</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/nvidia-docker-arch.png"
+        data-srcset="https://pics.lxkaka.wang/nvidia-docker-arch.png, https://pics.lxkaka.wang/nvidia-docker-arch.png 1.5x, https://pics.lxkaka.wang/nvidia-docker-arch.png 2x"
+        data-sizes="auto"
+        alt="nvidia-docker-arch"
+        title="nvidia-docker-arch" /></p>
+<p>nvidia-container-runtime 是在 runc 基础上多实现了 nvidia-container-runime-hook(现在叫 nvidia-container-toolkit)，该 hook 是在容器启动后（Namespace已创建完成），容器自定义命令(Entrypoint)启动前执行。当检测到 NVIDIA_VISIBLE_DEVICES 环境变量时，会调用 libnvidia-container 挂载 GPU Device 和 CUDA Driver。如果没有检测到 NVIDIA_VISIBLE_DEVICES 就会执行默认的 runc。</p>
+<p>下面分两步安装</p>
+<ul>
+<li>设置 repository 和 GPG key</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>安装</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">sudo apt-get update
+sudo apt-get install -y nvidia-docker2
+sudo systemctl restart docker
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>验证
+执行 <code>docker run --rm --gpus all nvidia/cuda:10.2-base nvidia-smi</code> 如果输出跟直接在宿主机上执行 <code>nvidia-smi</code>一致则说明安装成功。
+如果跑的深度学习模型使用的是 tensorflow 可以在容器里执行</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
+<span class="n">tf</span><span class="o">.</span><span class="n">contrib</span><span class="o">.</span><span class="n">eager</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>如果输出了宿主机上的 Nvidia 显卡数量则模型能使用到显卡加速。
+如果使用的是 pytorch 可以在容器里执行</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">torch</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>如果输出 <code>True</code> 证明环境也成功了，可以使用显卡。</p>
+<ul>
+<li>使用示例<br>
+使用所有显卡<br>
+<code>docker run --rm --gpus all nvidia/cuda nvidia-smi</code>
+<code>docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all nvidia/cuda nvidia-smi</code>
+指明使用哪几张卡<br>
+<code>docker run --gpus '&quot;device=1,2&quot;' nvidia/cuda nvidia-smi</code>
+<code>docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=1,2 nvidia/cuda nvidia-smi</code></li>
+</ul>
+<p>到这里在 docker 下使用 Nvidia 显卡加速计算的基础环境搭建就介绍完了。后续我们可以继续研究一下 k8s 下调度 GPU 的实现。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-10-24</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/docker-nvidia/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/docker-nvidia/" data-title="容器中使用 GPU 的基础环境搭建" data-hashtags="docker,nvidia,gpu"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/docker-nvidia/" data-hashtag="docker"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/docker-nvidia/" data-title="容器中使用 GPU 的基础环境搭建" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/docker-nvidia/" data-title="容器中使用 GPU 的基础环境搭建"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/docker-nvidia/" data-title="容器中使用 GPU 的基础环境搭建"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/docker/">docker</a>,&nbsp;<a href="/tags/nvidia/">nvidia</a>,&nbsp;<a href="/tags/gpu/">gpu</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/app-metrics/" class="prev" rel="prev" title="Prometheus 监控业务指标"><i class="fas fa-angle-left fa-fw"></i>Prometheus 监控业务指标</a>
+            <a href="/golang-context/" class="next" rel="next" title="Golang Context 探究">Golang Context 探究<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

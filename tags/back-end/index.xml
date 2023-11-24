@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>back-end - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/back-end/</link>
+        <description>back-end - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 17 Jul 2017 22:10:42 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/back-end/" rel="self" type="application/rss+xml" /><item>
+    <title>Django Signals小结</title>
+    <link>https://lxkaka.wang/django_signals/</link>
+    <pubDate>Mon, 17 Jul 2017 22:10:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django_signals/</guid>
+    <description><![CDATA[Signals 用处 django有一个“信号分配器”（signal dispatcher）使得当一些动作在框架的其他地方发生的时候，解耦的应用可以得到提醒。]]></description>
+</item><item>
+    <title>Django Signals小结</title>
+    <link>https://lxkaka.wang/django_signals/</link>
+    <pubDate>Mon, 17 Jul 2017 22:10:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django_signals/</guid>
+    <description><![CDATA[Signals 用处 django有一个“信号分配器”（signal dispatcher）使得当一些动作在框架的其他地方发生的时候，解耦的应用可以得到提醒。]]></description>
+</item><item>
+    <title>uWSGI--一个WSGI server</title>
+    <link>https://lxkaka.wang/uwsgi1/</link>
+    <pubDate>Mon, 14 Nov 2016 00:20:24 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/uwsgi1/</guid>
+    <description><![CDATA[相关背景知识，从 WSGI 说起: Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCG]]></description>
+</item><item>
+    <title>uWSGI--一个WSGI server</title>
+    <link>https://lxkaka.wang/uwsgi1/</link>
+    <pubDate>Mon, 14 Nov 2016 00:20:24 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/uwsgi1/</guid>
+    <description><![CDATA[相关背景知识，从 WSGI 说起: Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCG]]></description>
+</item></channel>
+</rss>

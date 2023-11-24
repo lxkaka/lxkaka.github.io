@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>JIRA 集成单点登录系统 CAS - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="JIRA 集成单点登录系统 CAS" />
+<meta property="og:description" content="JIRA 是一个非常优秀的项目管理工具，可以帮助我们缺陷管理和任务追踪。关于 JIRA 这里不多做介绍。JIRA 本身有完善的账号系统，但是因为很多公司包" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/jira-cas/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2019-01-31T15:35:31+08:00" />
+<meta property="article:modified_time" content="2019-01-31T15:35:31+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="JIRA 集成单点登录系统 CAS"/>
+<meta name="twitter:description" content="JIRA 是一个非常优秀的项目管理工具，可以帮助我们缺陷管理和任务追踪。关于 JIRA 这里不多做介绍。JIRA 本身有完善的账号系统，但是因为很多公司包"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/jira-cas/" /><link rel="prev" href="https://lxkaka.wang/istio-init/" /><link rel="next" href="https://lxkaka.wang/kubeconfig/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "JIRA 集成单点登录系统 CAS",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/jira-cas\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "cas, jira","wordcount":  990 ,
+        "url": "https:\/\/lxkaka.wang\/jira-cas\/","datePublished": "2019-01-31T15:35:31+08:00","dateModified": "2019-01-31T15:35:31+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">JIRA 集成单点登录系统 CAS</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-01-31">2019-01-31</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 990 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#集成方案">集成方案</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#step-1">Step 1</a></li>
+            <li><a href="#step-2">Step 2</a></li>
+          </ul>
+        </li>
+        <li><a href="#step-3">Step 3</a></li>
+        <li><a href="#step-4">step 4</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>JIRA 是一个非常优秀的项目管理工具，可以帮助我们缺陷管理和任务追踪。关于 JIRA 这里不多做介绍。JIRA 本身有完善的账号系统，但是因为很多公司包括我们自己有自己的单点登录系统，比如我们自己搭建的 CAS。所以如果能把 JIRA 接入 CAS 才是理想的方案。这里介绍一下 JIRA 集成 CAS 的方案。</p>
+<p>这里我们是用 docker 部署的 JIRA 7.x, 理论上 JIRA 7.x 不管是 docker 方式还是直接在宿主机上安装，我们的集成方案都是适用的。</p>
+<h2 id="集成方案">集成方案</h2>
+<h4 id="step-1">Step 1</h4>
+<p>下载两个 jar 包 <code>cas-client-core-3.3.3.jar</code>, <code>cas-client-integration-atlassian-3.5.0-jira7.jar</code>.<br>
+下载地址在<a href="https://bitbucket.org/mbrown_ascend/jira-cas-integration/downloads/" target="_blank" rel="noopener noreffer">这里</a></p>
+<h4 id="step-2">Step 2</h4>
+<p>修改 <code>web.xml</code> <br>
+如果是直接在宿主机（linux）上安装的方式, 修改 <code>/opt/atlassian/jira/atlassian-jira/WEB-INF/web.xml</code>(默认路径)<br>
+如果是 docker 方式， 我们可以先从容器中 copy 出 web.xml<br>
+<code>docker cp container_id:/opt/atlassian/jira/atlassian-jira/WEB-INF/web.xml .</code></p>
+<ul>
+<li>
+<p>编写好如下内容</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="c">&lt;!-- CAS:START - Java Client Filters --&gt;</span>
+  
+<span class="nt">&lt;filter&gt;</span>
+<span class="nt">&lt;filter-name&gt;</span>CasSingleSignOutFilter<span class="nt">&lt;/filter-name&gt;</span>
+<span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.session.SingleSignOutFilter<span class="nt">&lt;/filter-class&gt;</span>
+<span class="nt">&lt;/filter&gt;</span>
+<span class="nt">&lt;filter&gt;</span>
+<span class="nt">&lt;filter-name&gt;</span>CasAuthenticationFilter<span class="nt">&lt;/filter-name&gt;</span>
+<span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.authentication.AuthenticationFilter<span class="nt">&lt;/filter-class&gt;</span>
+<span class="nt">&lt;init-param&gt;</span>
+    <span class="nt">&lt;param-name&gt;</span>casServerLoginUrl<span class="nt">&lt;/param-name&gt;</span>
+    <span class="nt">&lt;param-value&gt;</span> Include your CAS login here <span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;init-param&gt;</span>
+    <span class="nt">&lt;param-name&gt;</span>serverName<span class="nt">&lt;/param-name&gt;</span>
+    <span class="nt">&lt;param-value&gt;</span> include your JIRA url here <span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;/filter&gt;</span>
+<span class="nt">&lt;filter&gt;</span>
+    <span class="nt">&lt;filter-name&gt;</span>CasValidationFilter<span class="nt">&lt;/filter-name&gt;</span>
+    <span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter<span class="nt">&lt;/filter-class&gt;</span>
+    <span class="nt">&lt;init-param&gt;</span>
+        <span class="nt">&lt;param-name&gt;</span>casServerUrlPrefix<span class="nt">&lt;/param-name&gt;</span>
+        <span class="nt">&lt;param-value&gt;</span>Include your CAS address<span class="nt">&lt;/param-value&gt;</span>
+    <span class="nt">&lt;/init-param&gt;</span>
+    <span class="nt">&lt;init-param&gt;</span>
+        <span class="nt">&lt;param-name&gt;</span>serverName<span class="nt">&lt;/param-name&gt;</span>
+    <span class="nt">&lt;param-value&gt;</span>include your JIRA url here<span class="nt">&lt;/param-value&gt;</span>
+    <span class="nt">&lt;/init-param&gt;</span>
+    <span class="nt">&lt;init-param&gt;</span>
+        <span class="nt">&lt;param-name&gt;</span>redirectAfterValidation<span class="nt">&lt;/param-name&gt;</span>
+        <span class="nt">&lt;param-value&gt;</span>true<span class="nt">&lt;/param-value&gt;</span>
+    <span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;/filter&gt;</span>
+  
+<span class="c">&lt;!--- CAS:END --&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>将上面的配置复制进 <code>web.xml</code> 大概380行的位置 <strong>THIS MUST BE THE LAST FILTER IN THE DEFINED CHAIN</strong>  的上面</p>
+</li>
+<li>
+<p>在大概 640行的位置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;filter-mapping&gt;</span>
+    <span class="nt">&lt;filter-name&gt;</span>login<span class="nt">&lt;/filter-name&gt;</span>
+    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+    <span class="nt">&lt;dispatcher&gt;</span>REQUEST<span class="nt">&lt;/dispatcher&gt;</span>
+    <span class="nt">&lt;dispatcher&gt;</span>FORWARD<span class="nt">&lt;/dispatcher&gt;</span> <span class="c">&lt;!-- we want security/login to be applied after urlrewrites, for example --&gt;</span>
+<span class="nt">&lt;/filter-mapping&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>在这部分的上面复制以下的配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="c">&lt;!-- CAS:START - Java Client Filter Mappings --&gt;</span>
+
+<span class="nt">&lt;filter-mapping&gt;</span>
+<span class="nt">&lt;filter-name&gt;</span>CasSingleSignOutFilter<span class="nt">&lt;/filter-name&gt;</span>
+<span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+<span class="nt">&lt;/filter-mapping&gt;</span>
+<span class="nt">&lt;filter-mapping&gt;</span>
+    <span class="nt">&lt;filter-name&gt;</span>CasAuthenticationFilter<span class="nt">&lt;/filter-name&gt;</span>
+    <span class="nt">&lt;url-pattern&gt;</span>/default.jsp<span class="nt">&lt;/url-pattern&gt;</span>
+<span class="nt">&lt;/filter-mapping&gt;</span>
+<span class="nt">&lt;filter-mapping&gt;</span>
+    <span class="nt">&lt;filter-name&gt;</span>CasValidationFilter<span class="nt">&lt;/filter-name&gt;</span>
+    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+<span class="nt">&lt;/filter-mapping&gt;</span>
+  
+<span class="c">&lt;!-- CAS:END --&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="step-3">Step 3</h3>
+<p>修改 <code> seraph-config.xml</code><br>
+和 <code>web.xml</code>类似，只是路径变为 <code>/opt/atlassian/jira/atlassian-jira/WEB-INF/classes/</code></p>
+<ul>
+<li>
+<p>修改这部分内容</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;init-param&gt;</span>
+  <span class="c">&lt;!--
+</span><span class="c">    The login URL to redirect to when the user tries to access a protected resource (rather than clicking on
+</span><span class="c">    an explicit login link). Most of the time, this will be the same value as &#39;link.login.url&#39;.
+</span><span class="c">  - if the URL is absolute (contains &#39;://&#39;), then redirect that URL (for SSO applications)
+</span><span class="c">  - else the context path will be prepended to this URL
+</span><span class="c"> 
+</span><span class="c">  If &#39;${originalurl}&#39; is present in the URL, it will be replaced with the URL that the user requested.
+</span><span class="c">  This gives SSO login pages the chance to redirect to the original page
+</span><span class="c">  --&gt;</span>
+  <span class="nt">&lt;param-name&gt;</span>login.url<span class="nt">&lt;/param-name&gt;</span>
+  <span class="c">&lt;!--&lt;param-value&gt;/login.jsp?os_destination=${originalurl}&lt;/param-value&gt;--&gt;</span>
+  <span class="nt">&lt;param-value&gt;</span>add your CAS login URL here<span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;init-param&gt;</span>
+  <span class="c">&lt;!--
+</span><span class="c">    the URL to redirect to when the user explicitly clicks on a login link (rather than being redirected after
+</span><span class="c">    trying to access a protected resource). Most of the time, this will be the same value as &#39;login.url&#39;.
+</span><span class="c">  - same properties as login.url above
+</span><span class="c">  --&gt;</span>
+  <span class="nt">&lt;param-name&gt;</span>link.login.url<span class="nt">&lt;/param-name&gt;</span>
+  <span class="c">&lt;!--&lt;param-value&gt;/login.jsp?os_destination=${originalurl}&lt;/param-value&gt;--&gt;</span>
+  <span class="c">&lt;!--&lt;param-value&gt;/secure/Dashboard.jspa?os_destination=${originalurl}&lt;/param-value&gt;--&gt;</span>
+  <span class="nt">&lt;param-value&gt;</span>add your CAS login URL here<span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;init-param&gt;</span>
+  <span class="c">&lt;!-- URL for logging out.
+</span><span class="c">  - If relative, Seraph just redirects to this URL, which is responsible for calling Authenticator.logout().
+</span><span class="c">  - If absolute (eg. SSO applications), Seraph calls Authenticator.logout() and redirects to the URL
+</span><span class="c">  --&gt;</span>
+  <span class="nt">&lt;param-name&gt;</span>logout.url<span class="nt">&lt;/param-name&gt;</span>
+  <span class="c">&lt;!--&lt;param-value&gt;/secure/Logout!default.jspa&lt;/param-value&gt;--&gt;</span>
+  <span class="nt">&lt;param-value&gt;</span>add your CAS LOGOUT URL here<span class="nt">&lt;/param-value&gt;</span>
+<span class="nt">&lt;/init-param&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>大概 95 行的位置注释掉 <code> SSOSeraphAuthenticator</code> 和 <code>JIRASeraphAuthenticator</code> 的部分</p>
+</li>
+<li>
+<p>用下面的部分替代 <code>JIRASeraphAuthenticator</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-xml" data-lang="xml"><span class="nt">&lt;authenticator</span> <span class="na">class=</span><span class="s">&#34;org.jasig.cas.client.integration.atlassian.Jira7CasAuthenticator&#34;</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;init-param&gt;</span>
+          <span class="nt">&lt;param-name&gt;</span>casServerUrlPrefix<span class="nt">&lt;/param-name&gt;</span>
+          <span class="nt">&lt;param-value&gt;</span>include your cas server here<span class="nt">&lt;/param-value&gt;</span>
+      <span class="nt">&lt;/init-param&gt;</span>
+      <span class="nt">&lt;init-param&gt;</span>
+          <span class="nt">&lt;param-name&gt;</span>serverName<span class="nt">&lt;/param-name&gt;</span>
+          <span class="nt">&lt;param-value&gt;</span>include your JIRA server URL<span class="nt">&lt;/param-value&gt;</span>
+      <span class="nt">&lt;/init-param&gt;</span>
+<span class="nt">&lt;/authenticator&gt;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="step-4">step 4</h3>
+<p>把准备好的 jar 包和配置文件复制进 JIRA 相应的目录<br>
+如果是宿主机安装方式直接复制即可<br>
+我们采用 docker 安装， 所以修改一下 dockerfile</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">COPY cas-client-core-3.3.3.jar /opt/atlassian/jira/atlassian-jira/WEB-INF/lib/
+COPY cas-client-integration-atlassian-3.5.0-jira7.jar /opt/atlassian/jira/atlassian-jira/WEB-INF/lib/
+COPY web.xml /opt/atlassian/jira/atlassian-jira/WEB-INF/
+COPY seraph-config.xml /opt/atlassian/jira/atlassian-jira/WEB-INF/classes/
+</code></pre></td></tr></table>
+</div>
+</div><p>至此，我们重启 JIRA 加载新的 jar 包和配置文件，JIRA 与 CAS 的集成就完成了，应该就可以用 CAS 的账号登录 JIRA。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-01-31</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/jira-cas/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/jira-cas/" data-title="JIRA 集成单点登录系统 CAS" data-hashtags="cas,jira"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/jira-cas/" data-hashtag="cas"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/jira-cas/" data-title="JIRA 集成单点登录系统 CAS" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/jira-cas/" data-title="JIRA 集成单点登录系统 CAS"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/jira-cas/" data-title="JIRA 集成单点登录系统 CAS"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/cas/">cas</a>,&nbsp;<a href="/tags/jira/">jira</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/istio-init/" class="prev" rel="prev" title="Istio 实践"><i class="fas fa-angle-left fa-fw"></i>Istio 实践</a>
+            <a href="/kubeconfig/" class="next" rel="next" title="kubectl 操作 Kubernetes 的权限控制">kubectl 操作 Kubernetes 的权限控制<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

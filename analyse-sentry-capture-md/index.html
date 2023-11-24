@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Django中sentry怎么抓取异常 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="Django中sentry怎么抓取异常" />
+<meta property="og:description" content="Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/analyse-sentry-capture-md/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2018-04-13T18:07:02+08:00" />
+<meta property="article:modified_time" content="2018-04-13T18:07:02+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Django中sentry怎么抓取异常"/>
+<meta name="twitter:description" content="Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/analyse-sentry-capture-md/" /><link rel="prev" href="https://lxkaka.wang/build-wechat-service/" /><link rel="next" href="https://lxkaka.wang/replica-research/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Django中sentry怎么抓取异常",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/analyse-sentry-capture-md\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Django, 后端, sentry","wordcount":  1457 ,
+        "url": "https:\/\/lxkaka.wang\/analyse-sentry-capture-md\/","datePublished": "2018-04-13T18:07:02+08:00","dateModified": "2018-04-13T18:07:02+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Django中sentry怎么抓取异常</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-04-13">2018-04-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1457 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#捕获已知的异常">捕获已知的异常</a></li>
+    <li><a href="#捕获未知的异常">捕获未知的异常</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#1-在django工程初识化时会调用install起一个signal实例绑定raven的异常处理handler">1. 在django工程初识化时，会调用<code>install()</code>起一个<code>Signal实例</code>绑定raven的异常处理handler</a></li>
+            <li><a href="#2在业务中未被捕获的异常在django处理请求的入口basehandler也是请求返回的出口会被最终捕获在这里会通过signal发送给receiver">2.在业务中未被捕获的异常在Django处理请求的入口<code>BaseHandler</code>也是请求返回的出口会被最终捕获，在这里会通过signal发送给receiver</a></li>
+            <li><a href="#3-receiver接收到异常处理异常并发送到sentry服务器">3. receiver接收到异常，处理异常并发送到sentry服务器</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><a href="https://docs.sentry.io/" target="_blank" rel="noopener noreffer">Sentry</a>是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，查看方便并且具有通知功能，受到我们开发者的热烈拥护。具体在Django中使用sentry还是比较简单的，<a href="https://docs.sentry.io/clients/python/integrations/django/" target="_blank" rel="noopener noreffer">官方文档</a>清晰明了。
+在我们的项目中，只要是<code>Exception</code>都能被sentry捕获并且发送至sentry服务器，那么代码中抛出的<code>Exception</code>是怎么被sentry捕获到的呢？</p>
+<p>这篇小记就是分析记录sentry的客户端raven在Django中的工作原理。
+在我们的项目中包含两类<code>Exception</code></p>
+<ul>
+<li>意料之中的或者说已知的<code>Exception</code>, 即<code>try, except</code>捕获的</li>
+<li>未知的<code>Exception</code>,即bug或未知的异常</li>
+</ul>
+<h2 id="捕获已知的异常">捕获已知的异常</h2>
+<p>对于已知的并且需要记录的<code>Exception</code>，我们一般会调用python自带日志模块<code>logging</code>处理，此时<code>raven</code>就发挥作用了
+代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># 代码位置 raven.handlers.logging.py</span>
+<span class="c1"># SentryHandler继承自loggging.Handler,并且覆写了emit()方法</span>
+<span class="k">class</span> <span class="nc">SentryHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">,</span> <span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;client_cls&#39;</span><span class="p">,</span> <span class="n">Client</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">arg</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">string_types</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span><span class="p">(</span><span class="n">dsn</span><span class="o">=</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Client</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">arg</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The first argument to </span><span class="si">%s</span><span class="s1"> must be either a &#39;</span>
+                                 <span class="s1">&#39;Client instance or a DSN, got </span><span class="si">%r</span><span class="s1"> instead.&#39;</span> <span class="o">%</span>
+                                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">arg</span><span class="p">,))</span>
+        <span class="k">elif</span> <span class="s1">&#39;client&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;client&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;tags&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;level&#39;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">NOTSET</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+            <span class="c1"># 其他部分略去，只列出关键流程</span>
+            <span class="o">...</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_emit</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        
+        <span class="k">def</span> <span class="nf">_emit</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="o">...</span>
+            <span class="c1"># 这个方法里sentry会把拿到的exception进行处理（build_msg方法）并且发送到服务器（send方法）</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span>
+            <span class="n">event_type</span><span class="p">,</span> <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="n">date</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>一句话就是说当我们用<code>logging</code>日志模块处理异常时, 只要我们正确配置了sentry，改异常同时会被<code>raven</code>捕获进行处理并发送到sentry服务器。</p>
+<h2 id="捕获未知的异常">捕获未知的异常</h2>
+<p>代码中的bug, 我们没法做预处理, 所以也就不可能用logging模块提前去记录。而raven捕获处理这种异常的流程如下:</p>
+<h4 id="1-在django工程初识化时会调用install起一个signal实例绑定raven的异常处理handler">1. 在django工程初识化时，会调用<code>install()</code>起一个<code>Signal实例</code>绑定raven的异常处理handler</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python">    <span class="c1"># 代码位置 raven.contrib.django.models.py</span>
+    <span class="k">def</span> <span class="nf">install</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">request_started</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">before_request</span><span class="p">,</span> <span class="n">weak</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="c1"># Signal实例绑定一个receiver(self.exception_handler)</span>
+        <span class="n">got_request_exception</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exception_handler</span><span class="p">,</span> <span class="n">weak</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_celery</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">install_celery</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Failed to install Celery error handler&#39;</span><span class="p">)</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="2在业务中未被捕获的异常在django处理请求的入口basehandler也是请求返回的出口会被最终捕获在这里会通过signal发送给receiver">2.在业务中未被捕获的异常在Django处理请求的入口<code>BaseHandler</code>也是请求返回的出口会被最终捕获，在这里会通过signal发送给receiver</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># 代码位置django.core.handlers.base.py</span>
+<span class="k">class</span> <span class="nc">BaseHandler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">get_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="o">...</span>
+        <span class="c1"># Signal实例把异常发送给receiver</span>
+        <span class="n">signals</span><span class="o">.</span><span class="n">got_request_exception</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">sender</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle_uncaught_exception</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">resolver</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="3-receiver接收到异常处理异常并发送到sentry服务器">3. receiver接收到异常，处理异常并发送到sentry服务器</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python">    <span class="c1"># 代码位置raven.contrib.django.models.py</span>
+    <span class="c1"># raven的receiver</span>
+    <span class="k">def</span> <span class="nf">exception_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># 处理异常</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">captureException</span><span class="p">(</span><span class="n">exc_info</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">(),</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;Unable to process log entry: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exc</span><span class="p">,))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Unable to process log entry: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">exc</span><span class="p">,))</span>
+
+    <span class="c1"># 代码位置raven.base.py</span>
+     <span class="k">def</span> <span class="nf">capture</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">time_spent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">stack</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_enabled</span><span class="p">():</span>
+            <span class="k">return</span>
+
+        <span class="n">exc_info</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exc_info&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exc_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip_error_for_logging</span><span class="p">(</span><span class="n">exc_info</span><span class="p">):</span>
+                <span class="k">return</span>
+            <span class="k">elif</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">should_capture</span><span class="p">(</span><span class="n">exc_info</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s1">&#39;Not capturing exception due to filters: </span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">record_exception_seen</span><span class="p">(</span><span class="n">exc_info</span><span class="p">)</span>
+
+        <span class="c1"># 组装拼接异常信息,构造成一个dict</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_msg</span><span class="p">(</span>
+            <span class="n">event_type</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">time_spent</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">stack</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># should this event be sampled?</span>
+        <span class="k">if</span> <span class="n">sample_rate</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">sample_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_rate</span>
+        <span class="c1"># 序列化，编码,压缩信息并发送到服务器器</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">sample_rate</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_local_state</span><span class="o">.</span><span class="n">last_event_id</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;event_id&#39;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;event_id&#39;</span><span class="p">]</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>上面就是raven处理未知异常的主流程。一句话总结:<br>
+<code>Exception</code>&ndash;&gt; (通过Signal) &ndash;&gt; <code>exception_handler</code> &ndash;&gt; <code>capture</code> &ndash;&gt; <code>build&amp;send</code></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-04-13</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/analyse-sentry-capture-md/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/analyse-sentry-capture-md/" data-title="Django中sentry怎么抓取异常" data-hashtags="Django,后端,sentry"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/analyse-sentry-capture-md/" data-hashtag="Django"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/analyse-sentry-capture-md/" data-title="Django中sentry怎么抓取异常" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/analyse-sentry-capture-md/" data-title="Django中sentry怎么抓取异常"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/analyse-sentry-capture-md/" data-title="Django中sentry怎么抓取异常"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/django/">Django</a>,&nbsp;<a href="/tags/%E5%90%8E%E7%AB%AF/">后端</a>,&nbsp;<a href="/tags/sentry/">sentry</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/build-wechat-service/" class="prev" rel="prev" title="搭建微信公众号服务小记"><i class="fas fa-angle-left fa-fw"></i>搭建微信公众号服务小记</a>
+            <a href="/replica-research/" class="next" rel="next" title="MySQL主从同步延迟调查">MySQL主从同步延迟调查<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

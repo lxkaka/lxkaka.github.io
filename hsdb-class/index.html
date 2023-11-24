@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>HSDB 告诉我们 Java 对象的内存地址 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="HSDB 告诉我们 Java 对象的内存地址" />
+<meta property="og:description" content="我们都知道在 Java 中类的实例都是在 heap 中分配内存，也就是说实例对象都是存储在 heap 中。那么类对象是否也存在 heap 中呢? 为了找到这个问题的答案我们使用 HSDB(HotSpot Debugger) 来" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/hsdb-class/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-04-22T10:07:34+08:00" />
+<meta property="article:modified_time" content="2020-04-22T10:07:34+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="HSDB 告诉我们 Java 对象的内存地址"/>
+<meta name="twitter:description" content="我们都知道在 Java 中类的实例都是在 heap 中分配内存，也就是说实例对象都是存储在 heap 中。那么类对象是否也存在 heap 中呢? 为了找到这个问题的答案我们使用 HSDB(HotSpot Debugger) 来"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/hsdb-class/" /><link rel="prev" href="https://lxkaka.wang/spark-prome/" /><link rel="next" href="https://lxkaka.wang/airflow-sync/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "HSDB 告诉我们 Java 对象的内存地址",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/hsdb-class\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "java, jvm, HSDB","wordcount":  1425 ,
+        "url": "https:\/\/lxkaka.wang\/hsdb-class\/","datePublished": "2020-04-22T10:07:34+08:00","dateModified": "2020-04-22T10:07:34+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">HSDB 告诉我们 Java 对象的内存地址</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-04-22">2020-04-22</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1425 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#背景知识">背景知识</a></li>
+        <li><a href="#java-对象探究">Java 对象探究</a>
+          <ul>
+            <li><a href="#使用-hsdb-步骤">使用 HSDB 步骤</a></li>
+            <li><a href="#分析-java-对象">分析 Java 对象</a></li>
+            <li><a href="#分析-class-对象">分析 Class 对象</a></li>
+            <li><a href="#指针压缩">指针压缩</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我们都知道在 Java 中类的实例都是在 heap 中分配内存，也就是说实例对象都是存储在 heap 中。那么类对象是否也存在 heap 中呢? 为了找到这个问题的答案我们使用 <a href="http://cr.openjdk.java.net/~minqi/6830717/raw_files/new/agent/doc/" target="_blank" rel="noopener noreffer">HSDB(HotSpot Debugger)</a> 来看看类对象的内存布局。</p>
+<h3 id="背景知识">背景知识</h3>
+<p>在此之前我们应该了解有关 Java 对象的两个重要概念 Oop 和 Klass</p>
+<ul>
+<li>
+<p>Oop<br>
+在 Java 程序运行的过程中，每创建一个新的对象，在 JVM 内部就会相应地创建一个对应类型的 oop（普通对象指针） 对象。各种 oop 类的共同基类为 oopDesc 类。
+在 JVM 内部，一个 Java 对象在内存中的布局可以连续分成两部分：对象头（instanceOopDesc） 和实例数据（成员变量）。
+instanceOopDesc 对象头包含两部分信息：Mark Word 和 元数据指针(Klass*)：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-c++" data-lang="c++"><span class="k">volatile</span> <span class="n">markOop</span>  <span class="n">_mark</span><span class="p">;</span>
+<span class="k">union</span> <span class="nc">_metadata</span> <span class="p">{</span>
+    <span class="n">Klass</span><span class="o">*</span>      <span class="n">_klass</span><span class="p">;</span>
+    <span class="n">narrowKlass</span> <span class="n">_compressed_klass</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">_metadata</span><span class="p">;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>Klass
+每个Java对象的对象头里，_klass 字段会指向一个VM内部用来记录类的元数据用的 InstanceKlass 对象；InsanceKlass 里有个 _java_mirror 字段，指向该类所对应的Java镜像——java.lang.Class实例。HotSpot VM 会给 Class 对象注入一个隐藏字段 “klass”，用于指回到其对应的 InstanceKlass 对象。这样，klass 与 mirror 之间就有双向引用，可以来回导航。
+这个模型里，java.lang.Class 实例并不负责记录真正的类元数据，而只是对VM内部的 InstanceKlass 对象的一个包装供 Java 的反射访问用。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">Java object ---&gt;  InstanceKlass  &lt;---&gt; java.lang.Class instance(java mirror)
+[_mark]           [...]              [klass](隐藏字段)
+[_klass]          [_java_mirror] 
+[fileds]          [...]
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="java-对象探究">Java 对象探究</h3>
+<p>示例代码</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BaseApplication</span> <span class="o">{</span>
+
+    <span class="kd">final</span> <span class="kd">static</span> <span class="n">CountDownLatch</span> <span class="n">cd</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CountDownLatch</span><span class="o">(</span><span class="n">10</span><span class="o">);</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="n">0</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">class</span> <span class="nc">Task</span> <span class="o">{</span>
+        <span class="kd">private</span> <span class="n">String</span> <span class="n">b</span> <span class="o">=</span> <span class="s">&#34;task&#34;</span><span class="o">;</span>
+
+        <span class="kd">private</span> <span class="kt">void</span> <span class="nf">method</span><span class="o">(){</span>
+            <span class="n">a</span><span class="o">++;</span>
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">a</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Task</span> <span class="n">task</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Task</span><span class="o">();</span>
+        <span class="n">task</span><span class="o">.</span><span class="na">method</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="使用-hsdb-步骤">使用 HSDB 步骤</h4>
+<ul>
+<li>在 method 内部打上断点，以 debug 模式运行</li>
+<li>启动 HSDB (根据自己 jdk 安装路径) <br>
+<code>sudo java -cp /Library/Java/JavaVirtualMachines/jdk1.8.0_171.jdk/Contents/Home/lib/sa-jdi.jar sun.jvm.hotspot.HSDB</code></li>
+<li>attch to HotSpot process <br>
+这一步先使用 <code>jps</code> 获取到 java 进程 id <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/attach.png"
+        data-srcset="https://pics.lxkaka.wang/attach.png, https://pics.lxkaka.wang/attach.png 1.5x, https://pics.lxkaka.wang/attach.png 2x"
+        data-sizes="auto"
+        alt="attach"
+        title="attach" /></li>
+</ul>
+<h4 id="分析-java-对象">分析 Java 对象</h4>
+<p>进入 HSDB 后选择对应的线程，如 main 线程，然后在 <em>Tools</em> tab 里选择 <em>Object Histogram</em> 找到要分析的类 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/object.png"
+        data-srcset="https://pics.lxkaka.wang/object.png, https://pics.lxkaka.wang/object.png 1.5x, https://pics.lxkaka.wang/object.png 2x"
+        data-sizes="auto"
+        alt="object"
+        title="object" /></p>
+<p>然后双击该类会看到有多少实例被创建出来，选中某一个实例 <strong>inspect</strong> 我们就能看到这个对象的真正在 JVM 里的构成即我们上面所说的 <code>Oop</code>   <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/oop.png"
+        data-srcset="https://pics.lxkaka.wang/oop.png, https://pics.lxkaka.wang/oop.png 1.5x, https://pics.lxkaka.wang/oop.png 2x"
+        data-sizes="auto"
+        alt="oop"
+        title="oop" /></p>
+<p>可以使用另外一种方式找到 Klass, 在 <em>Tools</em> tab 选择 <em>Class Browser</em> 搜索关键字       <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/class-browser.png"
+        data-srcset="https://pics.lxkaka.wang/class-browser.png, https://pics.lxkaka.wang/class-browser.png 1.5x, https://pics.lxkaka.wang/class-browser.png 2x"
+        data-sizes="auto"
+        alt="class-brow"
+        title="class-brow" /></p>
+<p>现在来看 <code>Task</code> 的实例内存地址  <em>0x00000007959380b8</em>，这个地址位于 JVM 中的内存模型中哪一个区域呢？<br>
+在 <em>Window</em> 命令行中执行      <br>
+<code>hsdb&gt; universe Heap Parameters: ParallelScavengeHeap [ PSYoungGen [ eden =  [0x0000000795580000,0x0000000795a14678,0x0000000797600000] , from =  [0x0000000797b00000,0x0000000797b00000,0x0000000798000000] , to =  [0x0000000797600000,0x0000000797600000,0x0000000797b00000]  ] PSOldGen [  [0x0000000740000000,0x0000000740000000,0x0000000745580000]  ]  ]</code></p>
+<p>能清楚的看到实例的内存地址 <em>0x00000007959380b8</em> 在 eden 的地址范围之内，所以是实例都是在 JVM 的堆里分配内存。</p>
+<h4 id="分析-class-对象">分析 Class 对象</h4>
+<p>以示例代码中的 <code>BaseApplication</code> 类为例，我们先找到 <code>InstanceKlass</code>，然后通过 <code>_java_mirror 找到 Class 对象</code><br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/Class.png"
+        data-srcset="https://pics.lxkaka.wang/Class.png, https://pics.lxkaka.wang/Class.png 1.5x, https://pics.lxkaka.wang/Class.png 2x"
+        data-sizes="auto"
+        alt="class"
+        title="class" />   <br>
+通过上图和 Class 对象的内存地址   <em>0x0000000795924de0</em> 清楚的看到 Class 对象的地址同样在 eden 的范围之内，即在堆上，并且类的静态成员变量就在 Class 对象中。</p>
+<h4 id="指针压缩">指针压缩</h4>
+<p>在上面的探究过程中，同样发现了指针压缩的证据。在分析实例对象的时候，我们知道对象头有指向 <code>InstanceKlass</code> 的指针，我们先具体看看这个指针的数据是什么样子的？  <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/klass-ptr.png"
+        data-srcset="https://pics.lxkaka.wang/klass-ptr.png, https://pics.lxkaka.wang/klass-ptr.png 1.5x, https://pics.lxkaka.wang/klass-ptr.png 2x"
+        data-sizes="auto"
+        alt="klass-ptr"
+        title="klass-ptr" /></p>
+<p>通过上图我们看到指针的值是 <em>0x00000000f800c392</em>, 而真实的 <code>InstanceKlass</code>的内存地址是   <em>0x00000007c0061c90</em><br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/klass-addr.png"
+        data-srcset="https://pics.lxkaka.wang/klass-addr.png, https://pics.lxkaka.wang/klass-addr.png 1.5x, https://pics.lxkaka.wang/klass-addr.png 2x"
+        data-sizes="auto"
+        alt="klass-arrr"
+        title="klass-arrr" /></p>
+<p>这就是指针压缩的的结果，当开启指针压缩的时候，JVM 按照8字节寻址。
+<code>CompressedOops 转换成地址：ObjectAddress64 = BaseAddress64 + 8*CompressedOops</code><br>
+JVM 进程可以请求操作系统把堆的基址分配在虚地址为 0 的位置，那么 CompressedOops 转换成地址，就成了：<code>ObjectAddress64 = 8*CompressedOops</code>
+也就是说 <code>InstanceKlass</code> 内存地址是对象中的指针左移 3 位可得(32位压缩指针能寻址2^35个字节（即32GB）的地址空间，超过 32GB 则会关闭压缩指针)。转换成二进制可以清楚的看出</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 0x00000000f800c392 (左移3位得到内存地址)
+11111000000000001100001110010010
+# 0x00000007c0061c90 
+11111000000000001100001110010010000
+</code></pre></td></tr></table>
+</div>
+</div><p>所以，如果我们关闭指针压缩，JVM 按照1字节来寻址，那是不是 <code>ObjectAddress64 = CompressedOops</code><br>
+首先加上启动参数，关闭指针压缩  <code>-XX:-UseCompressedOops</code><br>
+通过下图我们看到确实两者一致 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/64-ptr.png"
+        data-srcset="https://pics.lxkaka.wang/64-ptr.png, https://pics.lxkaka.wang/64-ptr.png 1.5x, https://pics.lxkaka.wang/64-ptr.png 2x"
+        data-sizes="auto"
+        alt="64-ptr"
+        title="64-ptr" /> <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/64-addr.png"
+        data-srcset="https://pics.lxkaka.wang/64-addr.png, https://pics.lxkaka.wang/64-addr.png 1.5x, https://pics.lxkaka.wang/64-addr.png 2x"
+        data-sizes="auto"
+        alt="64-addr"
+        title="64-addr" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-04-22</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/hsdb-class/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/hsdb-class/" data-title="HSDB 告诉我们 Java 对象的内存地址" data-hashtags="java,jvm,HSDB"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/hsdb-class/" data-hashtag="java"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/hsdb-class/" data-title="HSDB 告诉我们 Java 对象的内存地址" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/hsdb-class/" data-title="HSDB 告诉我们 Java 对象的内存地址"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/hsdb-class/" data-title="HSDB 告诉我们 Java 对象的内存地址"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/java/">java</a>,&nbsp;<a href="/tags/jvm/">jvm</a>,&nbsp;<a href="/tags/hsdb/">HSDB</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/spark-prome/" class="prev" rel="prev" title="怎么使用 Promethues 监控 Spark 应用"><i class="fas fa-angle-left fa-fw"></i>怎么使用 Promethues 监控 Spark 应用</a>
+            <a href="/airflow-sync/" class="next" rel="next" title="Hive To AnalyticDB 数据同步方案设计">Hive To AnalyticDB 数据同步方案设计<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

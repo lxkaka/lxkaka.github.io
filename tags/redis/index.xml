@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>redis - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/redis/</link>
+        <description>redis - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 30 Oct 2022 21:40:21 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/redis/" rel="self" type="application/rss+xml" /><item>
+    <title>Redis 多线程的学习和理解</title>
+    <link>https://lxkaka.wang/redis-io-threads/</link>
+    <pubDate>Sun, 30 Oct 2022 21:40:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-io-threads/</guid>
+    <description><![CDATA[在后端开发中面临分布式缓存选型时 Redis 已然成为了头号选手甚至可以说是事实上的标准。Redis 从本质上来讲是一个网络服务器，而对于一个网络服务器来]]></description>
+</item><item>
+    <title>Golang 实现的 Redis 分布式锁</title>
+    <link>https://lxkaka.wang/redis-lock/</link>
+    <pubDate>Sat, 23 Oct 2021 17:53:11 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-lock/</guid>
+    <description><![CDATA[最近在做一个功能的时候需要用到分布式锁，发现我们的公共库里好像没有可以直接拿来用的分布式锁，那就自己实现一个。首先想到方案就是 Redis 分布式锁。一]]></description>
+</item><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item></channel>
+</rss>

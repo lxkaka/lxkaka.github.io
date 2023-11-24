@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Mongodb 高可用方案及副本集搭建 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="Mongodb 高可用方案及副本集搭建" />
+<meta property="og:description" content="如果业务场景不需要强力的事务支持及复杂的join, 数据模型变化频繁，数据需要落地，查询 QPS 超过200。 那么 Mongodb 作为数据库非常合适。 在我们的业务中" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/mongo-replicaset/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2018-09-19T20:56:47+08:00" />
+<meta property="article:modified_time" content="2018-09-19T20:56:47+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Mongodb 高可用方案及副本集搭建"/>
+<meta name="twitter:description" content="如果业务场景不需要强力的事务支持及复杂的join, 数据模型变化频繁，数据需要落地，查询 QPS 超过200。 那么 Mongodb 作为数据库非常合适。 在我们的业务中"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/mongo-replicaset/" /><link rel="prev" href="https://lxkaka.wang/jaeger/" /><link rel="next" href="https://lxkaka.wang/k8s-1/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Mongodb 高可用方案及副本集搭建",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/mongo-replicaset\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Mongodb, ha, 数据库","wordcount":  2295 ,
+        "url": "https:\/\/lxkaka.wang\/mongo-replicaset\/","datePublished": "2018-09-19T20:56:47+08:00","dateModified": "2018-09-19T20:56:47+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Mongodb 高可用方案及副本集搭建</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-09-19">2018-09-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2295 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#高可用方案">高可用方案</a>
+      <ul>
+        <li><a href="#master-slave-主从架构">Master-Slave 主从架构</a></li>
+        <li><a href="#replicaset副本集">ReplicaSet(副本集)</a>
+          <ul>
+            <li><a href="#自动故障转移">自动故障转移</a></li>
+          </ul>
+        </li>
+        <li><a href="#sharding分片">Sharding(分片)</a></li>
+      </ul>
+    </li>
+    <li><a href="#replicaset-搭建">ReplicaSet 搭建</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>如果业务场景不需要强力的事务支持及复杂的join, 数据模型变化频繁，数据需要落地，查询 QPS 超过200。 那么 Mongodb 作为数据库非常合适。
+在我们的业务中我们就选用了 mongo 来存储账单，菜单，交易信息等数据。随着 mongodb 在我们的业务场景中应用的地方越来越广，mongo 必须是高可用的。
+这里主要介绍一下 Mongodb 高可用方案以及其中的 replicaset(副本集)方案在生产上的搭建。</p>
+<h2 id="高可用方案">高可用方案</h2>
+<h3 id="master-slave-主从架构">Master-Slave 主从架构</h3>
+<p>主从架构一般用于备份或者做读写分离。一般有一主一从设计和一主多从设计。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/master-slave.png"
+        data-srcset="https://pics.lxkaka.wang/master-slave.png, https://pics.lxkaka.wang/master-slave.png 1.5x, https://pics.lxkaka.wang/master-slave.png 2x"
+        data-sizes="auto"
+        alt="master-slave"
+        title="master-slave" /></p>
+<p>由两种角色构成：</p>
+<ul>
+<li>
+<p>主(Master)
+可读可写，当数据有修改的时候，会将oplog同步到所有连接的salve上去。</p>
+</li>
+<li>
+<p>从(Slave)
+只读不可写，自动从Master同步数据。
+特别的，对于 Mongodb 来说，并不推荐使用 Master-Slave 架构，因为 Master-Slave 其中 Master 宕机后不能自动恢复
+在主从结构中，主节点的操作记录成为 oplog（operation log), oplog 存储在一个系统数据库local的集合oplog.$main中，这个集合的每个文档都代表主节点上执行的一个操作。<br>
+从服务器会定期从主服务器中获取 oplog 记录，然后在本机上执行。对于存储 oplog 的集合，MongoDB采用的是固定集合，也就是说随着操作过多，新的操作会覆盖旧的操作。</p>
+</li>
+</ul>
+<h3 id="replicaset副本集">ReplicaSet(副本集)</h3>
+<p>Mongodb的 ReplicaSet 即副本集方式主要有两个目的，一个是数据冗余做故障恢复使用，当发生硬件故障或者其它原因造成的宕机时，可以使用副本进行恢复。
+另一个是做读写分离，读的请求分流到副本上，减轻主（Primary）的读压力。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/replica-set-primary-with-two-secondaries.bakedsvg.svg"
+        data-srcset="https://pics.lxkaka.wang/replica-set-primary-with-two-secondaries.bakedsvg.svg, https://pics.lxkaka.wang/replica-set-primary-with-two-secondaries.bakedsvg.svg 1.5x, https://pics.lxkaka.wang/replica-set-primary-with-two-secondaries.bakedsvg.svg 2x"
+        data-sizes="auto"
+        alt="replica-set"
+        title="replica-set" />
+Replica Set是mongod的实例集合，它们有着同样的数据内容。包含三类角色：</p>
+<ul>
+<li>
+<p>主节点（Primary）
+接收所有的写请求，然后把修改同步到所有Secondary。一个Replica Set只能有一个Primary节点，当Primary挂掉后，其他Secondary或者Arbiter节点会重新选举出来一个主节点。
+默认读请求也是发到 Primary 节点处理的，需要转发到 Secondary 需要客户端修改一下连接配置。</p>
+</li>
+<li>
+<p>副本节点（Secondary）
+副本节点同样使用 oplog 进行数据同步来与主节点保持同样的数据集。当主节点挂掉的时候，副本节点参与选主。</p>
+</li>
+<li>
+<p>仲裁者（Arbiter）
+不保有数据，不参与选主，只进行选主投票。使用Arbiter可以减轻数据存储的硬件需求，Arbiter跑起来几乎没什么大的硬件资源需求，但重要的一点是，在生产环境下它和其他数据节点不要部署在同一台机器上。
+注意，一个自动failover的 ReplicaSet 节点数必须为奇数，目的是选主投票的时候要有一个大多数才能进行选主决策。</p>
+</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/replica-set-primary-with-secondary-and-arbiter.bakedsvg.svg"
+        data-srcset="https://pics.lxkaka.wang/replica-set-primary-with-secondary-and-arbiter.bakedsvg.svg, https://pics.lxkaka.wang/replica-set-primary-with-secondary-and-arbiter.bakedsvg.svg 1.5x, https://pics.lxkaka.wang/replica-set-primary-with-secondary-and-arbiter.bakedsvg.svg 2x"
+        data-sizes="auto"
+        alt="rs-arbiter"
+        title="rs-arbiter" /></p>
+<h4 id="自动故障转移">自动故障转移</h4>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/replica-set-trigger-election.bakedsvg.svg"
+        data-srcset="https://pics.lxkaka.wang/replica-set-trigger-election.bakedsvg.svg, https://pics.lxkaka.wang/replica-set-trigger-election.bakedsvg.svg 1.5x, https://pics.lxkaka.wang/replica-set-trigger-election.bakedsvg.svg 2x"
+        data-sizes="auto"
+        alt="failover"
+        title="failover" /><br>
+当主节点与其他节点通信失联的时间超过选举超时时间（默认是10s）, 副本节点会提名自己成为主节点候选者。然后完成选主，集群则完成故障转移。
+在故障转移过程中，写操作失败，副本节点仍然能正常的完成读操作。</p>
+<h3 id="sharding分片">Sharding(分片)</h3>
+<p>当数据量比较大的时候，我们需要把数据分片运行在不同的机器中，以降低CPU、内存和IO的压力，Sharding就是数据库分片。
+MongodB 分片技术类似MySQL的水平切分和垂直切分，数据库主要由两种方式做 Sharding：垂直扩展和横向切分。</p>
+<ul>
+<li>垂直扩展的方式就是进行集群扩展，添加更多的CPU，内存，磁盘空间等。</li>
+<li>横向切分则是通过数据分片的方式，通过集群统一提供服务</li>
+</ul>
+<p>Mongodb sharded cluster 架构图如下
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/sharded-cluster-production-architecture.bakedsvg.svg"
+        data-srcset="https://pics.lxkaka.wang/sharded-cluster-production-architecture.bakedsvg.svg, https://pics.lxkaka.wang/sharded-cluster-production-architecture.bakedsvg.svg 1.5x, https://pics.lxkaka.wang/sharded-cluster-production-architecture.bakedsvg.svg 2x"
+        data-sizes="auto"
+        alt="shard-cluster"
+        title="shard-cluster" /><br>
+Mongodb sharded cluster中的组件包含以下三大部分：</p>
+<ul>
+<li>
+<p>shards
+用来保存数据，保证数据的高可用性和一致性。可以是一个单独的mongod实例，也可以是一个副本集。
+在生产环境下Shard一般是一个Replica Set，以防止该数据片的单点故障。</p>
+</li>
+<li>
+<p>mongos
+mongos承担客户端请求路由的作用。客户端直接连接mongos，由mongos把读写请求路由到指定的Shard上去。
+一个Sharding集群，可以有一个mongos，也可以有多mongos以减轻客户端请求的压力。</p>
+</li>
+<li>
+<p>config server
+保存集群的元数据（metadata），包含各个Shard的路由规则。
+下面这张图是我对 Mongodb 分片架构重点的总结<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/draw.jpeg"
+        data-srcset="https://pics.lxkaka.wang/draw.jpeg, https://pics.lxkaka.wang/draw.jpeg 1.5x, https://pics.lxkaka.wang/draw.jpeg 2x"
+        data-sizes="auto"
+        alt="draw"
+        title="draw" /></p>
+</li>
+</ul>
+<h2 id="replicaset-搭建">ReplicaSet 搭建</h2>
+<p>这里我们根据自己的业务场景和数据量我们选取的 mongo 高可用架构是 <strong>包含arbiter的三节点副本集</strong>。
+搭建环境是 Ubuntu, Mongodb 版本是4.0</p>
+<ul>
+<li>
+<p>配置国内的 deb 源<br>
+<code>echo &quot;deb [ arch=amd64,arm64 ] http://mirrors.aliyun.com/mongodb/apt/ubuntu xenial/mongodb-org/4.0 multiverse&quot; | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list</code></p>
+</li>
+<li>
+<p>安装 mongo 4.0</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">sudo apt-get update
+sudo apt-get install -y mongodb-org=4.0.0 mongodb-org-server=4.0.0 mongodb-org-shell=4.0.0 mongodb-org-mongos=4.0.0 mongodb-org-tools=4.0.0 --allow-unauthenticated
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>修改配置  /etc/mongod.conf</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# Where and how to store data.
+storage:
+dbPath: /var/lib/mongodb
+# 重点，arbiter节点置为 false, 主副节点置为 true
+journal:
+    enabled: false
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# where to write logging data.
+systemLog:
+destination: file
+logAppend: true
+path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+port: 27017
+bindIp: 0.0.0.0
+
+# 重点，副本集的名字
+replication:
+replSetName: waimai_rs
+
+#processManagement:
+
+security:
+authorization: enabled
+keyFile: /home/zaihui/keys/mongodb/mongodb-keyfile
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>启动 mongo 实例<br>
+<code>sudo service mongod start</code><br>
+如果 monod.service not found 使用 <code>sudo systemctl unmask mongodb</code></p>
+</li>
+<li>
+<p>重复上面的步骤，启动三个实例</p>
+</li>
+<li>
+<p>初始化副本集<br>
+进入  mongo shell</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">rs.initiate({_id:&#34;waimai_rs&#34;,members:[
+{_id:0,host:&#34;172.31.41.20:27017&#34;,priority:1},
+{_id:1,host:&#34;172.31.48.196:27017&#34;,priority:0.5},
+{_id:2, host:&#34;172.31.48.227:27017&#34;,arbiterOnly:true}
+]})
+</code></pre></td></tr></table>
+</div>
+</div><p>在这里，我们把 priority 设置的不一样是为了指明主节点为 priority 最高的那个。</p>
+</li>
+<li>
+<p>检查副本集配置<br>
+<code>rs.conf()</code><br>
+看到如下配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">{
+    &#34;_id&#34; : &#34;waimai_rs&#34;,
+    &#34;version&#34; : 1,
+    &#34;protocolVersion&#34; : NumberLong(1),
+    &#34;writeConcernMajorityJournalDefault&#34; : true,
+    &#34;members&#34; : [
+        {
+            &#34;_id&#34; : 0,
+            &#34;host&#34; : &#34;172.31.41.20:27017&#34;,
+            &#34;arbiterOnly&#34; : false,
+            &#34;buildIndexes&#34; : true,
+            &#34;hidden&#34; : false,
+            &#34;priority&#34; : 1,
+            &#34;tags&#34; : {
+
+            },
+            &#34;slaveDelay&#34; : NumberLong(0),
+            &#34;votes&#34; : 1
+        },
+    ....
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>查看副本集状态<br>
+<code>rs.status()</code><br>
+看到如下输出，检查各个节点是否正常</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">&#34;members&#34; : [
+        {
+            &#34;_id&#34; : 0,
+            &#34;name&#34; : &#34;172.31.41.20:27017&#34;,
+            &#34;health&#34; : 1,
+            &#34;state&#34; : 1,
+            &#34;stateStr&#34; : &#34;PRIMARY&#34;,
+            &#34;uptime&#34; : 1215722,
+            &#34;optime&#34; : {
+                &#34;ts&#34; : Timestamp(1537330095, 1),
+                &#34;t&#34; : NumberLong(2)
+            },
+            &#34;optimeDurable&#34; : {
+                &#34;ts&#34; : Timestamp(1537330095, 1),
+                &#34;t&#34; : NumberLong(2)
+            },
+            &#34;optimeDate&#34; : ISODate(&#34;2018-09-19T04:08:15Z&#34;),
+            &#34;optimeDurableDate&#34; : ISODate(&#34;2018-09-19T04:08:15Z&#34;),
+            &#34;lastHeartbeat&#34; : ISODate(&#34;2018-09-19T04:08:19.593Z&#34;),
+            &#34;lastHeartbeatRecv&#34; : ISODate(&#34;2018-09-19T04:08:18.644Z&#34;),
+            &#34;pingMs&#34; : NumberLong(1),
+            &#34;lastHeartbeatMessage&#34; : &#34;&#34;,
+            &#34;syncingTo&#34; : &#34;&#34;,
+            &#34;syncSourceHost&#34; : &#34;&#34;,
+            &#34;syncSourceId&#34; : -1,
+            &#34;infoMessage&#34; : &#34;&#34;,
+            &#34;electionTime&#34; : Timestamp(1536114379, 1),
+            &#34;electionDate&#34; : ISODate(&#34;2018-09-05T02:26:19Z&#34;),
+            &#34;configVersion&#34; : 1
+        },
+    ...
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>验证<br>
+主从服务器数据是否同步，从服务器没有读写权限</p>
+<ul>
+<li>向主节点写入数据 ok 后台自动同步到副本节点，副本节点有数据</li>
+<li>向副本节点写入数据 false 副本节点不能写</li>
+<li>主节点读取数据 ok</li>
+<li>副本节点读取数据 false 副本节点不能读</li>
+<li>配置副本节点可读</li>
+<li>副本节点读取数据 ok</li>
+</ul>
+</li>
+</ul>
+<p>注意，遇到问题时要仔细查看日志信息，能帮助我们快速定位问题。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-09-19</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/mongo-replicaset/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/mongo-replicaset/" data-title="Mongodb 高可用方案及副本集搭建" data-hashtags="Mongodb,ha,数据库"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/mongo-replicaset/" data-hashtag="Mongodb"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/mongo-replicaset/" data-title="Mongodb 高可用方案及副本集搭建" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/mongo-replicaset/" data-title="Mongodb 高可用方案及副本集搭建"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/mongo-replicaset/" data-title="Mongodb 高可用方案及副本集搭建"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/mongodb/">Mongodb</a>,&nbsp;<a href="/tags/ha/">ha</a>,&nbsp;<a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/jaeger/" class="prev" rel="prev" title="Jaeger in Django"><i class="fas fa-angle-left fa-fw"></i>Jaeger in Django</a>
+            <a href="/k8s-1/" class="next" rel="next" title="Kubernetes 基础概念">Kubernetes 基础概念<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>registry - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/registry/</link>
+        <description>registry - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 15 Nov 2019 12:15:34 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/registry/" rel="self" type="application/rss+xml" /><item>
+    <title>k8s 中部署 Harbor</title>
+    <link>https://lxkaka.wang/k8s-harbor/</link>
+    <pubDate>Fri, 15 Nov 2019 12:15:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-harbor/</guid>
+    <description><![CDATA[随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是]]></description>
+</item><item>
+    <title>k8s 中部署 Harbor</title>
+    <link>https://lxkaka.wang/k8s-harbor/</link>
+    <pubDate>Fri, 15 Nov 2019 12:15:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-harbor/</guid>
+    <description><![CDATA[随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是]]></description>
+</item></channel>
+</rss>

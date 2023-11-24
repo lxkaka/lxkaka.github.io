@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>MySQL InnoDB 加锁实践分析 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="MySQL InnoDB 加锁实践分析" />
+<meta property="og:description" content="在使用 MySQL 和存储引擎是 InnoDB 的情况下，当我们想从一个 SQL 语句分析出这个语句对应的加锁情况需要掌握哪些知识呢？ 在这篇文章我就想总结一下 InnoDB 的锁类型和这些" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/mysql-lock/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-01-20T10:24:08+08:00" />
+<meta property="article:modified_time" content="2020-01-20T10:24:08+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="MySQL InnoDB 加锁实践分析"/>
+<meta name="twitter:description" content="在使用 MySQL 和存储引擎是 InnoDB 的情况下，当我们想从一个 SQL 语句分析出这个语句对应的加锁情况需要掌握哪些知识呢？ 在这篇文章我就想总结一下 InnoDB 的锁类型和这些"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/mysql-lock/" /><link rel="prev" href="https://lxkaka.wang/nginx-ingress/" /><link rel="next" href="https://lxkaka.wang/zeppelin-intellij/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "MySQL InnoDB 加锁实践分析",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/mysql-lock\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "mysql, innodb, 事务","wordcount":  4415 ,
+        "url": "https:\/\/lxkaka.wang\/mysql-lock\/","datePublished": "2020-01-20T10:24:08+08:00","dateModified": "2020-01-20T10:24:08+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">MySQL InnoDB 加锁实践分析</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-01-20">2020-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4415 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#innodb-锁类型">InnoDB 锁类型</a></li>
+    <li><a href="#加锁分析">加锁分析</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在使用 MySQL 和存储引擎是 InnoDB 的情况下，当我们想从一个 SQL 语句分析出这个语句对应的加锁情况需要掌握哪些知识呢？
+在这篇文章我就想总结一下 InnoDB 的锁类型和这些不同的锁用在什么场景。
+影响加锁的因素有这几个：</p>
+<ul>
+<li>事务隔离级别
+事务的隔离级别以及他们能解决的事务问题这里就不做介绍了，这里我们只针对常用的 <em>Read Committed</em>, <em>Repeatable Read</em> 分析。</li>
+<li>SQL 语句本身(一致性非锁定读还是一致性锁定读；DML(update,insert,delete))
+普通的 <em>SELECT</em> 对应的就是一致性非锁定读，即不需要加锁，InnoDB 使用 MVCC(multiversion concurrency control)来增加读操作的并发性, MVCC是指，InnoDB 使用基于时间点的快照来获取查询结果，读取时在访问的表上不加锁，因此，在事务T1读取的同一时刻，事务 T2 可以自由的修改事务 T1 所读取的数据。
+<em>SELECT for share</em> 和 <em>SELECT for update</em> 对应的则是锁定读，即在搜索到的每条索引记录(index record) 加共享锁或排他锁。</li>
+<li>使用的索引类型(主键索引，唯一索引，非唯一索引，没有用到索引)</li>
+</ul>
+<h2 id="innodb-锁类型">InnoDB 锁类型</h2>
+<p>InnoDB 一共有8种锁类型，其中，意向锁(Intention Locks)和自增锁(AUTO-INC Locks)是表级锁，剩余全部都是行级锁。此外，共享锁或排它锁(Shared and Exclusive Locks)尽管也作为8种锁类型之一，它却并不是具体的锁，它是锁的模式，用来“修饰”其他各种类型的锁。</p>
+<ul>
+<li>
+<p>共享锁或排它锁(Shared and Exclusive Locks)
+它并不是一种锁的类型，而是其他各种锁的模式，每种锁都有shard或exclusive两种模式。
+S 锁和 X 锁兼容情况如下
+假设 T1 持有数据行 r 上的 S 锁，则当 T2 请求 r 上的锁时：</p>
+<ol>
+<li>T2 请求 r 上的 S 锁，则，T2 立即获得 S 锁。T1 和T2 同时都持有 r 上的 S 锁。</li>
+<li>T2 请求 r 上的 X 锁，则，T2 无法获得 X 锁。T2 必须要等待直到 T1 释放 r 上的 S 锁。
+假设 T1 持有 r 上的X锁，则当 T2 请求 r 上的锁时：
+T2 请求 r 上的任何类型的锁时，T2 都无法获得锁，此时，T2 必须要等待直到 T1 释放 r 上的 X 锁</li>
+</ol>
+</li>
+<li>
+<p>意向锁(Intention Locks)
+表锁。含义是已经持有了表锁，稍候将获取该表上某个/些行的行锁。有 shard 或 exclusive 两种模式。
+LOCK_MODE分别是：IS 或 IX<br>
+意向锁的目的是告知其他事务，某事务已经锁定了或即将锁定某个/些数据行。事务在获取行锁之前，首先要获取到意向锁，即：</p>
+<ol>
+<li>事务在获取行上的 S 锁之前，事务必须首先获取 表上的 IS 锁或表上的更强的锁。</li>
+<li>事务在获取行上的 X 锁之前，事务必须首先获取 表上的 IX 锁。
+意向锁和任何行锁都是兼容的，它只会阻塞全表请求(如 <em>lock tables&hellip;write</em>)</li>
+</ol>
+</li>
+<li>
+<p>索引记录锁(Record Locks)
+即行锁，在某个索引的特定索引记录（或称索引条目、索引项、索引入口）上设置锁。有 shard 或 exclusive 两种模式。
+LOCK_MODE分别是：S,REC_NOT_GAP 或 X,REC_NOT_GAP</p>
+</li>
+<li>
+<p>间隙锁(Gap Locks)
+索引记录之间的间隙上的锁，锁定尚未存在的记录，即索引记录之间的间隙。有 shard 或 exclusive 两种模式，二者等价。
+LOCK_MODE分别是：S,GAP 或 X,GAP<br>
+gap lock 锁住的间隙可以是第一个索引记录前面的间隙，或相邻两条索引记录之间的间隙，或最后一个索引记录后面的间隙。
+gap lock 存在的唯一目的就是阻止其他事务向gap中插入数据行，它用于在隔离级别为RR时，阻止幻影行(phantom row)的产生；隔离级别为RC时，搜索和索引扫描时，gap lock 是被禁用的，只在外键约束检查和重复 key 检查时 gap lock 才有效，正是因为此，RC 时会有幻影行问题。</p>
+</li>
+<li>
+<p>Next-Key Locks
+next-key lock 是 (索引记录上的索引记录锁) + (该索引记录前面的间隙上的锁) 二者的合体，它锁定索引记录以及该索引记录前面的间隙。有 shard 或e xclusive两种模式。
+LOCK_MODE分别是：S 或 X<br>
+当 InnoDB 搜索或扫描索引时，InnoDB 在它遇到的索引记录上所设置的锁就是 next-key lock，它会锁定索引记录本身以及该索引记录前面的 gap(&ldquo;gap&rdquo; immediately before that index record)。即：如果事务T1 在索引记录r 上有一个next-key lock，则 T2 无法在 紧靠着 r 前面的那个间隙中插入新的索引记录(gap immediately before r in the index order)。
+next-key lock 还会加在 <em>supremum pseudo-record</em>(索引中的伪记录(pseudo-record)，代表此索引中可能存在的最大值) 上，该 next-key lock实际上锁定了“此索引中可能存在的最大值”前面的间隙，也就是此索引中当前实际存在的最大值后面的间隙。</p>
+</li>
+<li>
+<p>插入意向锁(Insert Intention Locks)
+INSERT 操作插入成功后，会在新插入的行上设置 index record lock，但在插入行之前，INSERT 操作会首先在索引记录之间的间隙上设置 insert intention lock，该锁的范围是(插入值, 向下的一个索引值)。有 shard 或 exclusive 两种模式，二者等价。
+LOCK_MODE分别是：S,GAP,INSERT_INTENTION 或 X,GAP,INSERT_INTENTION<br>
+insert intention lock 相互不会阻塞，即多个事务向同一个 index gap 并发进行插入时，多个事务无需相互等待，极大提高了插入的并发性。那么为什么需要 insert intenton lock 呢？答案就是上面我们提到的 gap lock 或 next-key lock 会阻塞 insert intention lock, 这个特性解决了 <em>RR</em> 隔离级别中的 phantom row。</p>
+</li>
+<li>
+<p>自增锁(AUTO-INC Locks)
+表锁。向带有AUTO_INCREMENT列 的表时插入数据行时，事务需要首先获取到该表的AUTO-INC表级锁，以便可以生成连续的自增值。插入语句开始时请求该锁，插入语句结束后释放该锁(不是事务结束)
+我们日常开发中大部分场景都是 simple-inserts, 即待插入的条数提前可以确定，那么自增值的个数也可以别提前确定就不需要 auto-inc 锁。</p>
+</li>
+<li>
+<p>空间索引(Predicate Locks for Spatial Indexes)
+平时很少用到，这里不涉及</p>
+</li>
+</ul>
+<h2 id="加锁分析">加锁分析</h2>
+<p>这里使用的环境是 MySQL 8.0.19<br>
+测试表如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"> CREATE TABLE `test` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `a` varchar(10) DEFAULT NULL,
+  `b` varchar(10) DEFAULT NULL,
+  `n` int NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `index_n` (`n`),
+  KEY `index_b` (`b`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+</code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>没有使用索引，全表扫描<br>
+这种情况下，InnoDB 会在所有记录上加行锁</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">mysql&gt; begin;
+Query OK, 0 rows affected (0.00 sec)
+mysql&gt; select * from test where a=&#39;a&#39; for update;
+Empty set (0.00 sec)
+
+# 查看加锁情况，结果如下  
+# 可以看到全部记录加了 next-key lock(X)  
++----------+------------+-----------+-----------+-------------+------------------------+
+| trans_id | index_name | lock_type | lock_mode | lock_status | lock_data              |
++----------+------------+-----------+-----------+-------------+------------------------+
+|     2091 | NULL       | TABLE     | IX        | GRANTED     | NULL                   |
+|     2091 | PRIMARY    | RECORD    | X         | GRANTED     | supremum pseudo-record |
+|     2091 | PRIMARY    | RECORD    | X         | GRANTED     | 1                      |
+|     2091 | PRIMARY    | RECORD    | X         | GRANTED     | 2                      |
++----------+------------+-----------+-----------+-------------+------------------------+
+</code></pre></td></tr></table>
+</div>
+</div><p>上面看到了，查询条件无法使用索引则不得不全部行加锁，可见索引的重要性。</p>
+</li>
+<li>
+<p>使用了唯一索引
+首先如果是等值查询，只需要索引记录锁(index record lock)</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">mysql&gt; begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; select * from test where n=5 for update;
++----+------+------+---+
+| id | a    | b    | n |
++----+------+------+---+
+|  1 | s    | ss   | 5 |
++----+------+------+---+
+1 row in set (0.00 sec)
+
+# 查看加锁情况，结果如下
+# 在 index_n 上只加了 index record lock(X,REC_NOT_GAP)  
++----------+------------+-----------+---------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
++----------+------------+-----------+---------------+-------------+-----------+
+|     2116 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2116 | index_n    | RECORD    | X,REC_NOT_GAP | GRANTED     | 5, 1      |
+|     2116 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 1         |
++----------+------------+-----------+---------------+-------------+-----------+
+</code></pre></td></tr></table>
+</div>
+</div><p>范围查询，对符合条件的每条记录加 next-key lock 和在第一个不满足条件的索引记录上设置next-key lock</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 目前表中的所有记录  
+mysql&gt; select * from test;
++----+------+------+----+
+| id | a    | b    | n  |
++----+------+------+----+
+|  1 | s    | ss   |  5 |
+|  2 | d    | dd   | 10 |
+|  4 | g    | gg   | 20 |
+|  6 | l    | ll   | 50 |
++----+------+------+----+
+
+mysql&gt; select * from test where n &gt; 1 and n &lt;=15 for update;
++----+------+------+----+
+| id | a    | b    | n  |
++----+------+------+----+
+|  1 | s    | ss   |  5 |
+|  2 | d    | dd   | 10 |
++----+------+------+----+
+  
+# 加锁情况如下  
+# 可以看到符合条件(5，10)的记录都被加上了 next-key lock(X)， 不符合条件的第一条(20)也加上了 next-key lock  
++----------+------------+-----------+---------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
++----------+------------+-----------+---------------+-------------+-----------+
+|     2119 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2119 | index_n    | RECORD    | X             | GRANTED     | 5, 1      |
+|     2119 | index_n    | RECORD    | X             | GRANTED     | 10, 2     |
+|     2119 | index_n    | RECORD    | X             | GRANTED     | 20, 4     |
+|     2119 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 1         |
+|     2119 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 2         |
++----------+------------+-----------+---------------+-------------+-----------+
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>使用非唯一索引
+InnoDB 会锁住索引本身，还会锁住索引记录前面的间隙会对所有满足条件的记录 即加 next-key lock。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">mysql&gt; select * from test where b &gt; &#39;gg&#39; for update;
++----+------+------+----+
+| id | a    | b    | n  |
++----+------+------+----+
+|  6 | l    | ll   | 50 |
+|  1 | s    | ss   |  5 |
++----+------+------+----+
+
+# 加锁情况如下，可以看到在非唯一索引 index_b 加的是 next-key lock    
++----------+------------+-----------+---------------+-------------+------------------------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data              |
++----------+------------+-----------+---------------+-------------+------------------------+
+|     2159 | NULL       | TABLE     | IX            | GRANTED     | NULL                   |
+|     2159 | index_b    | RECORD    | X             | GRANTED     | supremum pseudo-record |
+|     2159 | index_b    | RECORD    | X             | GRANTED     | &#39;ss&#39;, 1                |
+|     2159 | index_b    | RECORD    | X             | GRANTED     | &#39;ll&#39;, 6                |
+|     2159 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 1                      |
+|     2159 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 6                      |
++----------+------------+-----------+---------------+-------------+------------------------+
+</code></pre></td></tr></table>
+</div>
+</div><p>在等值条件下，除了加 next-key lock 还会在搜索第一个不满足条件的索引记录上加 gap lock</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">mysql&gt; select * from test where b = &#39;gg&#39; for update;
++----+------+------+----+
+| id | a    | b    | n  |
++----+------+------+----+
+|  4 | g    | gg   | 20 |
++----+------+------+----+
+  
+# 加锁情况如下    
+# 可以看到在第一条不满足条件的记录(&#39;ll&#39;) 的索引上加了 gap lock  
++----------+------------+-----------+---------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
++----------+------------+-----------+---------------+-------------+-----------+
+|     2161 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2161 | index_b    | RECORD    | X             | GRANTED     | &#39;gg&#39;, 4   |
+|     2161 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 4         |
+|     2161 | index_b    | RECORD    | X,GAP         | GRANTED     | &#39;ll&#39;, 6   |
++----------+------------+-----------+---------------+-------------+-----------+
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>上面分析的情况都是在事务隔离级别为 <em>Reaptable Read</em> 的情况下，我们说过加锁情况跟事务隔离级别是密切相关的。下面我们分析在 <em>Read Committed</em> 下的加锁情况</p>
+<ul>
+<li><em>RC</em> 事务隔离级别<br>
+RC 下不加 next-key 或者 gap lock， 只加 index record lock(当然无论何种隔离级别，PRIMARY 上的 index record lock 总是会加的)
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"> mysql&gt; set session transaction isolation level read committed;
+ Query OK, 0 rows affected (0.00 sec)
+ mysql&gt; select @@session.transaction_isolation;
+ +---------------------------------+
+ | @@session.transaction_isolation |
+ +---------------------------------+
+ | READ-COMMITTED                  |
+ +---------------------------------+
+
+ mysql&gt; begin;
+ Query OK, 0 rows affected (0.00 sec)
+ mysql&gt; select * from test where b=&#39;gg&#39; for update;
+ +----+------+------+----+
+ | id | a    | b    | n  |
+ +----+------+------+----+
+ |  4 | g    | gg   | 20 |
+ +----+------+------+----+
+
+ # 加锁情况如下，我们看到只有 index reord lock(X,REC_NOT_GAP)     
+ +----------+------------+-----------+---------------+-------------+-----------+
+ | trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
+ +----------+------------+-----------+---------------+-------------+-----------+
+ |     2125 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+ |     2125 | index_b    | RECORD    | X,REC_NOT_GAP | GRANTED     | &#39;gg&#39;, 4   |
+ |     2125 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 4         |
+ +----------+------------+-----------+---------------+-------------+-----------+
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>查看 insert intention lock<br>
+上面我们看到了 <em>X</em>，<em>X,GAP</em>, <em>X,REC_NOT_GAP</em> 这几种锁都是锁定读和 update/delete 中很常见的锁。下面我们分析一下插入时加的锁
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># 我们首先开启事务 T1 更新一条记录  
+mysql&gt; begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; update test set a=&#39;kk&#39; where b=&#39;gg&#39;;
+Query OK, 1 row affected (0.02 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+# 上面 update 的加速情况我们现在应该很清楚了，(&#39;dd&#39;&#39;gg&#39;]有锁，(&#39;gg&#39;, &#39;ss&#39;)有锁 
+# 那么如果我们插入一条记录 b=&#39;jj&#39; 是不是插需要锁呢？
+
+# 开启事务 T2 插入一条记录
+mysql&gt; begin;
+Query OK, 0 rows affected (0.00 sec)
+mysql&gt; insert into test(a, b , n) values(&#39;j&#39;, &#39;jj&#39;, 50);
+# 这里我们发现等待锁的获取直到超时退出
+
+# 这时的加锁情况如下   
+# 我们清楚的看到次此时 T2(2127) 等待获取 insert intention lock，所以无法插入，和我们的预期完全一致。这样就防止了 phantom row 的产生。      
++----------+------------+-----------+------------------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode              | lock_status | lock_data |
++----------+------------+-----------+------------------------+-------------+-----------+
+|     2127 | NULL       | TABLE     | IX                     | GRANTED     | NULL      |
+|     2127 | index_b    | RECORD    | X,GAP,INSERT_INTENTION | WAITING     | &#39;ss&#39;, 1   |
+|     2126 | NULL       | TABLE     | IX                     | GRANTED     | NULL      |
+|     2126 | index_b    | RECORD    | X                      | GRANTED     | &#39;gg&#39;, 4   |
+|     2126 | PRIMARY    | RECORD    | X,REC_NOT_GAP          | GRANTED     | 4         |
+|     2126 | index_b    | RECORD    | X,GAP                  | GRANTED     | &#39;ss&#39;, 1   |
++----------+------------+-----------+------------------------+-------------+-----------+
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p><strong>注意</strong>: performance_schema.data_locks 显示的并不是全部的加锁，SQL实际执行时所没有使用的索引加上的锁则不会显示在表中(实际上是加了锁) <br>
+下面的这个例子说明了这种情况   <br>
+```
+# 事务 T1
+mysql&gt; begin;
+Query OK, 0 rows affected (0.02 sec)</p>
+<pre><code>mysql&gt; update test set b='gh' where n=20;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+# 查看加锁情况     
+# 可以看到表里只有 index_n 加了锁 
++----------+------------+-----------+---------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
++----------+------------+-----------+---------------+-------------+-----------+
+|     2143 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2143 | index_n    | RECORD    | X,REC_NOT_GAP | GRANTED     | 20, 4     |
+|     2143 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 4         |
++----------+------------+-----------+---------------+-------------+-----------+
+
+# 事务 T2
+mysql&gt; begin;
+Query OK, 0 rows affected (0.00 sec)
+
+mysql&gt; update test set b='gg' where b='gh';
+如果 T1 不提交，上面的更新会等待锁直到超时    
+
+# 加锁情况如下  
+# 显然在 T1(2143) 中 index_b 加了 next-key lock 但并未显示出来    
++----------+------------+-----------+---------------+-------------+-----------+
+| trans_id | index_name | lock_type | lock_mode     | lock_status | lock_data |
++----------+------------+-----------+---------------+-------------+-----------+
+|     2148 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2148 | index_b    | RECORD    | X             | WAITING     | 'gh', 4   |
+|     2143 | NULL       | TABLE     | IX            | GRANTED     | NULL      |
+|     2143 | index_n    | RECORD    | X,REC_NOT_GAP | GRANTED     | 20, 4     |
+|     2143 | PRIMARY    | RECORD    | X,REC_NOT_GAP | GRANTED     | 4         |
+|     2143 | index_b    | RECORD    | X,REC_NOT_GAP | GRANTED     | 'gh', 4   |
++----------+------------+-----------+---------------+-------------+-----------+
+```
+</code></pre>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-01-20</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/mysql-lock/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/mysql-lock/" data-title="MySQL InnoDB 加锁实践分析" data-hashtags="mysql,innodb,事务"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/mysql-lock/" data-hashtag="mysql"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/mysql-lock/" data-title="MySQL InnoDB 加锁实践分析" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/mysql-lock/" data-title="MySQL InnoDB 加锁实践分析"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/mysql-lock/" data-title="MySQL InnoDB 加锁实践分析"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/mysql/">mysql</a>,&nbsp;<a href="/tags/innodb/">innodb</a>,&nbsp;<a href="/tags/%E4%BA%8B%E5%8A%A1/">事务</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/nginx-ingress/" class="prev" rel="prev" title="Nginx Ingress 进阶——灰度发布"><i class="fas fa-angle-left fa-fw"></i>Nginx Ingress 进阶——灰度发布</a>
+            <a href="/zeppelin-intellij/" class="next" rel="next" title="在 IntelliJ 中使用 Zeppelin 提速数据开发">在 IntelliJ 中使用 Zeppelin 提速数据开发<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

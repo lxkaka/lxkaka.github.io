@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>操作系统IO模式(重整) - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="操作系统IO模式(重整)" />
+<meta property="og:description" content="1.关键概念理解 同步：发起一个调用，得到结果才返回。 异步：调用发起后，调用直接返回；调用方主动询问被调用方获取结果，或被调用方通过回调函数。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/io-models/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2018-01-25T20:18:06+08:00" />
+<meta property="article:modified_time" content="2018-01-25T20:18:06+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="操作系统IO模式(重整)"/>
+<meta name="twitter:description" content="1.关键概念理解 同步：发起一个调用，得到结果才返回。 异步：调用发起后，调用直接返回；调用方主动询问被调用方获取结果，或被调用方通过回调函数。"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/io-models/" /><link rel="prev" href="https://lxkaka.wang/zookeeper/" /><link rel="next" href="https://lxkaka.wang/redis-ha/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "操作系统IO模式(重整)",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/io-models\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "linux, IO","wordcount":  3340 ,
+        "url": "https:\/\/lxkaka.wang\/io-models\/","datePublished": "2018-01-25T20:18:06+08:00","dateModified": "2018-01-25T20:18:06+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">操作系统IO模式(重整)</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-01-25">2018-01-25</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3340 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 7 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#1关键概念理解">1.关键概念理解</a></li>
+    <li><a href="#2明确进程状态">2.明确进程状态</a></li>
+    <li><a href="#3从操作系统层面执行应用程序理解-io-模型">3.从操作系统层面执行应用程序理解 IO 模型</a>
+      <ul>
+        <li><a href="#阻塞io模型">阻塞IO模型：</a></li>
+        <li><a href="#非阻塞io模型">非阻塞IO模型</a></li>
+        <li><a href="#io复用模型">IO复用模型：</a></li>
+        <li><a href="#异步io模型">异步IO模型</a></li>
+      </ul>
+    </li>
+    <li><a href="#4区别io多路复用中的select-poll-epoll">4.区别IO多路复用中的select poll epoll</a>
+      <ul>
+        <li><a href="#select">select</a></li>
+        <li><a href="#poll">poll</a></li>
+        <li><a href="#epoll">epoll</a></li>
+        <li><a href="#区别总结">区别总结</a></li>
+        <li><a href="#应用举例">应用举例</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="1关键概念理解">1.关键概念理解</h2>
+<ul>
+<li>
+<p>同步：发起一个调用，得到结果才返回。</p>
+</li>
+<li>
+<p>异步：调用发起后，调用直接返回；调用方主动询问被调用方获取结果，或被调用方通过回调函数。</p>
+</li>
+<li>
+<p>阻塞：调用是指调用结果返回之前，当前线程会被挂起。调用线程只有在得到结果之后才会返回。</p>
+</li>
+<li>
+<p>非阻塞：调用指在不能立刻得到结果之前，该调用不会阻塞当前线程。</p>
+<p>同步才有阻塞和非阻塞之分；<br>
+阻塞与非阻塞关乎如何对待事情产生的结果（阻塞：不等到想要的结果我就不走了）</p>
+</li>
+</ul>
+<h2 id="2明确进程状态">2.明确进程状态</h2>
+<p>理解进程的状态转换</p>
+<ul>
+<li>就绪状态 -&gt; 运行状态：处于就绪状态的进程被调度后，获得CPU资源（分派CPU时间片），于是进程由就绪状态转换为运行状态。</li>
+<li>运行状态 -&gt; 就绪状态：处于运行状态的进程在时间片用完后，不得不让出CPU，从而进程由运行状态转换为就绪状态。此外，在可剥夺的操作系统中，当有更高优先级的进程就 、 绪时，调度程度将正执行的进程转换为就绪状态，让更高优先级的进程执行。</li>
+<li>运行状态 -&gt; 阻塞状态：当进程请求某一资源（如外设）的使用和分配或等待某一事件的发生（如I/O操作的完成）时，它就从运行状态转换为阻塞状态。进程以系统调用的形式请求操作系统提供服务，这是一种特殊的、由运行用户态程序调用操作系统内核过程的形式。</li>
+<li>阻塞状态 -&gt; 就绪状态：当进程等待的事件到来时，如I/O操作结束或中断结束时，中断处理程序必须把相应进程的状态由阻塞状态转换为就绪状态。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81.png"
+        data-srcset="https://pics.lxkaka.wang/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81.png, https://pics.lxkaka.wang/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81.png 1.5x, https://pics.lxkaka.wang/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81.png 2x"
+        data-sizes="auto"
+        alt="进程状态转换"
+        title="进程状态转换" /></li>
+</ul>
+<h2 id="3从操作系统层面执行应用程序理解-io-模型">3.从操作系统层面执行应用程序理解 IO 模型</h2>
+<h3 id="阻塞io模型">阻塞IO模型：</h3>
+<ul>
+<li>简介：进程会一直阻塞，直到数据拷贝完成应用程序调用一个IO函数，导致应用程序阻塞，等待数据准备好。 如果数据没有准备好，一直等待….数据准备好了，从内核拷贝到用户空间，IO函数返回成功指示。
+我们 第一次接触到的网络编程都是从 listen()、send()、recv()等接口开始的。使用这些接口可以很方便的构建服务器 /客户机的模型。</li>
+<li>阻塞I/O模型图：在调用recv()/recvfrom（）函数时，发生在内核中等待数据和复制数据的过程。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/blockio.png"
+        data-srcset="https://pics.lxkaka.wang/blockio.png, https://pics.lxkaka.wang/blockio.png 1.5x, https://pics.lxkaka.wang/blockio.png 2x"
+        data-sizes="auto"
+        alt="阻塞IO"
+        title="阻塞IO" />
+当调用recv()函数时，系统首先查是否有准备好的数据。如果数据没有准备好，那么系统就处于等待状态。当数据准备好后，将数据从系统缓冲区复制到用户空间，然后该函数返回。在套接应用程序中，当调用recv()函数时，未必用户空间就已经存在数据，那么此时recv()函数就会处于等待状态。 <br>
+阻塞模式给网络编程带来了一个很大的问题，如在调用 send()的同时，线程将被阻塞，在此期间，线程将无法执行任何运算或响应任何的网络请求。这给多客户机、多业务逻辑的网络编程带来了挑战。这时，我们可能会选择多线程的方式来解决这个问题。<br>
+应对多客户机的网络应用，最简单的解决方式是在服务器端使用多线程（或多进程）。多线程（或多进程）的目的是让每个连接都拥有独立的线程（或进程），这样任何一个连接的阻塞都不会影响其他的连接。<br>
+具体使用多进程还是多线程，并没有一个特定的模式。传统意义上，进程的开销要远远大于线程，所以，如果需要同时为较多的客户机提供服务，则不推荐使用多进程；如果单个服务执行体需要消耗较多的 CPU 资源，譬如需要进行大规模或长时间的数据运算或文件访问，则进程较为安全。</li>
+</ul>
+<h3 id="非阻塞io模型">非阻塞IO模型</h3>
+<ul>
+<li>简介：非阻塞IO通过进程反复调用IO函数（多次系统调用，并马上返回）；在数据拷贝的过程中，进程是阻塞的；
+我们把一个SOCKET接口设置为非阻塞就是告诉内核，当所请求的I/O操作无法完成时，不要将进程睡眠，而是返回一个错误。这样我们的I/O操作函数将不断的测试数据是否已经准备好，如果没有准备好，继续测试，直到数据准备好为止。在这个不断测试的过程中，会大量的占用CPU的时间。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/nonblock.png"
+        data-srcset="https://pics.lxkaka.wang/nonblock.png, https://pics.lxkaka.wang/nonblock.png 1.5x, https://pics.lxkaka.wang/nonblock.png 2x"
+        data-sizes="auto"
+        alt="非阻塞IO"
+        title="非阻塞IO" /></li>
+</ul>
+<h3 id="io复用模型">IO复用模型：</h3>
+<ul>
+<li>简介：IO multiplexing就是我们说的select，poll，epoll，有些地方也称这种IO方式为event driven IO。select/epoll的好处就在于单个process就可以同时处理多个网络连接的 IO。它的基本原理就是select，poll，epoll这个function会不断的轮询所负责的所有socket，当某个socket有数据到达了，就通知用户进程。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/iomultiplex.png"
+        data-srcset="https://pics.lxkaka.wang/iomultiplex.png, https://pics.lxkaka.wang/iomultiplex.png 1.5x, https://pics.lxkaka.wang/iomultiplex.png 2x"
+        data-sizes="auto"
+        alt="io多路复用"
+        title="io多路复用" />
+当用户进程调用了select，那么整个进程会被block，而同时，kernel会“监视”所有select负责的socket，当任何一个socket中的数据准备好了，select就会返回。这个时候用户进程再调用read操作，将数据从kernel拷贝到用户进程。<br>
+所以，I/O 多路复用的特点是通过一种机制一个进程能同时等待多个文件描述符，而这些文件描述符（套接字描述符）其中的任意一个进入读就绪状态，select()函数就可以返回。</li>
+</ul>
+<h3 id="异步io模型">异步IO模型</h3>
+<ul>
+<li>简介：用户进程发起read操作之后，立刻就可以开始去做其它的事。而另一方面，从kernel的角度，当它受到一个asynchronous read之后，首先它会立刻返回，所以不会对用户进程产生任何block。然后，kernel会等待数据准备完成，然后将数据拷贝到用户内存，当这一切都完成之后，kernel会给用户进程发送一个signal，告诉它read操作完成了。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/ayscio.png"
+        data-srcset="https://pics.lxkaka.wang/ayscio.png, https://pics.lxkaka.wang/ayscio.png 1.5x, https://pics.lxkaka.wang/ayscio.png 2x"
+        data-sizes="auto"
+        alt="asyncio"
+        title="asyncio" /></li>
+</ul>
+<h2 id="4区别io多路复用中的select-poll-epoll">4.区别IO多路复用中的select poll epoll</h2>
+<h3 id="select">select</h3>
+<p><code>int select (int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);</code> <br>
+<code>select</code> 函数监视的文件描述符分3类，分别是<code>writefds</code>、<code>readfds</code>、和<code>exceptfds</code>。调用后select函数会阻塞，直到有描述符就绪（有数据 可读、可写、或者有except），或者超时（timeout指定等待时间，如果立即返回设为null即可），函数返回。当select函数返回后，可以 通过遍历fdset，来找到就绪的描述符</p>
+<h3 id="poll">poll</h3>
+<p><code>int poll (struct pollfd *fds, unsigned int nfds, int timeout);</code>
+不同与select使用三个位图来表示三个fdset的方式，poll使用一个 <code>pollfd</code>的指针实现。pollfd并没有最大数量限制（但是数量过大后性能也是会下降）。 和select函数一样，poll返回后，需要轮询pollfd来获取就绪的描述符。</p>
+<h3 id="epoll">epoll</h3>
+<p>epoll是通过事件的就绪通知方式，调用<code>epoll_create</code>创建实例，调用<code>epoll_ctl</code>添加或删除监控的文件描述符，调用<code>epoll_wait</code>阻塞住，直到有就绪的文件描述符，通过<code>epoll_event</code>参数返回就绪状态的文件描述符和事件。</p>
+<p>epoll操作过程需要三个接口，分别如下：
+<code>int epoll_create(int size)；//创建一个epoll的句柄</code>，size用来告诉内核这个监听的数目一共有多大
+生成一个 epoll 专用的文件描述符，其实是申请一个内核空间，用来存放想关注的 socket fd 上是否发生以及发生了什么事件。</p>
+<p><code>int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)；</code><br>
+控制某个 epoll 文件描述符上的事件：注册、修改、删除。其中参数 epfd 是 epoll_create() 创建 epoll 专用的文件描述符。</p>
+<p><code>int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);</code><br>
+等待 I/O 事件的发生；返回发生事件数。参数说明：<br>
+<code>epfd</code>: 由 epoll_create() 生成的 Epoll 专用的文件描述符；<br>
+<code>epoll_event</code>: 用于回传代处理事件的数组；<br>
+<code>maxevents</code>: 每次能处理的事件数；<br>
+<code>timeout</code>: 等待 I/O 事件发生的超时值；</p>
+<h3 id="区别总结">区别总结</h3>
+<p>（1）select，poll实现需要自己不断轮询所有fd集合，直到设备就绪，期间可能要睡眠和唤醒多次交替。而epoll其实也需要调用epoll_wait不断轮询就绪链表，期间也可能多次睡眠和唤醒交替，但是它是设备就绪时，调用回调函数，把就绪fd放入就绪链表中，并唤醒在epoll_wait中进入睡眠的进程。虽然都要睡眠和交替，但是select和poll在“醒着”的时候要遍历整个fd集合，而epoll在“醒着”的时候只要判断一下就绪链表是否为空就行了，这节省了大量的CPU时间。这就是回调机制带来的性能提升。<br>
+（2）select，poll每次调用都要把fd集合从用户态往内核态拷贝一次，epoll 通过 mmap 把内核空间和用户空间映射到同一块内存，省去了拷贝的操作。</p>
+<h3 id="应用举例">应用举例</h3>
+<ul>
+<li>
+<p>Tornado：</p>
+<ul>
+<li>使用单线程的方式，避免线程切换的性能开销，同时避免在使用一些函数接口时出现线程不安全的情况</li>
+<li>支持异步非阻塞网络IO模型，避免主进程阻塞等待。</li>
+</ul>
+<p>tornado 的 IOLoop 模块 是异步机制的核心，它包含了一系列已经打开的文件描述符和每个描述符的处理器	（handlers）。这些 handlers 就是对 select， poll , epoll等的封装。（所以本质上说是 IO 复用）</p>
+</li>
+<li>
+<p>Django<br>
+没有用异步，通过使用多进程的WSGI server（比如uWSGI）来实现并发，这也是WSGI普遍的做法。</p>
+</li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-01-25</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/io-models/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/io-models/" data-title="操作系统IO模式(重整)" data-hashtags="linux,IO"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/io-models/" data-hashtag="linux"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/io-models/" data-title="操作系统IO模式(重整)" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/io-models/" data-title="操作系统IO模式(重整)"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/io-models/" data-title="操作系统IO模式(重整)"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/linux/">linux</a>,&nbsp;<a href="/tags/io/">IO</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/zookeeper/" class="prev" rel="prev" title="ZooKeeper初识整理(老酒装新瓶)"><i class="fas fa-angle-left fa-fw"></i>ZooKeeper初识整理(老酒装新瓶)</a>
+            <a href="/redis-ha/" class="next" rel="next" title="Redis高可用简要梳理">Redis高可用简要梳理<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

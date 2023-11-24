@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Hexo 迁移 Hugo - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="Hexo 迁移 Hugo" />
+<meta property="og:description" content="如果大家有想把博客 Hexo 迁移到 Hugo 的可以参考此文。 Hugo 的优势： 不需要额外的依赖，一个二进制文件 Hugo 就行，这样的话维护成本会降低 编译生成静态文件非常快 安" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/hexo2hugo/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-07-24T15:55:51+08:00" />
+<meta property="article:modified_time" content="2020-07-24T15:55:51+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Hexo 迁移 Hugo"/>
+<meta name="twitter:description" content="如果大家有想把博客 Hexo 迁移到 Hugo 的可以参考此文。 Hugo 的优势： 不需要额外的依赖，一个二进制文件 Hugo 就行，这样的话维护成本会降低 编译生成静态文件非常快 安"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/hexo2hugo/" /><link rel="prev" href="https://lxkaka.wang/gitops-argocd/" /><link rel="next" href="https://lxkaka.wang/python-grpc/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Hexo 迁移 Hugo",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/hexo2hugo\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "hugo, hexo","wordcount":  871 ,
+        "url": "https:\/\/lxkaka.wang\/hexo2hugo\/","datePublished": "2020-07-24T15:55:51+08:00","dateModified": "2020-07-24T15:55:51+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Hexo 迁移 Hugo</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-07-24">2020-07-24</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 871 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#安装-hugo">安装 Hugo</a></li>
+    <li><a href="#配置主题">配置主题</a></li>
+    <li><a href="#迁移">迁移</a></li>
+    <li><a href="#deploy">deploy</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>如果大家有想把博客 Hexo 迁移到 Hugo 的可以参考此文。
+Hugo 的优势：</p>
+<ul>
+<li>不需要额外的依赖，一个二进制文件 Hugo 就行，这样的话维护成本会降低</li>
+<li>编译生成静态文件非常快</li>
+</ul>
+<h2 id="安装-hugo">安装 Hugo</h2>
+<p>Hugo 的安装非常简单，mac 我并不推荐使用 brew 安装，实在太慢，即使更换了代理源速度也不快。这里我推荐直接下载二进制文件，简单又快捷。</p>
+<ul>
+<li>下载地址 <code>https://github.com/gohugoio/hugo/releases/download/v0.71.1/hugo_extended_0.71.1_macOS-64bit.tar.gz </code>
+版本可以自由选择，但推荐下载 extended version, 有些主题需要 extended version 的支持</li>
+<li>解压得到二进制文件
+<code>tar xzvf hugo_extended_0.71.1_macOS-64bit.tar.gz </code></li>
+<li>创建一个 bin 目录，把二进制执行文件 <code>hugo</code> 放到 bin 目录</li>
+<li>把创建的 bin 目录添加到环境变量 PATH 中,例如 <code>export PATH=$PATH:/Users/lxkaka/bin</code></li>
+<li>重新打开 terminal 或者 <code>source .zshrc</code>, 让 PATH 生效</li>
+<li>验证安装 <code>hugo version</code></li>
+</ul>
+<h2 id="配置主题">配置主题</h2>
+<p>Hugo 支持的主题也非常多，大家可以去 Hugo theme <a href="https://themes.gohugo.io" target="_blank" rel="noopener noreffer">网站</a>上看到很多主题，挑选自己喜欢的。</p>
+<ul>
+<li>
+<p>新建站点
+<code>hugo new site mySite</code>
+cd mySite 看到由以下文件和目录组成</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">  drwxr-xr-x  3 lxkaka  staff  96  7 24 16:20 archetypes
+  -rw-r--r--  1 lxkaka  staff  82  7 24 16:20 config.toml
+  drwxr-xr-x  2 lxkaka  staff  64  7 24 16:20 content
+  drwxr-xr-x  2 lxkaka  staff  64  7 24 16:20 data
+  drwxr-xr-x  2 lxkaka  staff  64  7 24 16:20 layouts
+  drwxr-xr-x  2 lxkaka  staff  64  7 24 16:20 static
+  drwxr-xr-x  2 lxkaka  staff  64  7 24 16:20 themes
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>进入的 <code>themes</code> 目录 clone 自己喜欢的主题
+复制 clone 的主题目录 exampleSite 下的配置文件夹 <code>config.toml</code> 到站点的的根目录。例如
+<code>cp themes/color-your-world/exampleSite/config.toml .</code></p>
+</li>
+<li>
+<p>按照需求修改 <code>config.toml</code></p>
+</li>
+</ul>
+<h2 id="迁移">迁移</h2>
+<p>Hexo 和 Hugo 对 markdown 文件中 Front Matter 的格式定义不同。需要修改所有的文章来适配 Hugo 的 Front matter。
+这里推荐一个脚本 <code>https://github.com/wd/hexo2hugo/blob/master/hexo2hugo.py</code></p>
+<ul>
+<li>安装依赖
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">python3 -m pip install pyyaml
+python3 -m pip install pytoml
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>转换文件格式
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback"># src 是原来所有文章的目录；dest 是转换后要放文章的目录
+python3 hexotohugo.py --src=~/mySpace/source/_posts/ --dest=./posts/converted --remove-date-from-name --verbose
+
+# 转换前文章 front matter 如下
+title: 基于 CAS 实现 SSO
+date: 2019-04-19 16:24:31
+tags:
+  - cas
+  - sso
+---
+# 转换后文章 front matter 如下
++++
+title = &#34;基于 CAS 实现 SSO&#34;
+date = &#34;2019-04-19T16:24:31+08:00&#34;
+tags = [&#34;cas&#34;, &#34;sso&#34;]
+description = &#34;&#34;
++++
+</code></pre></td></tr></table>
+</div>
+</div></li>
+<li>url 格式
+在 Hexo 一般 url 的格式配置成这样 <code>permalink: :year/:month/:day/:title/</code>,  为了不让以前的 url 实效，我们在 Hugo 的配置文件 config.toml 需要配置如下
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-toml" data-lang="toml"><span class="p">[</span><span class="nx">Permalinks</span><span class="p">]</span>
+<span class="nx">posts</span> <span class="p">=</span> <span class="s2">&#34;/:year/:month/:day/:filename/&#34;</span>
+</code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h2 id="deploy">deploy</h2>
+<p>Hugo 的命令行没有直接支持 deploy, 这里我们用简单脚本可以来代替。
+在站点目录下执行 <code>hugo</code> 在 <code>public</code> 目录下生成我们部署所需的全部静态文件，我们只需要把 public 下的静态文件通过 rsync 上传到服务器即可。
+这个过程用脚本描述如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-bash" data-lang="bash"><span class="cp">#!/bin/sh
+</span><span class="cp"></span><span class="nv">USER</span><span class="o">=</span>my-user
+<span class="nv">HOST</span><span class="o">=</span>my-server.com             
+<span class="nv">DIR</span><span class="o">=</span>my/directory/to/topologix.fr/   <span class="c1"># the directory where your web site files should go</span>
+
+hugo <span class="o">&amp;&amp;</span> rsync -avz --delete public/ <span class="si">${</span><span class="nv">USER</span><span class="si">}</span>@<span class="si">${</span><span class="nv">HOST</span><span class="si">}</span>:~/<span class="si">${</span><span class="nv">DIR</span><span class="si">}</span>
+
+<span class="nb">exit</span> <span class="m">0</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>执行 <code>bash deploy.sh</code>则完成了部署。
+服务器上 Nginx 示例配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">server {
+    root /home/lxkaka/hugo;
+
+    location = / {
+        root /home/lxkaka/hugo;
+        index index.html index.htm;
+   }
+...
+}
+</code></pre></td></tr></table>
+</div>
+</div><p>至此，迁移 Hugo 的主要过程就是这样，如果大家遇到啥问题欢迎交流。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-07-24</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/hexo2hugo/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/hexo2hugo/" data-title="Hexo 迁移 Hugo" data-hashtags="hugo,hexo"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/hexo2hugo/" data-hashtag="hugo"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/hexo2hugo/" data-title="Hexo 迁移 Hugo" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/hexo2hugo/" data-title="Hexo 迁移 Hugo"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/hexo2hugo/" data-title="Hexo 迁移 Hugo"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/hugo/">hugo</a>,&nbsp;<a href="/tags/hexo/">hexo</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/gitops-argocd/" class="prev" rel="prev" title="Kustomize &#43; Argo CD 优化发布流程"><i class="fas fa-angle-left fa-fw"></i>Kustomize &#43; Argo CD 优化发布流程</a>
+            <a href="/python-grpc/" class="next" rel="next" title="Python 和 Go 之间的 gRPC 交互">Python 和 Go 之间的 gRPC 交互<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

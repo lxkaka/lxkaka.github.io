@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>所有文章 - lxkaka</title>
+        <link>https://lxkaka.wang/posts/</link>
+        <description>所有文章 | lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/posts/" rel="self" type="application/rss+xml" /><item>
+    <title>Transformer 结构学习总结</title>
+    <link>https://lxkaka.wang/learn-transformer/</link>
+    <pubDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/learn-transformer/</guid>
+    <description><![CDATA[MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']], processEscapes: true}, jax: ["input/TeX","input/MathML","input/AsciiMath","output/CommonHTML"], extensions: ["tex2jax.js","mml2jax.js","asciimath2jax.js","MathMenu.js","MathZoom.js","AssistiveMML.js", "[Contrib]/a11y/accessibility-menu.js"], TeX: { extensions: ["AMSmath.js","AMSsymbols.js","noErrors.js","noUndefined.js"], equationNumbers: { autoNumber: "AMS" } } }); transformer 已经成了当前深度学习领域最著名的网络架构，它是各大语言模型的基石。在这篇文章里我把自己在了]]></description>
+</item><item>
+    <title>AI 助力 Code Review 的高效方案</title>
+    <link>https://lxkaka.wang/llm-code-review/</link>
+    <pubDate>Sun, 20 Aug 2023 11:22:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/llm-code-review/</guid>
+    <description><![CDATA[背景 随着 LLM 的日益强大，我们可以借助 LLM 来提高多方面的生产效率。很多的应用场景我们就不在这里展开，其中一方面就是用来给程序员提效，比如大名鼎鼎的]]></description>
+</item><item>
+    <title>实时数据入湖的选型和实践</title>
+    <link>https://lxkaka.wang/cdc-stream/</link>
+    <pubDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/cdc-stream/</guid>
+    <description><![CDATA[Hudi 作为最热的数据湖技术框架之一，用于构建具有增量数据处理管道的流式数据湖。其核心的能力包括对象存储上数据行级别的快速更新和删除，增量查询 (Incremental queries,Time]]></description>
+</item><item>
+    <title>数据编排技术-Alluxio 的原理介绍</title>
+    <link>https://lxkaka.wang/alluxio-info/</link>
+    <pubDate>Thu, 22 Dec 2022 17:18:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/alluxio-info/</guid>
+    <description><![CDATA[在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、]]></description>
+</item><item>
+    <title>系统自适应限流算法-BBR</title>
+    <link>https://lxkaka.wang/limit-bbr/</link>
+    <pubDate>Fri, 25 Nov 2022 19:49:53 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/limit-bbr/</guid>
+    <description><![CDATA[在 Golang 服务中我们经常会选择用官方库自带的令牌桶算法来实现服务实例级别的限流。 使用示例如下 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27]]></description>
+</item><item>
+    <title>Redis 多线程的学习和理解</title>
+    <link>https://lxkaka.wang/redis-io-threads/</link>
+    <pubDate>Sun, 30 Oct 2022 21:40:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-io-threads/</guid>
+    <description><![CDATA[在后端开发中面临分布式缓存选型时 Redis 已然成为了头号选手甚至可以说是事实上的标准。Redis 从本质上来讲是一个网络服务器，而对于一个网络服务器来]]></description>
+</item><item>
+    <title>Dapr 初探-Pub/Sub 实践</title>
+    <link>https://lxkaka.wang/dapr-pubsub/</link>
+    <pubDate>Fri, 30 Sep 2022 09:48:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/dapr-pubsub/</guid>
+    <description><![CDATA[Dapr 介绍 Dapr 是一个开源项目，由微软发起，下面是来自 Dapr 官方网站的介绍 Dapr 是一个可移植的、事件驱动的运行时，它使任何开发人员能够轻松构建出弹性的、无状]]></description>
+</item><item>
+    <title>Golang 中实用的图片处理方法</title>
+    <link>https://lxkaka.wang/image-process/</link>
+    <pubDate>Tue, 30 Aug 2022 23:04:05 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/image-process/</guid>
+    <description><![CDATA[当我们需要在端上展示用户上传的图片时，由于用户上传的图片尺寸各异，为了良好的视觉效果，我们必须对尺寸各异的图片做处理。在这篇文章里我们介绍一]]></description>
+</item><item>
+    <title>Python 应用接入 Prometheus 监控</title>
+    <link>https://lxkaka.wang/py-metrics/</link>
+    <pubDate>Fri, 29 Jul 2022 10:04:07 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/py-metrics/</guid>
+    <description><![CDATA[在这篇文章 我们介绍了 Prmetheus metrics 的基本类型和在 Golang 中的简单应用。我们知道在一个通过 Http 协议提供在线服务的应用中可以通过接口 /metrics 来 expose metrics，然后 promethues 可]]></description>
+</item><item>
+    <title>高效搭建后台系统的解决方案-amis</title>
+    <link>https://lxkaka.wang/amis-practice/</link>
+    <pubDate>Sat, 25 Jun 2022 10:50:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/amis-practice/</guid>
+    <description><![CDATA[最近需要搭建一个管理后台来给产品和运营同学使用。管理后台简单来说就是信息管理的工具需要提供增删改查的功能。从细节上来说这样的一个后台一般都会]]></description>
+</item></channel>
+</rss>

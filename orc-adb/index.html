@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Hive To AnalyticDB 数据同步方案演进 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="Hive To AnalyticDB 数据同步方案演进" />
+<meta property="og:description" content="在这篇文章里我接着讲述一下数仓数据同步到 ADB 的方案演进。随着数据规模纵向和横向的扩大，把 hive 作为同步的数据源瓶颈越来越明显。首先是单表的数据超过" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/orc-adb/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2020-06-23T11:18:22+08:00" />
+<meta property="article:modified_time" content="2020-06-23T11:18:22+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="Hive To AnalyticDB 数据同步方案演进"/>
+<meta name="twitter:description" content="在这篇文章里我接着讲述一下数仓数据同步到 ADB 的方案演进。随着数据规模纵向和横向的扩大，把 hive 作为同步的数据源瓶颈越来越明显。首先是单表的数据超过"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/orc-adb/" /><link rel="prev" href="https://lxkaka.wang/airflow-sync/" /><link rel="next" href="https://lxkaka.wang/gitops-argocd/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Hive To AnalyticDB 数据同步方案演进",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/orc-adb\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "airflow, kubernetes executor, orc","wordcount":  1886 ,
+        "url": "https:\/\/lxkaka.wang\/orc-adb\/","datePublished": "2020-06-23T11:18:22+08:00","dateModified": "2020-06-23T11:18:22+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Hive To AnalyticDB 数据同步方案演进</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-06-23">2020-06-23</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1886 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#目标改进">目标改进</a></li>
+    <li><a href="#同步流程">同步流程</a></li>
+    <li><a href="#方案">方案</a>
+      <ul>
+        <li><a href="#task-生成">task 生成</a></li>
+        <li><a href="#orc-解析">ORC 解析</a></li>
+        <li><a href="#使用-kubernetes-executor">使用 Kubernetes Executor</a></li>
+      </ul>
+    </li>
+    <li><a href="#存在的问题">存在的问题</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在这篇文章里我接着讲述一下数仓数据同步到 ADB 的方案演进。随着数据规模纵向和横向的扩大，把 hive 作为同步的数据源瓶颈越来越明显。首先是单表的数据超过 3000w 后，分段（limit方法）的速度非常缓慢；再者表越来越多 hive 的 IO 压力凸显。在上一篇文末我已经提到了这个问题，当时的设想是把数据源变成 OSS, 这样数据源我们完全可以认为瓶颈不会出现在源头。下面我具体介绍一下方案的设计和实施过程。</p>
+<h2 id="目标改进">目标改进</h2>
+<p>首先我们的目标在此前的基础上做出了如下改进</p>
+<ul>
+<li>延时
+数据源头切换成 OSS, 数仓里的表 location 全部在 OSS 的特定 bucket 里并且文件格式是 ORC, 也就说数据源的存储形态就是 OSS bucket 中的一个个的 ORC 文件。一个表可能有多个 ORC 文件组成，所以我们同步任务的粒度可以精细到单个 ORC 文件，多个 ORC 文件创建多个同步任务，这些任务同时同时进行，同步的效率可以达到 ADB 的写入上限。相比之前的方案，同步的效率有了巨大的提升。</li>
+<li>容错
+同步任务的前置和后置分别抽成 task, 前置 task 负责中间表的清理和创建；后置 task 负责中间表的 rename 和原表的备份。这样的设计提高了容错率，比如当一张表的某一个同步任务失败，在有唯一键的情况下重新执行这个 task 即可；再比如当需要重新同步整张表，重置前置 task 即可重新同步；或者本次同步失败，只需要标记后置 task 为失败即可。</li>
+<li>扩展性
+另外一个巨大的改进是基础设施的改进。在上一篇文章中我们讲过同步任务的调度框架是 Airflow, 每个 task 最终以消息的形式发送给 celery worker 执行。在 Airflow 1.10 后引入了一种新的 Executor&ndash;Kubernetes Executor, 这是我一直想引入的 Executor 终于可以投入到生产使用了。简单说就是每个 task 现在可以以 k8s Pod 的形式调度到 k8s 集群执行，task 执行完成则 Pod 自动被 remove。这类非常驻的任务可以搭配公有云厂商提供的 serverless k8s 集群可以说非常高效。</li>
+</ul>
+<h2 id="同步流程">同步流程</h2>
+<p>改进的大致同步流程如下<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/oss_sync_flow.png"
+        data-srcset="https://pics.lxkaka.wang/oss_sync_flow.png, https://pics.lxkaka.wang/oss_sync_flow.png 1.5x, https://pics.lxkaka.wang/oss_sync_flow.png 2x"
+        data-sizes="auto"
+        alt="oss_sync_flow"
+        title="oss_sync_flow" /></p>
+<h2 id="方案">方案</h2>
+<h3 id="task-生成">task 生成</h3>
+<p>根据表的 location 前缀找到所有有效的 ORC 文件，有的表可能因为分区数很多，可能产生了数千甚至上万的小文件，如果每个文件生成一个 task, 小文件对应的 task 同步数据的时间比创建 pod 的时间还短，会十分的低效。所以，这里有两个方法，一是在 hive 层面我们可以使用命令例如 <code>alter table test_xxx partition(product_name='a',measure_name='b') CONCATENATE;</code> 来压缩小文件；二是我们把多个小文件组合成一个 task, 即多个小文件组合成一个 batch, 每个 batch 生成一个 task。 综合来看第二种方式更方便高效。
+示例代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">oss_bucket</span><span class="o">.</span><span class="n">list_objects</span><span class="p">(</span><span class="n">oss_prefix</span><span class="p">)</span>
+<span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">acc</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">while</span> <span class="n">res</span><span class="o">.</span><span class="n">object_list</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">object_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="mi">1000000</span>
+            <span class="n">acc</span> <span class="o">+=</span> <span class="n">s</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">acc</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sync_operator</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">dag</span><span class="p">,</span> <span class="n">sync_task</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">memory_base</span><span class="o">=</span><span class="n">memory_base</span><span class="p">))</span>
+                <span class="n">acc</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">next_marker</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">oss_bucket</span><span class="o">.</span><span class="n">list_objects</span><span class="p">(</span><span class="n">oss_prefix</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">next_marker</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">break</span>
+<span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+<span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">sync_operator</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">dag</span><span class="p">,</span> <span class="n">sync_task</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">memory_base</span><span class="o">=</span><span class="n">memory_base</span><span class="p">))</span>
+<span class="k">return</span> <span class="n">result</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="orc-解析">ORC 解析</h3>
+<p>ORC 文件的解析的关键就是解析表结构；如何获取一行数据 <br>
+示例代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="c1"># 下载 oss 文件到本地</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;start download oss file {file}....&#39;</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># 断点续传  </span>
+    <span class="n">oss2</span><span class="o">.</span><span class="n">resumable_download</span><span class="p">(</span><span class="n">oss_bucket</span><span class="p">,</span> <span class="nb">file</span><span class="p">,</span> <span class="n">local_name</span><span class="p">,</span> <span class="n">num_threads</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="n">download</span><span class="p">(</span><span class="n">oss_bucket</span><span class="p">,</span> <span class="n">local_name</span><span class="p">)</span>
+
+<span class="c1"># 解析 orc 文件</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local_name</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">orc</span><span class="o">.</span><span class="n">ORCFile</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="c1"># 表的 colum 数</span>
+    <span class="n">num_columns</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">num_columns</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">num_rows</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">num_columns</span><span class="p">)</span>
+
+<span class="c1"># 获取多行数据的集合</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">to_batches</span><span class="p">():</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">to_pydict</span><span class="p">()</span>
+    <span class="n">zip_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">names</span><span class="p">]</span>
+    <span class="c1"># 这里得到多行数据组成的元祖可以直接 insert 到 ADB 表中</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">zip_data</span><span class="p">)</span>
+
+<span class="c1"># 对于分区表我们解析文件的路径，从路径中获得分区并插入到行中  </span>
+<span class="n">partition</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">partition_value</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">file_parts</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+        <span class="n">partition</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">partition_value</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">columns</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">names</span> <span class="o">+</span> <span class="n">partition</span>
+<span class="n">columns</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span>  
+</code></pre></td></tr></table>
+</div>
+</div><p>其中数据的写入过程和容错过程与上篇文章所描述的基本一致，这里不再赘述。</p>
+<h3 id="使用-kubernetes-executor">使用 Kubernetes Executor</h3>
+<p>在 Airflow 的部署上，我们只需要把 <code>Airflow webserver</code> 和 <code>scheduler</code> 通过 <code>deployment</code> 部署到 k8s 集群。</p>
+<ul>
+<li>配置
+启用 k8s executor 需要基本配置如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">executor = KubernetesExecutor
+
+[kubernetes]
+# The repository, tag and imagePullPolicy of the Kubernetes Image for the Worker to Run
+worker_container_repository = {IMAGE_BASE}
+worker_container_tag = {VERSION}
+worker_container_image_pull_policy = Always
+
+# If True (default), worker pods will be deleted upon termination
+delete_worker_pods = True
+
+# Number of Kubernetes Worker Pod creation calls per scheduler loop
+worker_pods_creation_batch_size = 20
+
+# The Kubernetes namespace where airflow workers should be created. Defaults to ``default``
+namespace = default
+
+# For docker image already contains DAGs, this is set to ``True``, and the worker will
+# search for dags in dags_folder,
+# otherwise use git sync or dags volume claim to mount DAGs
+# 我们这里把 dag 打包到镜像里，官方推荐使用 git repo 同步的方式，这个需要 git sync 的一些配置，具体可参考官方文档
+dags_in_image = True
+
+# Use the service account kubernetes gives to pods to connect to kubernetes cluster.
+# It&#39;s intended for clients that expect to be running inside a pod running on kubernetes.
+# It will raise an exception if called from a process not running in a kubernetes environment.
+in_cluster = False
+
+# When running with in_cluster=False change the default cluster_context or config_file
+# options to Kubernetes client. Leave blank these to use default behaviour like ``kubectl`` has.
+# cluster_context =
+config_file = /root/airflow/k8sconfig
+</code></pre></td></tr></table>
+</div>
+</div><p>Airfow 使用 Kubernetes Executor 我画了下面这张图来说明一下现在的架构</p>
+<ul>
+<li>通过浏览器我们可以访问到部署在 k8s 中的 Airflow Web服务，查看 task 的执行情况；</li>
+<li>Airflow scheduler 负责调用集群（k8s集群可以是本集群或者是其他集群）的 API 根据 Airflow operator 的定义和其他 k8s 配置创建 Pod 执行 task;</li>
+<li>task 执行完成 Pod 被删除，执行日志上传到 OSS<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/airflow_k8s.png"
+        data-srcset="https://pics.lxkaka.wang/airflow_k8s.png, https://pics.lxkaka.wang/airflow_k8s.png 1.5x, https://pics.lxkaka.wang/airflow_k8s.png 2x"
+        data-sizes="auto"
+        alt="airflow_k8s"
+        title="airflow_k8s" /></li>
+</ul>
+<p>由不同 batch 生成的 task 的 dag 示意图如下<br>
+上面说到的前置 task 即图中的 start, 后者 task 即 finish, 同步任务即 batch_i<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/oss_dag.png"
+        data-srcset="https://pics.lxkaka.wang/oss_dag.png, https://pics.lxkaka.wang/oss_dag.png 1.5x, https://pics.lxkaka.wang/oss_dag.png 2x"
+        data-sizes="auto"
+        alt="oss_dag"
+        title="oss_dag" /></p>
+<h2 id="存在的问题">存在的问题</h2>
+<p>到这里 ORC 数据同步方案介绍完了，这个方案也不是最完善的。从示例代码中可以看出来，大量数据同步前都放到内存里了，在执行的同步过程中随着数据量的上升内存的占用会越来越高，如果同步前没有规划好 task 的内存资源(反应到 k8s 即 Pod 的内存占用)可能 task 会因为 OOM 被 kill。资源的优化，如何节省内存是下一步需要思考的问题。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-06-23</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/orc-adb/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/orc-adb/" data-title="Hive To AnalyticDB 数据同步方案演进" data-hashtags="airflow,kubernetes executor,orc"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/orc-adb/" data-hashtag="airflow"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/orc-adb/" data-title="Hive To AnalyticDB 数据同步方案演进" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/orc-adb/" data-title="Hive To AnalyticDB 数据同步方案演进"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/orc-adb/" data-title="Hive To AnalyticDB 数据同步方案演进"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/airflow/">airflow</a>,&nbsp;<a href="/tags/kubernetes-executor/">kubernetes executor</a>,&nbsp;<a href="/tags/orc/">orc</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/airflow-sync/" class="prev" rel="prev" title="Hive To AnalyticDB 数据同步方案设计"><i class="fas fa-angle-left fa-fw"></i>Hive To AnalyticDB 数据同步方案设计</a>
+            <a href="/gitops-argocd/" class="next" rel="next" title="Kustomize &#43; Argo CD 优化发布流程">Kustomize &#43; Argo CD 优化发布流程<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>

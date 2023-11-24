@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>nvidia - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/nvidia/</link>
+        <description>nvidia - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 24 Oct 2020 13:09:02 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/nvidia/" rel="self" type="application/rss+xml" /><item>
+    <title>容器中使用 GPU 的基础环境搭建</title>
+    <link>https://lxkaka.wang/docker-nvidia/</link>
+    <pubDate>Sat, 24 Oct 2020 13:09:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-nvidia/</guid>
+    <description><![CDATA[在 Linux 服务器上使用 GPU 跑深度学习的模型很正常不过。如果我们想用 docker 实现同样的需求，就需要做些额外的工作。本质上就是我们要在容器里能看到并且使用宿主]]></description>
+</item></channel>
+</rss>

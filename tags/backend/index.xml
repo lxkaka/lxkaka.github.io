@@ -1,0 +1,64 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>backend - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/backend/</link>
+        <description>backend - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 25 Mar 2019 15:43:54 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/backend/" rel="self" type="application/rss+xml" /><item>
+    <title>Pulsar(新一代高性能消息系统)核心总结</title>
+    <link>https://lxkaka.wang/pulsar/</link>
+    <pubDate>Mon, 25 Mar 2019 15:43:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/pulsar/</guid>
+    <description><![CDATA[消息中间件是后端服务系统中一个非常重要的组件，它可以在分布式环境下提供应用解耦、流量削峰、异步通信、数据同步等关键功能。在我们的应用中首先 rabbimq]]></description>
+</item><item>
+    <title>Pulsar(新一代高性能消息系统)核心总结</title>
+    <link>https://lxkaka.wang/pulsar/</link>
+    <pubDate>Mon, 25 Mar 2019 15:43:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/pulsar/</guid>
+    <description><![CDATA[消息中间件是后端服务系统中一个非常重要的组件，它可以在分布式环境下提供应用解耦、流量削峰、异步通信、数据同步等关键功能。在我们的应用中首先 rabbimq]]></description>
+</item><item>
+    <title>Jaeger in Django</title>
+    <link>https://lxkaka.wang/jaeger/</link>
+    <pubDate>Wed, 15 Aug 2018 13:59:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/jaeger/</guid>
+    <description><![CDATA[注意：Jaeger是德语单词，猎人的意思，读做“耶格” 链路追踪背景 微服务的流行程度不需要我们多说，随着业务的扩张和规模的扩大，单体架构的支撑]]></description>
+</item><item>
+    <title>Jaeger in Django</title>
+    <link>https://lxkaka.wang/jaeger/</link>
+    <pubDate>Wed, 15 Aug 2018 13:59:54 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/jaeger/</guid>
+    <description><![CDATA[注意：Jaeger是德语单词，猎人的意思，读做“耶格” 链路追踪背景 微服务的流行程度不需要我们多说，随着业务的扩张和规模的扩大，单体架构的支撑]]></description>
+</item><item>
+    <title>搭建微信公众号服务小记</title>
+    <link>https://lxkaka.wang/build-wechat-service/</link>
+    <pubDate>Mon, 12 Mar 2018 19:43:51 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/build-wechat-service/</guid>
+    <description><![CDATA[需求 说起来都是泪。平时工作生活中习惯不好，脏话有点多了，比如 卧槽，沙比这种。虽然我认为这样的词在说的时候完全只是当语气词来用，但毕竟是脏话]]></description>
+</item><item>
+    <title>搭建微信公众号服务小记</title>
+    <link>https://lxkaka.wang/build-wechat-service/</link>
+    <pubDate>Mon, 12 Mar 2018 19:43:51 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/build-wechat-service/</guid>
+    <description><![CDATA[需求 说起来都是泪。平时工作生活中习惯不好，脏话有点多了，比如 卧槽，沙比这种。虽然我认为这样的词在说的时候完全只是当语气词来用，但毕竟是脏话]]></description>
+</item><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item><item>
+    <title>Redis高可用简要梳理</title>
+    <link>https://lxkaka.wang/redis-ha/</link>
+    <pubDate>Fri, 09 Feb 2018 10:42:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-ha/</guid>
+    <description><![CDATA[Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订]]></description>
+</item></channel>
+</rss>

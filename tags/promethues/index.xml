@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>promethues - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/promethues/</link>
+        <description>promethues - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 29 Jul 2022 10:04:07 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/promethues/" rel="self" type="application/rss+xml" /><item>
+    <title>Python 应用接入 Prometheus 监控</title>
+    <link>https://lxkaka.wang/py-metrics/</link>
+    <pubDate>Fri, 29 Jul 2022 10:04:07 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/py-metrics/</guid>
+    <description><![CDATA[在这篇文章 我们介绍了 Prmetheus metrics 的基本类型和在 Golang 中的简单应用。我们知道在一个通过 Http 协议提供在线服务的应用中可以通过接口 /metrics 来 expose metrics，然后 promethues 可]]></description>
+</item><item>
+    <title>使用 Promethues 实现应用监控的一些实践</title>
+    <link>https://lxkaka.wang/metrics-best-practice/</link>
+    <pubDate>Sat, 25 Sep 2021 09:34:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/metrics-best-practice/</guid>
+    <description><![CDATA[在这篇文章中我们介绍了如何利用 Prometheus 监控应用。在后续的工作中随着监控的深入，我们结合自己的经验和官方文档总结了一些 Metrics 的实践。希望这些实践能给大家]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>建立动态演示的记录 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:title" content="建立动态演示的记录" />
+<meta property="og:description" content="用Raphaeljs画图，细节记录 1. paper.path的用法 举例：用Q command The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example," />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/buidingdynamicdemo/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2015-11-29T12:10:24+08:00" />
+<meta property="article:modified_time" content="2015-11-29T12:10:24+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="建立动态演示的记录"/>
+<meta name="twitter:description" content="用Raphaeljs画图，细节记录 1. paper.path的用法 举例：用Q command The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example,"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/buidingdynamicdemo/" /><link rel="prev" href="https://lxkaka.wang/blog-md/" /><link rel="next" href="https://lxkaka.wang/pageformatnotes/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "建立动态演示的记录",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/buidingdynamicdemo\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Tech Notes, js","wordcount":  302 ,
+        "url": "https:\/\/lxkaka.wang\/buidingdynamicdemo\/","datePublished": "2015-11-29T12:10:24+08:00","dateModified": "2015-11-29T12:10:24+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">建立动态演示的记录</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2015-11-29">2015-11-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 302 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-paperpathhttpraphaeljscomreferencehtmlpaperpath的用法">1. <a href="http://raphaeljs.com/reference.html#Paper.path">paper.path</a>的用法</a></li>
+    <li><a href="#2-其他用法">2. 其他用法</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h1 id="用raphaeljshttpraphaeljscom画图细节记录">用<a href="http://raphaeljs.com/" target="_blank" rel="noopener noreffer">Raphaeljs</a>画图，细节记录</h1>
+<h2 id="1-paperpathhttpraphaeljscomreferencehtmlpaperpath的用法">1. <a href="http://raphaeljs.com/reference.html#Paper.path" target="_blank" rel="noopener noreffer">paper.path</a>的用法</h2>
+<p>举例：用Q command<br>
+The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example, consider the following code:</p>
+<p><code>paper.path(['M', 50, 150, 'Q', 225, 20, 400, 150]);</code></p>
+<p>这样的表示方法，其中的坐标都是绝对值。
+如果像这样写,则 c 后面的坐标都为相对起点的距离。 <code>r.path(&quot;M320,240c-50,100,50,110,0,190&quot;).attr({fill: &quot;none&quot;, &quot;stroke-width&quot;: 2});</code></p>
+<p>This draws the quadratic Bézier curve shown. The equivalent path using the lowercase variant of the command would be &ldquo;M 50,150 q 175,-130 350,0&rdquo;, where the (x, y) and (x1, y1) parameters are the relative distances from the start point (50, 100):</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://www.packtpub.com/sites/default/files/Article-Images/9161OS_03_10.PNG"
+        data-srcset="https://www.packtpub.com/sites/default/files/Article-Images/9161OS_03_10.PNG, https://www.packtpub.com/sites/default/files/Article-Images/9161OS_03_10.PNG 1.5x, https://www.packtpub.com/sites/default/files/Article-Images/9161OS_03_10.PNG 2x"
+        data-sizes="auto"
+        alt="示意图"
+        title="示意图" /></p>
+<h2 id="2-其他用法">2. 其他用法</h2>
+<ul>
+<li>
+<p>给曲线加箭头
+<code>r.path(['M',xS,yS,'L',x1,y1]).attr({'arrow-end': 'classic-wide-long'});</code></p>
+</li>
+<li>
+<p>加文本<br>
+<code>r.text(x,y,text).attr({'font-size': 20});</code><br>
+其他参数可参考<a href="http://raphaeljs.com/reference.html#Element.attr" target="_blank" rel="noopener noreffer">文档</a></p>
+</li>
+<li>
+<p>画圆
+<code>r.circle(x,y,radius).attr({fill: 'none', stroke: color, 'stroke-width': 2});</code></p>
+</li>
+<li>
+<p>把多个raphael object 放到一个类似数组的对象里面，可以一次操作多个元素。<br>
+<code>paper.set();</code><br>
+例子:</p>
+</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-js" data-lang="js">	<span class="kd">var</span> <span class="nx">pathSet</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">set</span><span class="p">();</span>
+      <span class="k">if</span><span class="p">(</span><span class="nx">peerChoice</span> <span class="o">&amp;&amp;</span> <span class="nx">peerPath</span><span class="p">){</span>
+      		<span class="nx">pathSet</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span><span class="nx">index</span><span class="p">){</span>
+           	<span class="nx">element</span><span class="p">.</span><span class="nx">remove</span><span class="p">();</span>
+             <span class="p">});</span>
+       <span class="p">}</span> 
+</code></pre></td></tr></table>
+</div>
+</div><p>一个比较好的<a href="http://cancerbero.mbarreneche.com/raphaeltut/" target="_blank" rel="noopener noreffer">raphael tutorial</a></p>
+<h1 id="webrtc--rlnc-分布式存储系统动态演示demo截图">WebRTC + RLNC 分布式存储系统动态演示Demo截图</h1>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.20.56.png"
+        data-srcset="https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.20.56.png, https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.20.56.png 1.5x, https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.20.56.png 2x"
+        data-sizes="auto"
+        alt="截图1"
+        title="截图1" />
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.21.24.png"
+        data-srcset="https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.21.24.png, https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.21.24.png 1.5x, https://pics.lxkaka.wang/%e5%b1%8f%e5%b9%95%e5%bf%ab%e7%85%a7%202015-12-16%20%e4%b8%8b%e5%8d%8812.21.24.png 2x"
+        data-sizes="auto"
+        alt="截图2"
+        title="截图2" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2015-11-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/buidingdynamicdemo/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/buidingdynamicdemo/" data-title="建立动态演示的记录" data-hashtags="Tech Notes,js"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/buidingdynamicdemo/" data-hashtag="Tech Notes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/buidingdynamicdemo/" data-title="建立动态演示的记录" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/buidingdynamicdemo/" data-title="建立动态演示的记录"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/buidingdynamicdemo/" data-title="建立动态演示的记录"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/tech-notes/">Tech Notes</a>,&nbsp;<a href="/tags/js/">js</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/blog-md/" class="prev" rel="prev" title="Github Page&#43;Hexo搭建blog"><i class="fas fa-angle-left fa-fw"></i>Github Page&#43;Hexo搭建blog</a>
+            <a href="/pageformatnotes/" class="next" rel="next" title="页面外观样式笔记">页面外观样式笔记<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
