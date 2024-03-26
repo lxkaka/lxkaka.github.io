@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>负载均衡 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/</link>
+        <description>负载均衡 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 27 Feb 2022 16:37:33 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/" rel="self" type="application/rss+xml" /><item>
+    <title>算法服务稳定性优化之负载控制</title>
+    <link>https://lxkaka.wang/p2c1/</link>
+    <pubDate>Sun, 27 Feb 2022 16:37:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/p2c1/</guid>
+    <description><![CDATA[在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。]]></description>
+</item><item>
+    <title>gRPC 一致性 Hash balancer 实现</title>
+    <link>https://lxkaka.wang/gprc-balancer/</link>
+    <pubDate>Sun, 21 Feb 2021 11:52:38 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gprc-balancer/</guid>
+    <description><![CDATA[在开发过程中我们遇到了需要 session 保持的场景，即同一个用户的请求需要我们路由到后端服务的同一个实例。如果是 http 请求我们可用利用 nginx 的 ip hash 负载均衡策略来]]></description>
+</item></channel>
+</rss>

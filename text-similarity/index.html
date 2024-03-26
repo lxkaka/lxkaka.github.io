@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>快速搭建文本语义搜索 - lxkaka</title><meta name="Description" content="高效搭建文本搜索的方案"><meta property="og:title" content="快速搭建文本语义搜索" />
+<meta property="og:description" content="高效搭建文本搜索的方案" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://lxkaka.wang/text-similarity/" />
+<meta property="og:image" content="https://lxkaka.wang/logo.png"/>
+<meta property="article:published_time" content="2023-12-16T17:13:09+08:00" />
+<meta property="article:modified_time" content="2023-12-16T17:13:09+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://lxkaka.wang/logo.png"/>
+
+<meta name="twitter:title" content="快速搭建文本语义搜索"/>
+<meta name="twitter:description" content="高效搭建文本搜索的方案"/>
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/text-similarity/" /><link rel="prev" href="https://lxkaka.wang/learn-transformer/" /><link rel="next" href="https://lxkaka.wang/crewai-practice/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "快速搭建文本语义搜索",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/text-similarity\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "semantic search, embedding","wordcount":  2906 ,
+        "url": "https:\/\/lxkaka.wang\/text-similarity\/","datePublished": "2023-12-16T17:13:09+08:00","dateModified": "2023-12-16T17:13:09+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "高效搭建文本搜索的方案"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">快速搭建文本语义搜索</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a>&nbsp;<a href="/categories/%E7%B3%BB%E7%BB%9F/"><i class="far fa-folder fa-fw"></i>系统</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2023-12-16">2023-12-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2906 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#文本处理">文本处理</a></li>
+        <li><a href="#创建索引">创建索引</a></li>
+        <li><a href="#查询">查询</a></li>
+        <li><a href="#redis-vector-search">Redis Vector Search</a>
+          <ul>
+            <li><a href="#创建索引-1">创建索引</a></li>
+            <li><a href="#查询-1">查询</a></li>
+            <li><a href="#更新索引">更新索引</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>想象这样一个场景我们文案团队每天都会根据需求产出高质量的文案，随着需求的增加我们系统已经累积了很多优质文案。那么我们是否可以根据新的需求描述去搜索文案库里已有的文案呢？利用文本相似度检测我们能实现一个这样既能提高效率又能节省成本的文案搜索方案。
+在这篇文章里我们介绍一下快速搭建文本语义搜索系统的方法。</p>
+<h3 id="文本处理">文本处理</h3>
+<p>文本由两部分组成 <em>text</em> + <em>metadata</em>，这里的 metadata 可以理解成是 text 的一些属性。通过这些属性我们可以找到跟 text 关联的其他信息。
+在我们这个例子里我们的每段 <code>text</code> 对应一个 <code>task_id </code>，并且 metadata 我们只关心这个 task id。部分数据如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-fallback" data-lang="fallback">571600,&#34;xxx豆花渎鱼——入口图文案：
+
+1、宠粉双十二，桌桌有礼拿
+2、「黔」方双十二，霸王餐送达
+3、双十二来袭， 免单指到「礼」
+4、12.12 | 抽奖赢好礼，这单老板请&#34;
+571599,&#34;黔渔翁豆花渎鱼——商户通文案：
+
+1、双十二「渔」你同乐，免单奖砸中「礼」了
+2、&lt;12.12剧透&gt;抽奖大乐透，壕礼人人有 | 这一桌老板买单！
+3、双十二提「黔」到，免单大奖播报 | 逢抽必中，来者就送
+4、爱要「奖」出来，双十二特派🎁敢抽就敢送，霸王餐派送
+
++辅助文案：
+凭买单小票抽奖
+免单、霸王餐、代金券、神秘礼拼手气&#34;
+572021,&#34;1、优雅姿造匠心制，现做鲜美宴贵宾
+2、海鲜姿造聚高端食材，商务宴请迎八方贵客
+3、深海鲜美入馔，视味姿造盛宴，静待诸位入席&#34;
+571440,&#34;xxx核桃炭烤串 - 商户通
+1. 烤肉局申请加入跨年PLAN！牛羊串X排骨筋，好友欢聚撸过瘾！
+2. 元旦当“燃”这一串！牛羊日日鲜，老铁酷酷炫！
+3. 2023-2024舌尖换乘点 | 和快乐“串”通，欢聚更尽兴！
+4. “元”气开烤，“旦”愿美好！围炉聚老友，火热烤肉季！
+
+&#34;
+570781,&#34;xxx小酒馆——推荐菜文案：
+
+【羊肉汤锅】
+暖身汤力荐，领鲜三十年。慢火足时酝酿，开锅满室浓香，除了爱无添加。汤色乳白，汤味鲜香，羊肉无膻，香醇浓厚。人生百味，羊汤抚慰
+
+【现烤羊腿】
+技法炉火纯青，方得羊香四溢。千里挑一羊腿，传统炭火炙烤，披上油亮新装。外焦香酥脆，内鲜嫩多汁，撕着吃才够味！
+
+【火焰鱼羊鲜】
+双鲜论剑，唇齿流连。烈烈火焰之上，锡纸一方天地，鱼与羊尽释本味。鱼肉吸收羊肉浓香，羊肉吸收鱼肉鲜甜，尽释“鲜”字奥义。&#34;
+</code></pre></td></tr></table>
+</div>
+</div><p>我们把历史数据先导出到 csv, 然后进行如下处理</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="nb">file</span><span class="p">):</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+            <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">documents</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="创建索引">创建索引</h3>
+<p>想通过语义准确的匹配到文本，最关键的是把文本转换为 <code>embedding</code>然后建立向量索引库。这里我们用的模型是 openai 的 <code>text-embedding-ada-002</code>。为了高效的创建以及后续的查询，这些繁琐的工作我们不需要每行都自己实现，<a href="https://docs.llamaindex.ai/en/stable/index.html" target="_blank" rel="noopener noreffer">llmindex</a>可以帮助我们快速来搭建。
+通过下面的代码我们创建了索引并持久化到了本地文件</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">context</span><span class="p">():</span>
+    <span class="n">embedding_llm</span> <span class="o">=</span> <span class="n">AzureOpenAIEmbedding</span><span class="p">(</span>
+        <span class="n">mode</span><span class="o">=</span><span class="n">OpenAIEmbeddingMode</span><span class="o">.</span><span class="n">SIMILARITY_MODE</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">&#34;text-embedding-ada-002&#34;</span><span class="p">,</span>
+        <span class="n">azure_deployment</span><span class="o">=</span><span class="s2">&#34;text-embedding-ada-002&#34;</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">openai</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+        <span class="n">azure_endpoint</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span>
+        <span class="n">api_version</span><span class="o">=</span><span class="n">openai</span><span class="o">.</span><span class="n">api_version</span><span class="p">,</span>
+        <span class="n">max_retries</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">request_timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="p">)</span>
+
+    <span class="c1"># max LLM token input size</span>
+    <span class="n">max_input_size</span> <span class="o">=</span> <span class="mi">4096</span>
+    <span class="c1"># set number of output tokens</span>
+    <span class="n">num_output</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="c1"># set maximum chunk overlap</span>
+    <span class="n">max_chunk_overlap</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">chunk_size_limit</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># prompt_helper = PromptHelper(max_input_size, num_output)</span>
+    <span class="n">service_context</span> <span class="o">=</span> <span class="n">ServiceContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span>
+        <span class="n">embed_model</span><span class="o">=</span><span class="n">embedding_llm</span><span class="p">,</span>
+        <span class="c1"># prompt_helper=prompt_helper</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">service_context</span>
+
+<span class="k">def</span> <span class="nf">make_index</span><span class="p">(</span><span class="nb">file</span><span class="p">):</span>
+    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">docs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">:</span>
+        <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">doc</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="p">))</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">documents</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+    <span class="n">index</span><span class="o">.</span><span class="n">storage_context</span><span class="o">.</span><span class="n">persist</span><span class="p">(</span><span class="n">persist_dir</span><span class="o">=</span><span class="n">store_dir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">index</span>
+</code></pre></td></tr></table>
+</div>
+</div><h3 id="查询">查询</h3>
+<p>我们需要先把索引加载到内存中，然后查出相似度最高的 3 个文案</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="n">q</span><span class="p">):</span>
+    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+    <span class="n">storage_context</span> <span class="o">=</span> <span class="n">StorageContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">persist_dir</span><span class="o">=</span><span class="n">store_dir</span><span class="p">)</span>
+    <span class="c1"># load index</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">load_index_from_storage</span><span class="p">(</span><span class="n">storage_context</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="n">VectorIndexRetriever</span><span class="p">(</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">similarity_top_k</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;id&#34;</span><span class="p">))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>结果示例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">redbook_notes.similarity.service_context</span> <span class="kn">import</span> <span class="n">make_index</span>
+<span class="nb">file</span> <span class="o">=</span> <span class="s2">&#34;/Users/wanglinxiao/Desktop/文案提需.csv&#34;</span>
+<span class="n">make_index</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">4</span><span class="p">]:</span> <span class="o">&lt;</span><span class="n">llama_index</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">vector_store</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">VectorStoreIndex</span> <span class="n">at</span> <span class="mh">0x1695375e0</span><span class="o">&gt;</span>
+<span class="kn">from</span> <span class="nn">redbook_notes.similarity.service_context</span> <span class="kn">import</span> <span class="n">query</span>
+<span class="n">q</span> <span class="o">=</span> <span class="s2">&#34;羊肉推荐菜&#34;</span>
+<span class="n">query</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+<span class="mf">0.8669767534968357</span>
+<span class="n">xx小酒馆</span><span class="err">——推荐菜文案：</span>
+<span class="err">【羊肉汤锅】</span>
+<span class="err">暖身汤力荐，领鲜三十年。慢火足时酝酿，开锅满室浓香，除了爱无添加。汤色乳白，汤味鲜香，羊肉无膻，香醇浓厚。人生百味，羊汤抚慰</span>
+<span class="err">【现烤羊腿】</span>
+<span class="err">技法炉火纯青，方得羊香四溢。千里挑一羊腿，传统炭火炙烤，披上油亮新装。外焦香酥脆，内鲜嫩多汁，撕着吃才够味！</span>
+<span class="err">【火焰鱼羊鲜】</span>
+<span class="err">双鲜论剑，唇齿流连。烈烈火焰之上，锡纸一方天地，鱼与羊尽释本味。鱼肉吸收羊肉浓香，羊肉吸收鱼肉鲜甜，尽释“鲜”字奥义。</span>
+<span class="mi">570781</span>
+<span class="mf">0.862087523108285</span>
+<span class="err">新鲜事：</span>
+<span class="err">寻欢主推•重磅食材</span>
+<span class="err">本店当家花旦，牛羊大有来头</span>
+<span class="err">澳洲谷饲牛肉，脂香浓郁，鲜嫩多汁</span>
+<span class="err">天然草原羊肉，口感细腻，味美无膻</span>
+<span class="err">缤纷串串尽情开涮，从这「娌」开启温暖冬日！</span>
+<span class="mi">571812</span>
+<span class="mf">0.8364552439695493</span>
+<span class="err">金都城——推荐菜文案：</span>
+<span class="err">【黄金脆皮猪手】</span>
+<span class="err">食指大动，肉控特供。寻味三峡库区，上乘巴东黑猪，蒸卤炸三部曲，十几小时工序，蜕变喷香油亮。咔滋咔滋入嘴，内里多汁</span><span class="n">Q弹</span><span class="err">，滋味妙不可言。</span>
+<span class="err">【酥不腻烤鸭】</span>
+<span class="err">金黄酥脆，京城至味。烹鸭自有金牌法则，×道工序换得焦糖鸭色。皮质酥脆入魂，鸭肉细嫩多汁，</span>
+<span class="err">味入肌理，带来酥而不腻的舌尖体验。</span>
+<span class="err">【石锅蝶鱼头】</span>
+<span class="err">锅气食足，心胃满足。水越深鱼越鲜，拾味深海海域，石锅慢入味，锁住丰腴鲜美，开盖满室鱼香。裹满汤汁入口，滑嫩味厚，回味绵长。</span>
+<span class="err">【金都特色脆皮肉丁】</span>
+<span class="err">金字招牌，下饭好菜。黄金六两松板肉，一头猪仅产半斤，辅以秘法烹制，释放无尽鲜美，口感层层递进。物以稀为贵，唇齿流连回味。</span>
+<span class="err">【梅干菜红烧肉】</span>
+<span class="err">人间尤物，味蕾倾慕。灵魂</span><span class="n">CP同烹</span><span class="err">，呈现酱红色泽。食之软烂醇香，口感肥而不腻。梅干菜增添清新气息，乍吃无波澜，再品回味长。</span>
+<span class="err">【酥皮虾】</span>
+<span class="err">热卖风味，快乐来会。刚捞出来的鲜虾，热油磨炼金皇甲。一口咔滋脆，一口</span><span class="n">Q弹爽</span><span class="err">，吮指回味，老少皆宜。</span>
+<span class="mi">572779</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到最匹配的结果是我们示例数据中的第三段文案，内容还是比较匹配的。</p>
+<h3 id="redis-vector-search">Redis Vector Search</h3>
+<p>上面的方案有两个问题</p>
+<ol>
+<li>索引持久化到了文件，对于容器化服务，发版之前我们需要把索引文件先上传，等待新容器启动后需要下载索引文件。整个过程容易出错和耗时，可用性不高；</li>
+<li>当文本量巨大不光需要更大的内存，更显著的问题是查询性能会下降的很厉害
+为了解决上面的问题我们需要引入向量数据库，这里我们使用了 redis-search 来存储和查询 embedding。</li>
+</ol>
+<h4 id="创建索引-1">创建索引</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">new_make_index</span><span class="p">(</span><span class="nb">file</span><span class="p">):</span>
+    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">docs</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">:</span>
+        <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">doc</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="n">doc</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="p">))</span>
+    <span class="n">vector_store</span> <span class="o">=</span> <span class="n">RedisVectorStore</span><span class="p">(</span>
+        <span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;vector_index&#34;</span><span class="p">,</span>
+        <span class="n">index_prefix</span><span class="o">=</span><span class="s2">&#34;zh&#34;</span><span class="p">,</span>
+        <span class="n">redis_url</span><span class="o">=</span><span class="s2">&#34;redis://localhost:6379&#34;</span><span class="p">,</span>  <span class="c1"># Default</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># create storage context</span>
+    <span class="n">storage_context</span> <span class="o">=</span> <span class="n">StorageContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_documents</span><span class="p">(</span><span class="n">documents</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">,</span> <span class="n">storage_context</span><span class="o">=</span><span class="n">storage_context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">index</span>
+</code></pre></td></tr></table>
+</div>
+</div><h4 id="查询-1">查询</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="k">def</span> <span class="nf">new_query</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+    <span class="n">vector_store</span> <span class="o">=</span> <span class="n">RedisVectorStore</span><span class="p">(</span>
+        <span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;vector_index&#34;</span><span class="p">,</span>
+        <span class="n">index_prefix</span><span class="o">=</span><span class="s2">&#34;zh&#34;</span><span class="p">,</span>
+        <span class="n">redis_url</span><span class="o">=</span><span class="s2">&#34;redis://localhost:6379&#34;</span><span class="p">,</span>  <span class="c1"># Default</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_vector_store</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+    <span class="n">retriever</span> <span class="o">=</span> <span class="n">VectorIndexRetriever</span><span class="p">(</span>
+        <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">similarity_top_k</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&#34;id&#34;</span><span class="p">))</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>结果示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">redbook_notes.similarity.service_context</span> <span class="kn">import</span> <span class="n">new_make_index</span>
+<span class="nb">file</span> <span class="o">=</span> <span class="s2">&#34;/Users/wanglinxiao/Desktop/文案提需.csv&#34;</span>
+<span class="n">new_make_index</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+<span class="n">Out</span><span class="p">[</span><span class="mi">4</span><span class="p">]:</span> <span class="o">&lt;</span><span class="n">llama_index</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="n">vector_store</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">VectorStoreIndex</span> <span class="n">at</span> <span class="mh">0x16f841a00</span><span class="o">&gt;</span>
+<span class="kn">from</span> <span class="nn">redbook_notes.similarity.service_context</span> <span class="kn">import</span> <span class="n">new_query</span>
+<span class="n">q</span> <span class="o">=</span> <span class="s2">&#34;羊肉推荐菜&#34;</span>
+<span class="n">new_query</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
+<span class="mf">0.866977393627</span>
+<span class="err">太和小酒馆——推荐菜文案：</span>
+<span class="err">【羊肉汤锅】</span>
+<span class="err">暖身汤力荐，领鲜三十年。慢火足时酝酿，开锅满室浓香，除了爱无添加。汤色乳白，汤味鲜香，羊肉无膻，香醇浓厚。人生百味，羊汤抚慰</span>
+<span class="err">【现烤羊腿】</span>
+<span class="err">技法炉火纯青，方得羊香四溢。千里挑一羊腿，传统炭火炙烤，披上油亮新装。外焦香酥脆，内鲜嫩多汁，撕着吃才够味！</span>
+<span class="err">【火焰鱼羊鲜】</span>
+<span class="err">双鲜论剑，唇齿流连。烈烈火焰之上，锡纸一方天地，鱼与羊尽释本味。鱼肉吸收羊肉浓香，羊肉吸收鱼肉鲜甜，尽释“鲜”字奥义。</span>
+<span class="mi">570781</span>
+</code></pre></td></tr></table>
+</div>
+</div><p>可以看到和上面的内存索引结果是一致的</p>
+<h4 id="更新索引">更新索引</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre class="chroma"><code class="language-python" data-lang="python">    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+    <span class="n">vector_store</span> <span class="o">=</span> <span class="n">RedisVectorStore</span><span class="p">(</span>
+        <span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;vector_index&#34;</span><span class="p">,</span>
+        <span class="n">index_prefix</span><span class="o">=</span><span class="s2">&#34;zh&#34;</span><span class="p">,</span>
+        <span class="n">redis_url</span><span class="o">=</span><span class="s2">&#34;redis://localhost:6379&#34;</span><span class="p">,</span>  <span class="c1"># Default</span>
+        <span class="n">overwrite</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_vector_store</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+    <span class="n">index</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&#34;text&#34;</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;id&#34;</span><span class="p">:</span> <span class="mi">123</span><span class="p">}))</span>
+</code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2023-12-16</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/text-similarity/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/text-similarity/" data-title="快速搭建文本语义搜索" data-hashtags="semantic search,embedding"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/text-similarity/" data-hashtag="semantic search"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/text-similarity/" data-title="快速搭建文本语义搜索" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/text-similarity/" data-title="快速搭建文本语义搜索"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/text-similarity/" data-title="快速搭建文本语义搜索"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/semantic-search/">semantic search</a>,&nbsp;<a href="/tags/embedding/">embedding</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/learn-transformer/" class="prev" rel="prev" title="Transformer 结构学习总结"><i class="fas fa-angle-left fa-fw"></i>Transformer 结构学习总结</a>
+            <a href="/crewai-practice/" class="next" rel="next" title="crewAI 搭建 AI agent 的原理及应用">crewAI 搭建 AI agent 的原理及应用<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
