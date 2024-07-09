@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>backend - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/backend/</link>
+        <description>backend - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 20 May 2022 11:05:55 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/backend/" rel="self" type="application/rss+xml" /><item>
+    <title>服务在线更新配置或文件的方案设计</title>
+    <link>https://lxkaka.wang/tts-online-update/</link>
+    <pubDate>Fri, 20 May 2022 11:05:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tts-online-update/</guid>
+    <description><![CDATA[在 TTS 算法服务中我们的词典可能会经常更新，但如果是离线更新，那么势必要重新构建和服务发布。这样的带来的问题一是更新成本高，二是降低了服务稳定性]]></description>
+</item><item>
+    <title>消息系统方案设计之站内消息和事件提醒</title>
+    <link>https://lxkaka.wang/msg-system/</link>
+    <pubDate>Fri, 22 Apr 2022 14:28:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/msg-system/</guid>
+    <description><![CDATA[消息系统可以说是每个应用不可缺少的系统。从功能上来说一个消息系统至少有两大部分组成 消息的存储 消息的通知 消息系统的复杂程度和用户规模和业务规模]]></description>
+</item><item>
+    <title>算法服务稳定性优化之负载控制</title>
+    <link>https://lxkaka.wang/p2c1/</link>
+    <pubDate>Sun, 27 Feb 2022 16:37:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/p2c1/</guid>
+    <description><![CDATA[在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。]]></description>
+</item><item>
+    <title>易于使用的性能测试工具-Locust</title>
+    <link>https://lxkaka.wang/locust/</link>
+    <pubDate>Sat, 29 Jan 2022 16:07:35 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/locust/</guid>
+    <description><![CDATA[当我们对外提供服务的时候调用方经常会问这样一个问题：你们的服务能提供多大的 QPS？ 那么就要求我们在服务上线之前就应该清楚的知道服务的极限 QPS 是]]></description>
+</item><item>
+    <title>用 StatefulSet 实现同步服务和异步服务的管理</title>
+    <link>https://lxkaka.wang/service-manage/</link>
+    <pubDate>Sun, 26 Dec 2021 13:55:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/service-manage/</guid>
+    <description><![CDATA[一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别]]></description>
+</item><item>
+    <title>从一个消费慢的例子深入理解 kafka rebalance</title>
+    <link>https://lxkaka.wang/kafka-rebalance/</link>
+    <pubDate>Sat, 20 Nov 2021 11:23:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kafka-rebalance/</guid>
+    <description><![CDATA[消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka]]></description>
+</item><item>
+    <title>Kafka 和 Pulsar 存储结构对比</title>
+    <link>https://lxkaka.wang/kakfa-pulsar-storage/</link>
+    <pubDate>Sat, 26 Dec 2020 14:00:11 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kakfa-pulsar-storage/</guid>
+    <description><![CDATA[在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇文章 中我们提到过这两种消息队列，而在我们了解]]></description>
+</item><item>
+    <title>Golang Context 探究</title>
+    <link>https://lxkaka.wang/golang-context/</link>
+    <pubDate>Sat, 28 Nov 2020 17:08:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-context/</guid>
+    <description><![CDATA[在用 Golang 开发过程中，我们一定能在代码里很多函数或方法都会传递 context, 也会经常遇到这样的报错 context deadline exceeded。你有想过或去探究过 context 到底是什么吗，为]]></description>
+</item><item>
+    <title>容器中使用 GPU 的基础环境搭建</title>
+    <link>https://lxkaka.wang/docker-nvidia/</link>
+    <pubDate>Sat, 24 Oct 2020 13:09:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-nvidia/</guid>
+    <description><![CDATA[在 Linux 服务器上使用 GPU 跑深度学习的模型很正常不过。如果我们想用 docker 实现同样的需求，就需要做些额外的工作。本质上就是我们要在容器里能看到并且使用宿主]]></description>
+</item><item>
+    <title>Prometheus 监控业务指标</title>
+    <link>https://lxkaka.wang/app-metrics/</link>
+    <pubDate>Sat, 26 Sep 2020 13:38:40 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/app-metrics/</guid>
+    <description><![CDATA[在 Kubernetes 已经成了事实上的容器编排标准之下，微服务的部署变得非常容易。但随着微服务规模的扩大，服务治理带来的挑战也会越来越大。在这样的背景下出现了]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>HTTP2 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/http2/</link>
+        <description>HTTP2 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 01 Jul 2018 17:51:20 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/http2/" rel="self" type="application/rss+xml" /><item>
+    <title>从实践出发理解HTTP2</title>
+    <link>https://lxkaka.wang/http2/</link>
+    <pubDate>Sun, 01 Jul 2018 17:51:20 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/http2/</guid>
+    <description><![CDATA[HTTP 协议是整个WEB世界的基石，而我们现在站绝对统治地位的HTTP/1.1从诞生之初到现在已经过去19年了。当时的互联网规模和现在相比无论是从]]></description>
+</item><item>
+    <title>从实践出发理解HTTP2</title>
+    <link>https://lxkaka.wang/http2/</link>
+    <pubDate>Sun, 01 Jul 2018 17:51:20 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/http2/</guid>
+    <description><![CDATA[HTTP 协议是整个WEB世界的基石，而我们现在站绝对统治地位的HTTP/1.1从诞生之初到现在已经过去19年了。当时的互联网规模和现在相比无论是从]]></description>
+</item></channel>
+</rss>

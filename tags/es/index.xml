@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>es - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/es/</link>
+        <description>es - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 17 Apr 2021 14:42:45 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/es/" rel="self" type="application/rss+xml" /><item>
+    <title>Elastic APM 补齐服务监控</title>
+    <link>https://lxkaka.wang/golang-apm/</link>
+    <pubDate>Sat, 17 Apr 2021 14:42:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-apm/</guid>
+    <description><![CDATA[在之前的文章介绍过服务可观测性。其中 tracing 扩展一下我们可以称之为 APM(Application Performance Monitoring)。在这篇文章里，我会具体介绍我们在 Golang 服务中的 APM 实践。 A]]></description>
+</item><item>
+    <title>基于elastalert的监控报警系统</title>
+    <link>https://lxkaka.wang/elasalert/</link>
+    <pubDate>Sat, 16 Jun 2018 09:15:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elasalert/</guid>
+    <description><![CDATA[监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报]]></description>
+</item><item>
+    <title>基于elastalert的监控报警系统</title>
+    <link>https://lxkaka.wang/elasalert/</link>
+    <pubDate>Sat, 16 Jun 2018 09:15:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elasalert/</guid>
+    <description><![CDATA[监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报]]></description>
+</item></channel>
+</rss>

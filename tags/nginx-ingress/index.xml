@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>nginx ingress - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/nginx-ingress/</link>
+        <description>nginx ingress - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/nginx-ingress/" rel="self" type="application/rss+xml" /><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>ZooKeeper - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/zookeeper/</link>
+        <description>ZooKeeper - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/zookeeper/" rel="self" type="application/rss+xml" /><item>
+    <title>ZooKeeper初识整理(老酒装新瓶)</title>
+    <link>https://lxkaka.wang/zookeeper/</link>
+    <pubDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zookeeper/</guid>
+    <description><![CDATA[整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能]]></description>
+</item><item>
+    <title>ZooKeeper初识整理(老酒装新瓶)</title>
+    <link>https://lxkaka.wang/zookeeper/</link>
+    <pubDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zookeeper/</guid>
+    <description><![CDATA[整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能]]></description>
+</item></channel>
+</rss>
