@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>elasticsearch - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/elasticsearch/</link>
+        <description>elasticsearch - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 29 Sep 2019 14:39:15 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/elasticsearch/" rel="self" type="application/rss+xml" /><item>
+    <title>Elasticsearch 读写总结</title>
+    <link>https://lxkaka.wang/es-wr/</link>
+    <pubDate>Sun, 29 Sep 2019 14:39:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/es-wr/</guid>
+    <description><![CDATA[我们整个日志系统是使用 EFK 这套开源方案来搭建的，在以前的文章中我们有提到过。在这个体系中，最关键的组件当属 Elasticsearch, 它负责数据的存储和搜索。在这里我们]]></description>
+</item><item>
+    <title>Elasticsearch 读写总结</title>
+    <link>https://lxkaka.wang/es-wr/</link>
+    <pubDate>Sun, 29 Sep 2019 14:39:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/es-wr/</guid>
+    <description><![CDATA[我们整个日志系统是使用 EFK 这套开源方案来搭建的，在以前的文章中我们有提到过。在这个体系中，最关键的组件当属 Elasticsearch, 它负责数据的存储和搜索。在这里我们]]></description>
+</item></channel>
+</rss>
