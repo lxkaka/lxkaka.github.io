@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>ArgoCD - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/argocd/</link>
+        <description>ArgoCD - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/argocd/" rel="self" type="application/rss+xml" /><item>
+    <title>Kustomize &#43; Argo CD 优化发布流程</title>
+    <link>https://lxkaka.wang/gitops-argocd/</link>
+    <pubDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gitops-argocd/</guid>
+    <description><![CDATA[GitOps 相信不少人听说过，这种新的交付模式越来越受到大家的关注，包括我自己在内。今天在这篇文章里我结合我们的实际生产上遇到的痛点，讲讲我们在 GitOps 上的]]></description>
+</item><item>
+    <title>Kustomize &#43; Argo CD 优化发布流程</title>
+    <link>https://lxkaka.wang/gitops-argocd/</link>
+    <pubDate>Mon, 20 Jul 2020 14:19:25 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gitops-argocd/</guid>
+    <description><![CDATA[GitOps 相信不少人听说过，这种新的交付模式越来越受到大家的关注，包括我自己在内。今天在这篇文章里我结合我们的实际生产上遇到的痛点，讲讲我们在 GitOps 上的]]></description>
+</item></channel>
+</rss>

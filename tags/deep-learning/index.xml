@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>deep learning - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/deep-learning/</link>
+        <description>deep learning - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 21 Aug 2021 11:14:26 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/deep-learning/" rel="self" type="application/rss+xml" /><item>
+    <title>深度学习中的常用音频处理方法</title>
+    <link>https://lxkaka.wang/audio-process/</link>
+    <pubDate>Sat, 21 Aug 2021 11:14:26 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/audio-process/</guid>
+    <description><![CDATA[在利用深度学习给音乐打标签的实践过程中，我们不会把音频的原始信号直接作为模型的直接输入。常见的做法是我们会对音频信号做一系列的处理生成频谱图]]></description>
+</item><item>
+    <title>为什么 GPU 能加速深度学习</title>
+    <link>https://lxkaka.wang/gpu-dl/</link>
+    <pubDate>Sat, 31 Jul 2021 12:52:18 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gpu-dl/</guid>
+    <description><![CDATA[接触过深度学习的同学都知道在训练和推理中使用 GPU 能加速，但是相对于 CPU 来说为什么 GPU 能在深度学习中提供更快的处理速度？我把自己学习和总结的成果分享]]></description>
+</item></channel>
+</rss>

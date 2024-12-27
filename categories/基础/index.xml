@@ -1,0 +1,43 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>基础 - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/%E5%9F%BA%E7%A1%80/</link>
+        <description>基础 - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/%E5%9F%BA%E7%A1%80/" rel="self" type="application/rss+xml" /><item>
+    <title>Transformer 结构学习总结</title>
+    <link>https://lxkaka.wang/learn-transformer/</link>
+    <pubDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/learn-transformer/</guid>
+    <description><![CDATA[MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']], processEscapes: true}, jax: ["input/TeX","input/MathML","input/AsciiMath","output/CommonHTML"], extensions: ["tex2jax.js","mml2jax.js","asciimath2jax.js","MathMenu.js","MathZoom.js","AssistiveMML.js", "[Contrib]/a11y/accessibility-menu.js"], TeX: { extensions: ["AMSmath.js","AMSsymbols.js","noErrors.js","noUndefined.js"], equationNumbers: { autoNumber: "AMS" } } }); transformer 已经成了当前深度学习领域最著名的网络架构，它是各大语言模型的基石。在这篇文章里我把自己在了]]></description>
+</item><item>
+    <title>Redis 多线程的学习和理解</title>
+    <link>https://lxkaka.wang/redis-io-threads/</link>
+    <pubDate>Sun, 30 Oct 2022 21:40:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-io-threads/</guid>
+    <description><![CDATA[在后端开发中面临分布式缓存选型时 Redis 已然成为了头号选手甚至可以说是事实上的标准。Redis 从本质上来讲是一个网络服务器，而对于一个网络服务器来]]></description>
+</item><item>
+    <title>为什么 GPU 能加速深度学习</title>
+    <link>https://lxkaka.wang/gpu-dl/</link>
+    <pubDate>Sat, 31 Jul 2021 12:52:18 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gpu-dl/</guid>
+    <description><![CDATA[接触过深度学习的同学都知道在训练和推理中使用 GPU 能加速，但是相对于 CPU 来说为什么 GPU 能在深度学习中提供更快的处理速度？我把自己学习和总结的成果分享]]></description>
+</item><item>
+    <title>Docker 核心原理</title>
+    <link>https://lxkaka.wang/docker-principle/</link>
+    <pubDate>Sat, 23 Jan 2021 12:34:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-principle/</guid>
+    <description><![CDATA[对 Docker 的使用大部分都比较熟悉，但是说到 docker 的实现原理很多人还是一知半解。我把在团队内部做的一次 Docker 核心原理分享总结到文章里，以供参考。 Docker 的优势 Build once,]]></description>
+</item><item>
+    <title>Golang Context 探究</title>
+    <link>https://lxkaka.wang/golang-context/</link>
+    <pubDate>Sat, 28 Nov 2020 17:08:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-context/</guid>
+    <description><![CDATA[在用 Golang 开发过程中，我们一定能在代码里很多函数或方法都会传递 context, 也会经常遇到这样的报错 context deadline exceeded。你有想过或去探究过 context 到底是什么吗，为]]></description>
+</item></channel>
+</rss>
