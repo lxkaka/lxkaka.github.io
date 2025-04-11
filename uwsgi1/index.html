@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>uWSGI--一个WSGI server - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/uwsgi1/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="uWSGI--一个WSGI server">
+  <meta property="og:description" content="相关背景知识，从 WSGI 说起: Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCG">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:published_time" content="2016-11-14T00:20:24+08:00">
+    <meta property="article:modified_time" content="2016-11-14T00:20:24+08:00">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="Back-End">
+    <meta property="article:tag" content="Back-End">
+    <meta property="article:tag" content="Web Server">
+    <meta property="article:tag" content="Web Server">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="uWSGI--一个WSGI server">
+  <meta name="twitter:description" content="相关背景知识，从 WSGI 说起: Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCG">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/uwsgi1/" /><link rel="prev" href="https://lxkaka.wang/pageformatnotes/" /><link rel="next" href="https://lxkaka.wang/django_signals/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "uWSGI--一个WSGI server",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/uwsgi1\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "page","keywords": "Tech Notes, back-end, web server, uwsgi","wordcount":  2843 ,
+        "url": "https:\/\/lxkaka.wang\/uwsgi1\/","datePublished": "2016-11-14T00:20:24+08:00","dateModified": "2016-11-14T00:20:24+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="page single special"><h1 class="single-title animated pulse faster">uWSGI--一个WSGI server</h1><div class="content" id="content"><ul>
+<li>
+<p><strong>相关背景知识，从 WSGI 说起:</strong></p>
+<p>Web应用框架的选择将限制可用的Web服务器的选择，反之亦然。那时的Python应用程序通常是为CGI，FastCGI，mod_python中的一个而设计，甚至是为特定Web服务器的自定义的API接口而设计的。WSGI 是为Python语言定义的Web服务器和Web应用程序或框架之间的一种简单而通用的接口。WSGI区分为两个部分：一为“服务器”或“网关”，另一为“应用程序”或“应用框架”。在处理一个WSGI请求时，服务器会为应用程序提供环境信息及一个回调函数（Callback Function）。当应用程序完成处理请求后，通过前述的回调函数，将结果回传给服务器。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/uwsgi1.png"
+        data-srcset="https://pics.lxkaka.wang/uwsgi1.png, https://pics.lxkaka.wang/uwsgi1.png 1.5x, https://pics.lxkaka.wang/uwsgi1.png 2x"
+        data-sizes="auto"
+        alt="uwsgi"
+        title="uwsgi" /></p>
+<p>wsgi server可以理解为一个符合wsgi规范的web server，接收request请求，封装一系列环境变量，按照wsgi规范调用注册的wsgi app，最后将response返回给客户端。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/req_process.png"
+        data-srcset="https://pics.lxkaka.wang/req_process.png, https://pics.lxkaka.wang/req_process.png 1.5x, https://pics.lxkaka.wang/req_process.png 2x"
+        data-sizes="auto"
+        alt="process"
+        title="process" /></p>
+</li>
+</ul>
+ <pre>
+    a. 服务器创建socket，监听端口，等待客户端连接  
+    b. 当有请求来时，服务器解析客户端信息放到环境变量environ中，并调用绑定的handler来处理请求
+    c. handler解析这个http请求，将请求信息例如method，path等放到environ中  
+    d. wsgi handler再将一些服务器端信息也放到environ中，最后服务器信息，客户端信息，本次请求信息全部都保存到了环境变量environ中  
+    e. wsgi handler 调用注册的wsgi app，并将environ和回调函数（start_response)传给wsgi app  
+    f. wsgi app 将reponse header/status/body 回传给wsgi handler  
+    g. 最终handler还是通过socket将response信息塞回给客户端。  
+  </pre>	
+<ul>
+<li>
+<p>CGI:</p>
+<p>外部应用程序（CGI程序）与Web服务器之间的接口标准，是在CGI程序和Web服务器之间传递信息的规程。简单点说CGI就是规定Web server要传哪些数据、以什么样的格式传递给 CGI 程序。CGI方式在遇到连接请求（用户请求）先要创建cgi的子进程，激活一个CGI进程，然后处理请求，处理完后结束这个子进程。这就是fork-and-execute模式。所以用cgi方式的服务器有多少连接请求就会有多少cgi子进程，子进程反复加载是cgi性能低下的主要原因。当用户请求数量非常多时，会大量挤占系统的资源如内存，CPU时间等，造成效能低下。</p>
+</li>
+<li>
+<p>FASTCGI：</p>
+<p>FastCGI是从CGI发展改进而来的。Fastcgi会先启一个master，解析配置文件，初始化执行环境，然后再启动多个worker。当请求过来时，master会传递给一个worker，然后立即可以接受下一个请求。这样就避免了重复的劳动，效率自然是高。而且当worker不够用时，master可以根据配置预先启动几个worker等着。</p>
+</li>
+<li>
+<p>uWSGI</p>
+<p>uWSGI是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议。uWSGI，既不用wsgi协议也不用FastCGI协议，而是自创了一个uwsgi的协议，uwsgi协议是一个uWSGI服务器自有的协议，
+它是一个二进制协议,能够携带任意类型的信息，每一个uwsgi packet前4byte为传输信息类型描述，它与WSGI相比是两样东西。
+uWSGI 保留了 fastcgi 的优点，实现进程控制，预先设置好启动多个worker处理请求。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/Nginx_uwsgi.jpg"
+        data-srcset="https://pics.lxkaka.wang/Nginx_uwsgi.jpg, https://pics.lxkaka.wang/Nginx_uwsgi.jpg 1.5x, https://pics.lxkaka.wang/Nginx_uwsgi.jpg 2x"
+        data-sizes="auto"
+        alt="nginx-uwsgi"
+        title="nginx-uwsgi" /></p>
+<p>nginx 通过 ngx_http_uwsgi_module模块把请求传递个 uWSGI 服务器。</p>
+<p>示例配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"> location / {
+</span></span><span class="line"><span class="cl">	include uwsgi_params;
+</span></span><span class="line"><span class="cl">	uwsgi_pass localhost:9000;
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>常用配置参数</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"> uwsgi_pass [protocol://]address;   
+</span></span><span class="line"><span class="cl"> 设置uwsgi服务器的协议和地址，协议可是uwsgi或suwsgi（uwsgi over ssl）； 
+</span></span><span class="line"><span class="cl"> 地址可以是ip地址，域名，和可选的端口：
+</span></span><span class="line"><span class="cl"> uwsgi_pass localhost:9000;
+</span></span><span class="line"><span class="cl"> uwsgi_pass uwsgi://localhost:9000; 
+</span></span><span class="line"><span class="cl"> uwsgi_pass suwsgi://[2001:db8::1]:9090; 
+</span></span><span class="line"><span class="cl"> 也可是unix socket： 
+</span></span><span class="line"><span class="cl"> uwsgi_pass unix:/tmp/uwsgi.socket;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> uwsgi_read_timeout time;
+</span></span><span class="line"><span class="cl"> Default:uwsgi_read_timeout 60s; 
+</span></span><span class="line"><span class="cl"> 定义从uwsgi服务器读取响应的超时时间，如果在超时时间内uwsgi服务器没有传输任何东西，连接会被断开。
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl">	<span class="n">uwsgi_params</span> <span class="err">定义了传递到</span><span class="n">uWSGI服务器的参数</span><span class="err">，示例：</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">  <span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">QUERY_STRING</span>       <span class="o">$</span><span class="n">query_string</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">REQUEST_METHOD</span>     <span class="o">$</span><span class="n">request_method</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">CONTENT_TYPE</span>       <span class="o">$</span><span class="n">content_type</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">CONTENT_LENGTH</span>     <span class="o">$</span><span class="n">content_length</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">REQUEST_URI</span>        <span class="o">$</span><span class="n">request_uri</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">PATH_INFO</span>          <span class="o">$</span><span class="n">document_uri</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">DOCUMENT_ROOT</span>      <span class="o">$</span><span class="n">document_root</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">SERVER_PROTOCOL</span>    <span class="o">$</span><span class="n">server_protocol</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">REMOTE_ADDR</span>        <span class="o">$</span><span class="n">remote_addr</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">REMOTE_PORT</span>        <span class="o">$</span><span class="n">remote_port</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">SERVER_PORT</span>        <span class="o">$</span><span class="n">server_port</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">    <span class="n">uwsgi_param</span>  <span class="n">SERVER_NAME</span>        <span class="o">$</span><span class="n">server_name</span><span class="p">;</span>  
+</span></span><span class="line"><span class="cl">  <span class="o">&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>	
+</span></span><span class="line"><span class="cl">	<span class="o">!</span><span class="p">[</span><span class="n">nignx</span><span class="o">-</span><span class="n">uwsgi2</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">pics</span><span class="o">.</span><span class="n">lxkaka</span><span class="o">.</span><span class="n">wang</span><span class="o">/</span><span class="n">nginx_uwsgi2</span><span class="o">.</span><span class="n">png</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="n">uWSGI</span> <span class="err">常用配置项</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">socket</span> <span class="ow">or</span> <span class="n">uwsgi</span><span class="o">-</span><span class="n">socket</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">指定</span><span class="n">uwsgi的客户端将要连接的socket的路径</span><span class="err">（使用</span><span class="n">UNIX</span> <span class="n">socket的情况</span><span class="err">）或者地址（使用网络地址的情况）。你最多可以同时指定</span><span class="mi">8</span><span class="err">个</span><span class="n">socket选项</span><span class="err">。当使用命令行变量时，可以使用“</span><span class="o">-</span><span class="n">s</span><span class="err">”这个缩写。</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">socket</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">uwsgi</span><span class="o">.</span><span class="n">sock</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">	<span class="err">以上配置将会绑定到</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">uwsgi</span><span class="o">.</span><span class="n">sock</span> <span class="err">指定的</span><span class="n">UNIX</span> <span class="n">socket</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">protocol</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">设置默认的通信协议（</span><span class="n">uwsgi</span><span class="err">，</span><span class="n">http</span><span class="err">，</span><span class="n">fastcgi</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">protocol</span> <span class="o">&lt;</span><span class="n">protocol</span><span class="o">&gt;</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">processes</span> <span class="ow">or</span> <span class="n">workers</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">为预先派生模式设置工作进程的数量。这个设置是</span><span class="n">app能实现简单并且安全的并发能力的基础</span><span class="err">。设置的工作进程越多，就能越快的处理请求。每一个工作进程都等同于一个系统进程，它消耗内存，所以需要小心设置工作进程的数量。如果设置的数量太多，就有可能是系统崩溃。</span>	
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">processes</span> <span class="mi">8</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">以上配置会产生</span><span class="mi">8</span><span class="err">个工作进程</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">harakiri</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">这个选项会设置</span><span class="n">harakiri超时时间</span><span class="err">。如果一个请求花费的时间超过了这个</span><span class="n">harakiri超时时间</span><span class="err">，那么这个请求都会被丢弃，并且当前处理这个请求的工作进程会被回收再利用（即重启）。</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">harakiri</span> <span class="mi">60</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">这个设置会使</span><span class="n">uwsgi丢弃所有需要60秒才能处理完成的请求</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">	<span class="n">harakiri</span><span class="o">-</span><span class="n">verbose</span>
+</span></span><span class="line"><span class="cl">	<span class="err">当一个请求被</span><span class="n">harakiri杀掉以后</span><span class="err">，你将在</span><span class="n">uWSGI日志中得到一条消息</span><span class="err">。激活这个选项会打印出额外的信息（例如，在</span><span class="n">linux中会打印出当前的syscall</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">harakiri</span><span class="o">-</span><span class="n">verbose</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">以上配置会开启</span><span class="n">harakiri的额外信息</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">daemonize</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">使进程在后台运行，并将日志打到指定的日志文件或者</span><span class="n">udp服务器</span><span class="o">--</span><span class="n">daemonize</span> <span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">uwsgi</span><span class="o">.</span><span class="n">log</span> <span class="err">这个指令会让</span><span class="n">uWSGI在后台运行并将日志打到</span> <span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">uwsgi</span><span class="o">.</span><span class="n">log文件中</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">buffer</span><span class="o">-</span><span class="n">size</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">设置用于</span><span class="n">uwsgi包解析的内部缓存区大小</span><span class="err">。默认是</span><span class="mi">4</span><span class="n">k</span><span class="err">。如果接受一个拥有很多请求头的大请求，可以增加这个值到</span><span class="mi">64</span><span class="n">k</span><span class="err">。</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">buffer</span><span class="o">-</span><span class="n">size</span> <span class="mi">32768</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	  
+</span></span><span class="line"><span class="cl">	<span class="err">这个命令会允许</span><span class="n">uWSGI服务器接收最大为32k的uwsgi包</span><span class="err">，再大的包就会被拒绝。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">auto</span><span class="o">-</span><span class="n">procname</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">这个选项将自动给</span><span class="n">uWSGI的进程设置一些有意义的名字</span><span class="err">，例如“</span><span class="n">uWSGI</span> <span class="n">master</span><span class="err">”，</span> <span class="err">“</span><span class="n">uWSGI</span> <span class="n">worker</span> <span class="mi">1</span><span class="err">”，</span> <span class="err">“</span><span class="n">uWSGI</span> <span class="n">worker</span> <span class="mi">2</span><span class="err">”。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">procname</span><span class="o">-</span><span class="n">prefix</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">这个选项为进程名指定前缀。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">procname</span><span class="o">-</span><span class="n">prefix</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">procname</span><span class="o">-</span><span class="n">prefix</span><span class="o">-</span><span class="n">spaced</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">用这个选项给进程名指定前缀时，前缀和进程名之间有空格分隔。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">procname</span><span class="o">-</span><span class="n">prefix</span><span class="o">-</span><span class="n">spaced</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">procname</span><span class="o">-</span><span class="n">append</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">这个选项为进程名增加指定的后缀。</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">procname</span><span class="o">-</span><span class="n">append</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">master</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">启动主进程。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="nb">max</span><span class="o">-</span><span class="n">requests</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">为每个工作进程设置请求数的上限。当一个工作进程处理的请求数达到这个值，那么该工作进程就会被回收重用（重启）。你可以使用这个选项来默默地对抗内存泄漏（尽管这类情况使用</span><span class="n">reload</span><span class="o">-</span><span class="n">on</span><span class="o">-</span><span class="n">as和reload</span><span class="o">-</span><span class="n">on</span><span class="o">-</span><span class="n">rss选项更有用</span><span class="err">）。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">`</span>
+</span></span><span class="line"><span class="cl">	<span class="p">[</span><span class="n">uwsgi</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="nb">max</span><span class="o">-</span><span class="n">requests</span> <span class="o">=</span> <span class="mi">1000</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span>
+</span></span><span class="line"><span class="cl">	<span class="err">上述配置设置工作进程没处理</span><span class="mi">1000</span><span class="err">个请求就会被回收重用。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">socket</span><span class="o">-</span><span class="n">timeout</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">为所有的</span><span class="n">socket操作设置内部超时时间</span><span class="err">（默认</span><span class="mi">4</span><span class="err">秒）。</span>
+</span></span><span class="line"><span class="cl">	<span class="err">`</span><span class="o">--</span><span class="n">socket</span><span class="o">-</span><span class="n">timeout</span> <span class="mi">10</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">这个配置会结束那些处于不活动状态超过</span><span class="mi">10</span><span class="err">秒的连接。</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="o">**</span><span class="n">module</span> <span class="p">[</span><span class="n">python</span> <span class="n">plugin</span> <span class="n">required</span><span class="p">]</span><span class="o">**</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">加载指定的</span><span class="n">python</span> <span class="n">WSGI模块</span><span class="err">（模块路径必须在</span><span class="n">PYTHONPATH里</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">  <span class="o">!</span><span class="p">[</span><span class="n">simple</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">pics</span><span class="o">.</span><span class="n">lxkaka</span><span class="o">.</span><span class="n">wang</span><span class="o">/</span><span class="n">simple</span><span class="o">.</span><span class="n">png</span> <span class="s2">&#34;简单架构实例&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">		
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></div></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

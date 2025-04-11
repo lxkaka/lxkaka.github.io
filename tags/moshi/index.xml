@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Moshi - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/moshi/</link>
+        <description>Moshi - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 23 Jan 2025 15:16:44 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/moshi/" rel="self" type="application/rss+xml" /><item>
+    <title>实时语音服务构建实践：基于 OpenAI Real-time 协议的技术分享</title>
+    <link>https://lxkaka.wang/end-to-end-audio-service/</link>
+    <pubDate>Thu, 23 Jan 2025 15:16:44 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/end-to-end-audio-service/</guid>
+    <description><![CDATA[在这里和大家分享一下构建实时语音服务的实践经验，这个服务是基于 OpenAI 最新推出的 Real-time 协议实现的。 随着 AI 技术的快速发展，实时语音交互的应用前景非常广阔]]></description>
+</item></channel>
+</rss>

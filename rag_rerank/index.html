@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>RAG 应用的关键步骤 - 优化搜索结果 - lxkaka</title><meta name="Description" content="如何高效搭建 RAG 中的搜索系统"><meta property="og:url" content="https://lxkaka.wang/rag_rerank/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="RAG 应用的关键步骤 - 优化搜索结果">
+  <meta property="og:description" content="如何高效搭建 RAG 中的搜索系统">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-02-28T18:58:52+08:00">
+    <meta property="article:modified_time" content="2024-02-28T18:58:52+08:00">
+    <meta property="article:tag" content="Semantic Search">
+    <meta property="article:tag" content="Embedding">
+    <meta property="article:tag" content="Rag">
+    <meta property="article:tag" content="Rerank">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="RAG 应用的关键步骤 - 优化搜索结果">
+  <meta name="twitter:description" content="如何高效搭建 RAG 中的搜索系统">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/rag_rerank/" /><link rel="prev" href="https://lxkaka.wang/crewai-practice/" /><link rel="next" href="https://lxkaka.wang/rag_doc/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "RAG 应用的关键步骤 - 优化搜索结果",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/rag_rerank\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "semantic search, embedding, rag, rerank","wordcount":  2278 ,
+        "url": "https:\/\/lxkaka.wang\/rag_rerank\/","datePublished": "2024-02-28T18:58:52+08:00","dateModified": "2024-02-28T18:58:52+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "如何高效搭建 RAG 中的搜索系统"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">RAG 应用的关键步骤 - 优化搜索结果</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a>&nbsp;<a href="/categories/%E7%B3%BB%E7%BB%9F/"><i class="far fa-folder fa-fw"></i>系统</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2024-02-28">2024-02-28</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2278 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#开源-embedding-模型">开源 embedding 模型</a></li>
+        <li><a href="#向量数据库">向量数据库</a></li>
+        <li><a href="#管理索引">管理索引</a>
+          <ul>
+            <li><a href="#创建索引">创建索引</a></li>
+            <li><a href="#删除部分索引">删除部分索引</a></li>
+            <li><a href="#查询">查询</a></li>
+          </ul>
+        </li>
+        <li><a href="#rerank">Rerank</a>
+          <ul>
+            <li><a href="#完整示例">完整示例</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在这篇<a href="https://www.lxkaka.wang/text-similarity/" target="_blank" rel="noopener noreffer">文章</a>里我们介绍了快速搭建语义搜索的实践方案。在这里我们会介绍语义搜索的进阶方案，包括使用开源模型构建文本  embedding、更好用的向量数据库以及介绍如何提高搜索的准确率。</p>
+<h3 id="开源-embedding-模型">开源 embedding 模型</h3>
+<p>我们之前使用的是 OpenAI 的 <code>text-embedding-ada-002</code>，目前有一些国内的开源模型在中文领域效果比 <code>text-embedding-ada-002</code> 要好。评测结果可以参考这个<a href="https://huggingface.co/spaces/mteb/leaderboard" target="_blank" rel="noopener noreffer">排行榜</a>。
+这里我们以模型 <code>BAAI/bge-large-zh-v1.5</code> 为例演示如何使用开源模型。
+我们还是使用 <a href="https://docs.llamaindex.ai/en/stable/index.html" target="_blank" rel="noopener noreffer">llmindex</a> 来作为工具包创建向量索引。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">new_context</span><span class="p">(</span><span class="n">index_name</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&#34;xxxx&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">api_version</span> <span class="o">=</span> <span class="s2">&#34;2023-05-15&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">llm</span> <span class="o">=</span> <span class="n">AOpenAI</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">engine</span><span class="o">=</span><span class="s2">&#34;gpt35&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">model</span><span class="o">=</span><span class="s2">&#34;gpt-35-turbo-16k&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">azure_endpoint</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">api_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">api_version</span><span class="o">=</span><span class="n">api_version</span><span class="p">,</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 这部分代码展示了使用开源模型的方式</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="s1">&#39;Bge&#39;</span> <span class="ow">in</span> <span class="n">index_name</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">model_name</span> <span class="o">=</span> <span class="s2">&#34;BAAI/bge-large-zh-v1.5&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;device&#34;</span><span class="p">:</span> <span class="s2">&#34;cpu&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">encode_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;normalize_embeddings&#34;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">embedding</span> <span class="o">=</span> <span class="n">HuggingFaceBgeEmbeddings</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span> <span class="n">model_kwargs</span><span class="o">=</span><span class="n">model_kwargs</span><span class="p">,</span> <span class="n">encode_kwargs</span><span class="o">=</span><span class="n">encode_kwargs</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">elif</span> <span class="s1">&#39;Openai&#39;</span> <span class="ow">in</span> <span class="n">index_name</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">embedding</span> <span class="o">=</span> <span class="n">AzureOpenAIEmbedding</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">mode</span><span class="o">=</span><span class="n">OpenAIEmbeddingMode</span><span class="o">.</span><span class="n">SIMILARITY_MODE</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">model</span><span class="o">=</span><span class="s2">&#34;text-embedding-ada-002&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">azure_deployment</span><span class="o">=</span><span class="s2">&#34;text-embedding-ada-002&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">api_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">azure_endpoint</span><span class="o">=</span><span class="n">endpoint</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">api_version</span><span class="o">=</span><span class="n">api_version</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">max_retries</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">request_timeout</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;no valid model&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">service_context</span> <span class="o">=</span> <span class="n">ServiceContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">embed_model</span><span class="o">=</span><span class="n">embedding</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">service_contex</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="向量数据库">向量数据库</h3>
+<p>目前可供选择的 vector database 还是很多的，大家可以参考这个<a href="https://db-engines.com/en/ranking/vector&#43;dbms" target="_blank" rel="noopener noreffer">榜单</a>。
+从部署成本、使用便捷、文档易读和性能等角度调研下来我们选择的是 <a href="https://weaviate.io/" target="_blank" rel="noopener noreffer">weaviate</a>。</p>
+<blockquote>
+<p>Weaviate 是一个低延迟矢量数据库，对不同媒体类型（文本、图像等）提供开箱即用的支持。它提供语义搜索、问答提取、分类、可定制模型 (PyTorch/TensorFlow/Keras) 等。Weaviate 在 Go 中从头开始构建，可存储对象和向量，允许将向量搜索与结构化过滤以及容错能力相结合。云原生数据库。这一切都可以通过 GraphQL、REST 和各种客户端编程语言进行访问。<br>
+快速查询 <br>
+Weaviate 通常在不到 100 毫秒的时间内对数百万个对象执行最近邻 (NN) 搜索。您可以在我们的基准页面上找到更多信息。
+使用 Weaviate 模块摄取任何媒体类型
+使用最先进的 AI 模型推理（例如 Transformer）在搜索和查询时访问数据（文本、图像等），让 Weaviate 为您管理数据矢量化过程 - 或提供您自己的数据矢量化过程 向量。
+组合向量和标量搜索<br>
+Weaviate 允许高效、组合的矢量和标量搜索。例如，“过去 7 天内发表的与 COVID-19 大流行相关的文章”。Weaviate 存储对象和向量，并确保两者的检索始终高效。不需要第三方对象存储。
+实时且持久<br>
+即使当前正在导入或更新数据，Weaviate 也可让您搜索数据。此外，每次写入都会写入预写日志 (WAL)，以便立即持久写入 - 即使发生崩溃也是如此。<br>
+水平扩展性<br>
+根据您的具体需求扩展 Weaviate，例如最大摄取量、最大可能的数据集大小、每秒最大查询数等。<br>
+成本效益<br>
+非常大的数据集不需要完全保存在 Weaviate 的内存中。同时，可以利用可用内存来提高查询速度。这样可以有意识地进行速度/成本权衡，以适应每个用例。<br>
+对象之间类似图形的连接<br>
+以类似图形的方式在对象之间建立任意连接，以类似于数据点之间的现实生活连接。使用 GraphQL 遍历这些连接。</p>
+</blockquote>
+<p>使用示例如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">create_weavite_vectorstore</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">service_context</span> <span class="o">=</span> <span class="n">context</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">storage_context</span> <span class="o">=</span> <span class="n">StorageContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">persist_dir</span><span class="o">=</span><span class="n">store_dir</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># load old index</span>
+</span></span><span class="line"><span class="cl">    <span class="n">index</span> <span class="o">=</span> <span class="n">load_index_from_storage</span><span class="p">(</span><span class="n">storage_context</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">embed_dict</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">_vector_store</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">embedding_dict</span>
+</span></span><span class="line"><span class="cl">    <span class="n">node_dict</span> <span class="o">=</span> <span class="n">index</span><span class="o">.</span><span class="n">_docstore</span><span class="o">.</span><span class="n">docs</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">node_id</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">node_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">vector</span> <span class="o">=</span> <span class="n">embed_dict</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="o">.</span><span class="n">embedding</span> <span class="o">=</span> <span class="n">vector</span>
+</span></span><span class="line"><span class="cl">        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># create client and a new collection</span>
+</span></span><span class="line"><span class="cl">    <span class="n">weaviate_client</span> <span class="o">=</span> <span class="n">weaviate</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">url</span><span class="o">=</span><span class="s2">&#34;xxx&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vector_store</span> <span class="o">=</span> <span class="n">WeaviateVectorStore</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">weaviate_client</span><span class="o">=</span><span class="n">weaviate_client</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;TestIndex&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">storage_context</span> <span class="o">=</span> <span class="n">StorageContext</span><span class="o">.</span><span class="n">from_defaults</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">storage_context</span><span class="o">=</span><span class="n">storage_context</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">index</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="管理索引">管理索引</h3>
+<p>我们先实现一个工具类，每次都能使用这个类来方便的创建索引，更新索引或者查询。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">VectorModel</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="ow">not</span> <span class="n">index_name</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;no index&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">index_name</span> <span class="o">=</span> <span class="n">index_name</span>
+</span></span><span class="line"><span class="cl">        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&#34;model init download and load index...&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">service_context</span> <span class="o">=</span> <span class="n">new_context</span><span class="p">(</span><span class="n">index_name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">weaviate_client</span> <span class="o">=</span> <span class="n">weaviate</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">url</span><span class="o">=</span><span class="s2">&#34;xxxx&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">timeout_config</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">vector_store</span> <span class="o">=</span> <span class="n">WeaviateVectorStore</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">weaviate_client</span><span class="o">=</span><span class="n">weaviate_client</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">index_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index_name</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># load index</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">VectorStoreIndex</span><span class="o">.</span><span class="n">from_vector_store</span><span class="p">(</span><span class="n">vector_store</span><span class="o">=</span><span class="n">vector_store</span><span class="p">,</span> <span class="n">service_context</span><span class="o">=</span><span class="n">service_context</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">retriever</span> <span class="o">=</span> <span class="n">VectorIndexRetriever</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">similarity_top_k</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="c1"># vector_store_query_mode=VectorStoreQueryMode.HYBRID,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="创建索引">创建索引</h4>
+<p>测试数据格式如下所示</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>biz</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>业务 1</td>
+<td>[&ldquo;查看客户拜访记录&rdquo;, &ldquo;浏览陪同拜访资料&rdquo;, &ldquo;检索客户拜访详情&rdquo;, &ldquo;筛选按姓名查找拜访记录&rdquo;, &ldquo;按拜访地址寻找记录&rdquo;, &ldquo;根据联系方式查询拜访信息&rdquo;]</td>
+</tr>
+<tr>
+<td>6</td>
+<td>业务 2</td>
+<td>[&ldquo;创建和发布公司通知&rdquo;, &ldquo;根据部门发送公告&rdquo;, &ldquo;按工作年限筛选接收公告的员工&rdquo;, &ldquo;向特定群体发送消息&rdquo;, &ldquo;定向发布内部通知&rdquo;, &ldquo;管理和发送组织公告&rdquo;]</td>
+</tr>
+<tr>
+<td>&hellip;</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>根据上面的数据创建索引</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">make_index</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">file</span> <span class="o">=</span> <span class="s1">&#39;/test.csv&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">vm</span> <span class="o">=</span> <span class="n">VectorModel</span><span class="p">(</span><span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;TestIndex_Bge&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reader</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">id</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">biz</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">fns</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="k">except</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">fns</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">text</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&#34;page_id&#34;</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">&#34;biz&#34;</span><span class="p">:</span> <span class="n">biz</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="p">))</span>
+</span></span><span class="line"><span class="cl">                <span class="nb">print</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">biz</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">vm</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">refresh_ref_docs</span><span class="p">(</span><span class="n">documents</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="删除部分索引">删除部分索引</h4>
+<p>删除部分索引示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">update_objects</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="n">client</span> <span class="o">=</span> <span class="n">weaviate</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="s2">&#34;xxx&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">all_objects</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">data_object</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">class_name</span><span class="o">=</span><span class="s2">&#34;TestIndex_Bge&#34;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;total objects: &#39;</span><span class="p">,</span> <span class="n">all_objects</span><span class="p">[</span><span class="s1">&#39;totalResults&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">ob</span> <span class="ow">in</span> <span class="n">all_objects</span><span class="p">[</span><span class="s1">&#39;objects&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;page_id&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="s1">&#39;27&#39;</span><span class="p">,</span> <span class="s1">&#39;29&#39;</span><span class="p">,</span> <span class="s1">&#39;42&#39;</span><span class="p">,</span> <span class="s1">&#39;49&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="n">ob</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;page_id&#39;</span><span class="p">],</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">client</span><span class="o">.</span><span class="n">data_object</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                <span class="n">uuid</span><span class="o">=</span><span class="n">ob</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">                <span class="n">class_name</span><span class="o">=</span><span class="n">ob</span><span class="p">[</span><span class="s1">&#39;class&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="查询">查询</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">vm</span> <span class="o">=</span> <span class="n">VectorModel</span><span class="p">(</span><span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;Testndex_Bge&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">res</span> <span class="o">=</span> <span class="n">m1</span><span class="o">.</span><span class="n">retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">query</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>示例结果如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Node ID: c7436e4d-db8b-4bd5-a891-b86ae8b2e550
+</span></span><span class="line"><span class="cl">Text: 浏览陪同拜访资料
+</span></span><span class="line"><span class="cl">Score:  0.486
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="rerank">Rerank</h3>
+<p>Rerank 模型通过对候选文档列表进行重新排序，以提高其与用户查询语义的匹配度，从而优化排序结果。该模型的核心在于评估用户问题与每个候选文档之间的关联程度，并基于这种相关性给文档排序，使得与用户问题更为相关的文档排在更前的位置。这种模型的实现通常涉及计算相关性分数，然后按照这些分数从高到低排列文档。
+这里我们使用并测试了两种 rerank 模型：闭源的 Cohere Rerank 模型 <code>rerank-multilingual-v2.0</code> 和 开源的 <code>bge-reranker-large</code>。<br>
+使用示例如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">reranker</span> <span class="o">=</span> <span class="n">CohereRerank</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&#34;rerank-multilingual-v2.0&#34;</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="s2">&#34;xxx&#34;</span><span class="p">)</span>  
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">bge_rerank</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">reranker</span> <span class="o">=</span> <span class="n">FlagReranker</span><span class="p">(</span><span class="s1">&#39;BAAI/bge-reranker-large&#39;</span><span class="p">,</span> <span class="n">use_fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">reqs</span> <span class="o">=</span> <span class="p">[[</span><span class="n">query</span><span class="p">,</span> <span class="n">n</span><span class="o">.</span><span class="n">text</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">scores</span> <span class="o">=</span> <span class="n">reranker</span><span class="o">.</span><span class="n">compute_score</span><span class="p">(</span><span class="n">reqs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">scores_with_index</span> <span class="o">=</span> <span class="p">[(</span><span class="n">i</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">scores</span><span class="p">)]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">[</span><span class="n">nodes</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">scores_with_index</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="完整示例">完整示例</h4>
+<p>完整的评测代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">file</span> <span class="o">=</span> <span class="s1">&#39;/test.csv&#39;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">m1</span> <span class="o">=</span> <span class="n">VectorModel</span><span class="p">(</span><span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;TestIndex_Openai&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">m2</span> <span class="o">=</span> <span class="n">VectorModel</span><span class="p">(</span><span class="n">index_name</span><span class="o">=</span><span class="s2">&#34;TestIndex_Bge&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">header</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">reader</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">reader</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="k">continue</span>
+</span></span><span class="line"><span class="cl">            <span class="n">res1</span> <span class="o">=</span> <span class="n">m1</span><span class="o">.</span><span class="n">retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">res1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">res1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">r</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">res2</span> <span class="o">=</span> <span class="n">m2</span><span class="o">.</span><span class="n">retriever</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">res2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">res2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">r</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1"># cohere rerank</span>
+</span></span><span class="line"><span class="cl">            <span class="n">res4</span> <span class="o">=</span> <span class="n">m1</span><span class="o">.</span><span class="n">reranker</span><span class="o">.</span><span class="n">postprocess_nodes</span><span class="p">(</span><span class="n">res1</span><span class="p">,</span> <span class="n">query_str</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1"># bge rerank</span>
+</span></span><span class="line"><span class="cl">            <span class="n">res5</span> <span class="o">=</span> <span class="n">bge_rerank</span><span class="p">(</span><span class="n">res2</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">res4</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res4</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res4</span><span class="o">.</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">res4</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">r</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">res5</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res5</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">res5</span><span class="o">.</span><span class="n">metadata</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">r</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">res4</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">                <span class="n">r</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/test_res.csv&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">w</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>测试结果如下所示（省略内容）</p>
+<table>
+<thead>
+<tr>
+<th>query</th>
+<th>预期 id</th>
+<th>openai</th>
+<th>bge</th>
+<th>openai+cohere rerank</th>
+<th>bge+bge rerank</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>看拜访记录</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+<td>5</td>
+</tr>
+<tr>
+<td>查看商户数据</td>
+<td>10</td>
+<td>8</td>
+<td>46</td>
+<td>10</td>
+<td>10</td>
+</tr>
+<tr>
+<td>&hellip;</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>-</td>
+<td>-</td>
+<td>72.5%</td>
+<td>67.5%</td>
+<td>77.5%</td>
+<td>85%</td>
+</tr>
+</tbody>
+</table>
+<p>在这篇文章里介绍了我们怎么去创建 RAG 应用的思路和实践，相信能提供一些实际的帮助。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-02-28</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/rag_rerank/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/rag_rerank/" data-title="RAG 应用的关键步骤 - 优化搜索结果" data-hashtags="semantic search,embedding,rag,rerank"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/rag_rerank/" data-hashtag="semantic search"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/rag_rerank/" data-title="RAG 应用的关键步骤 - 优化搜索结果" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/rag_rerank/" data-title="RAG 应用的关键步骤 - 优化搜索结果"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/rag_rerank/" data-title="RAG 应用的关键步骤 - 优化搜索结果"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/semantic-search/">Semantic Search</a>,&nbsp;<a href="/tags/embedding/">Embedding</a>,&nbsp;<a href="/tags/rag/">Rag</a>,&nbsp;<a href="/tags/rerank/">Rerank</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/crewai-practice/" class="prev" rel="prev" title="crewAI 搭建 AI agent 的原理及应用"><i class="fas fa-angle-left fa-fw"></i>crewAI 搭建 AI agent 的原理及应用</a>
+            <a href="/rag_doc/" class="next" rel="next" title="基于文档的 RAG 应用优化方案">基于文档的 RAG 应用优化方案<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

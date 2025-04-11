@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>低代码 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E4%BD%8E%E4%BB%A3%E7%A0%81/</link>
+        <description>低代码 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 25 Jun 2022 10:50:45 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E4%BD%8E%E4%BB%A3%E7%A0%81/" rel="self" type="application/rss+xml" /><item>
+    <title>高效搭建后台系统的解决方案-amis</title>
+    <link>https://lxkaka.wang/amis-practice/</link>
+    <pubDate>Sat, 25 Jun 2022 10:50:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/amis-practice/</guid>
+    <description><![CDATA[最近需要搭建一个管理后台来给产品和运营同学使用。管理后台简单来说就是信息管理的工具需要提供增删改查的功能。从细节上来说这样的一个后台一般都会]]></description>
+</item></channel>
+</rss>

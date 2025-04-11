@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Django特殊使用场景集合(updated at 2017-12-21） - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/django-use/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Django特殊使用场景集合(updated at 2017-12-21）">
+  <meta property="og:description" content="》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by(&#39;field&#39;)的时候， **first()和[0]**是">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-09-05T18:33:19+08:00">
+    <meta property="article:modified_time" content="2017-09-05T18:33:19+08:00">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="Django">
+    <meta property="article:tag" content="BE">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Django特殊使用场景集合(updated at 2017-12-21）">
+  <meta name="twitter:description" content="》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by(&#39;field&#39;)的时候， **first()和[0]**是">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/django-use/" /><link rel="prev" href="https://lxkaka.wang/elk-build/" /><link rel="next" href="https://lxkaka.wang/elx-process/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Django特殊使用场景集合(updated at 2017-12-21）",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/django-use\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Tech Notes, Django, BE","wordcount":  2120 ,
+        "url": "https:\/\/lxkaka.wang\/django-use\/","datePublished": "2017-09-05T18:33:19+08:00","dateModified": "2017-09-05T18:33:19+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Django特殊使用场景集合(updated at 2017-12-21）</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2017-09-05">2017-09-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2120 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#query的时候-querysetfirst-和-queryset0的区别">》query的时候 QuerySet.first()  和 QuerySet[0]的区别:</a></li>
+        <li><a href="#-联表查的时候重复字段指定表名">》 联表查的时候，重复字段指定表名</a></li>
+        <li><a href="#多次aggragate合并成一次查询">》多次aggragate合并成一次查询</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h3 id="query的时候-querysetfirst-和-queryset0的区别">》query的时候 QuerySet.first()  和 QuerySet[0]的区别:</h3>
+<ul>
+<li>
+<p>指明了排序，即 <code>order_by('field')</code>的时候， **first()<strong>和</strong>[0]**是等价的 都是取出按照指定字段排序的第一个结果<br>
+如：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>reh = HuiPayTransaction.objects.using(&lsquo;read&rsquo;).values(&lsquo;account_id&rsquo;).annotate(count=Count(&lsquo;account_id&rsquo;)).order_by(&rsquo;-account_id&rsquo;)
+reh.first()
+Out[139]: {&lsquo;account_id&rsquo;: 291589, &lsquo;count&rsquo;: 3}
+reh[0]
+Out[140]: {&lsquo;account_id&rsquo;: 291589, &lsquo;count&rsquo;: 3}
+```
+ </p>
+<ul>
+<li>
+<p>如果没有指明排序，这个时候 <strong>first()</strong> 会默认用 <code>order_by('pk')</code>排序。返回的结果就是数据库里id最小的那一条记录，与**[0]**返回的不一致<br>
+如：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>reh = HuiPayTransaction.objects.using(&lsquo;read&rsquo;).filter(account_id__gte=0).values(&lsquo;account_id&rsquo;).annotate(count=Count(&lsquo;account_id&rsquo;))
+reh.first()
+Out[154]: {&lsquo;account_id&rsquo;: 911, &lsquo;count&rsquo;: 1}
+reh[0]
+Out[155]: {&lsquo;account_id&rsquo;: 0, &lsquo;count&rsquo;: 27}
+```</p>
+<h3 id="-联表查的时候重复字段指定表名">》 联表查的时候，重复字段指定表名</h3>
+<ul>
+<li>
+<p>如下查询</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">query_set</span> <span class="o">=</span> <span class="n">MerchandiseLog</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">using</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">select_related</span><span class="p">(</span><span class="s1">&#39;merchandise&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">**</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;date_created&#39;</span><span class="p">:</span> <span class="s1">&#39;Date(created_at)&#39;</span><span class="p">})</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s1">&#39;date_created&#39;</span><span class="p">)</span>      
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>对应的sql</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">SELECT (Date(created_at)) AS &#34;date_created&#34; FROM &#34;zmall_merchandiselog&#34; INNER JOIN &#34;zmall_merchandise&#34; ON ( &#34;zmall_merchandiselog&#34;.&#34;merchandise_id&#34; = &#34;zmall_merchandise&#34;.&#34;id&#34; ) WHERE (&#34;zmall_merchandiselog&#34;.&#34;business_group_id&#34; = 1 AND &#34;zmall_merchandise&#34;.&#34;folder_id&#34; = 2 AND &#34;zmall_merchandiselog&#34;.&#34;created_at&#34; &gt;= 2017-09-01 00:00:00 AND &#34;zmall_merchandiselog&#34;.&#34;created_at&#34; &lt;= 2017-09-05 23:59:59.999999 AND &#34;zmall_merchandiselog&#34;.&#34;log_type&#34; = points_buy)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><font color='red'>报错</font>：<strong><code>ambiguous column name: created_at</code></strong></p>
+<p>这个时候问题就很明显了，表 <code>zmall_merchandiselog</code> 和表 	<code>zmall_merchandise</code>都有字段 created_at,数据库当然不知道	你要用哪个 <code>created_at</code></p>
+</li>
+<li>
+<p><strong>正确姿势</strong>, 指明表名</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">query_set</span> <span class="o">=</span> <span class="n">MerchandiseLog</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">using</span><span class="p">(</span><span class="s1">&#39;read&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">select_related</span><span class="p">(</span><span class="s1">&#39;merchandise&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">**</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="s1">&#39;date_created&#39;</span><span class="p">:</span> <span class="s1">&#39;Date(zmall_merchandiselog.created_at)&#39;</span><span class="p">})</span><span class="o">.</span><span class="n">values_list</span><span class="p">(</span><span class="s1">&#39;date_created&#39;</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>对应的sql</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">SELECT (Date(zmall_merchandiselog.created_at)) AS &#34;date_created&#34; FROM &#34;zmall_merchandiselog&#34; INNER JOIN &#34;zmall_merchandise&#34; ON ( &#34;zmall_merchandiselog&#34;.&#34;merchandise_id&#34; = &#34;zmall_merchandise&#34;.&#34;id&#34; ) WHERE (&#34;zmall_merchandiselog&#34;.&#34;created_at&#34; &lt;= 2017-09-05 23:59:59.999999 AND &#34;zmall_merchandiselog&#34;.&#34;log_type&#34; = points_buy AND &#34;zmall_merchandise&#34;.&#34;folder_id&#34; = 2 AND &#34;zmall_merchandiselog&#34;.&#34;created_at&#34; &gt;= 2017-09-01 00:00:00 AND &#34;zmall_merchandiselog&#34;.&#34;business_group_id&#34; = 1)
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="多次aggragate合并成一次查询">》多次aggragate合并成一次查询</h3>
+<ul>
+<li>
+<p>如下查询，我们想按条件count某些字段，甚至其中的字段需要先annotate</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># last_visited_date 百分位数</span>
+</span></span><span class="line"><span class="cl"><span class="n">last_visited_date_rate</span> <span class="o">=</span> <span class="n">dw_membership</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">last_visited_date__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_visited_date&#39;</span><span class="p">))</span><span class="o">.</span>\
+</span></span><span class="line"><span class="cl">    <span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;last_visited_date&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">/</span> <span class="n">total_count</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># visit_count 百分位数</span>
+</span></span><span class="line"><span class="cl"><span class="n">visit_count_rate</span> <span class="o">=</span> <span class="n">dw_membership</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">visit_count__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visit_count&#39;</span><span class="p">))</span><span class="o">.</span>\
+</span></span><span class="line"><span class="cl">    <span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;visit_count&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">/</span> <span class="n">total_count</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># consumptions_amount 百分位数</span>
+</span></span><span class="line"><span class="cl"><span class="n">consume_amount_rate</span> <span class="o">=</span> <span class="n">dw_membership</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">consumptions_original_amount__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;consume_amount&#39;</span><span class="p">))</span><span class="o">.</span>\
+</span></span><span class="line"><span class="cl">    <span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;consumptions_original_amount&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">/</span> <span class="n">total_count</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># average_consume 百分位数</span>
+</span></span><span class="line"><span class="cl"><span class="n">average_consume_rate</span> <span class="o">=</span> <span class="n">dw_membership</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">average_consume</span><span class="o">=</span><span class="n">ExpressionWrapper</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">F</span><span class="p">(</span><span class="s1">&#39;consumptions_original_amount&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">F</span><span class="p">(</span><span class="s1">&#39;consumptions_count&#39;</span><span class="p">),</span> <span class="n">output_field</span><span class="o">=</span><span class="n">DecimalField</span><span class="p">()))</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">average_consume__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;average_consume&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">/</span> <span class="n">total_count</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>用 <code>Case</code> <code>When</code>合并以下操作为一个query</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">query_res</span> <span class="o">=</span> <span class="n">dw_membership</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">      <span class="n">last_visited_date_counter</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="n">Case</span><span class="p">(</span>   <span class="c1"># 比当前会员到店间隔大的会员数</span>
+</span></span><span class="line"><span class="cl">          <span class="n">When</span><span class="p">(</span><span class="n">last_visited_date__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;last_visited_date&#39;</span><span class="p">),</span> <span class="n">then</span><span class="o">=</span><span class="n">F</span><span class="p">(</span><span class="s1">&#39;membership_uid&#39;</span><span class="p">)))),</span>
+</span></span><span class="line"><span class="cl">      <span class="n">visit_count_counter</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="n">Case</span><span class="p">(</span>  <span class="c1"># 比当前会员到店次数少的会员数</span>
+</span></span><span class="line"><span class="cl">          <span class="n">When</span><span class="p">(</span><span class="n">visit_count__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visit_count&#39;</span><span class="p">),</span> <span class="n">then</span><span class="o">=</span><span class="n">F</span><span class="p">(</span><span class="s1">&#39;membership_uid&#39;</span><span class="p">)))),</span>
+</span></span><span class="line"><span class="cl">      <span class="n">consume_amount_counter</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="n">Case</span><span class="p">(</span>  <span class="c1"># 比当前会员消费金额低的会员数</span>
+</span></span><span class="line"><span class="cl">          <span class="n">When</span><span class="p">(</span><span class="n">consumptions_original_amount__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;consume_amount&#39;</span><span class="p">),</span> <span class="n">then</span><span class="o">=</span><span class="n">F</span><span class="p">(</span><span class="s1">&#39;membership_uid&#39;</span><span class="p">)))))</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">合并操作时善用</span> <span class="err">`</span><span class="n">Case</span><span class="err">`</span><span class="p">,</span> <span class="err">`</span><span class="n">When</span><span class="err">`再搭配上</span><span class="n">aggregate操作比如</span> <span class="err">`</span><span class="n">Count</span><span class="err">`</span><span class="p">,</span> <span class="err">`</span><span class="n">Sum</span><span class="err">`</span><span class="p">,</span> <span class="err">`</span><span class="n">Max</span><span class="err">`</span><span class="p">,</span><span class="err">`</span><span class="n">Min</span><span class="err">`等，会起到不错的效果。但最好充分测试，很可能因为</span><span class="n">Django的版本问题存在bug</span><span class="err">。</span>  
+</span></span><span class="line"><span class="cl"><span class="err">比如这样使用</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="err">```</span><span class="n">python</span>
+</span></span><span class="line"><span class="cl"><span class="n">dw_membership</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">average_consume</span><span class="o">=</span><span class="n">ExpressionWrapper</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">F</span><span class="p">(</span><span class="s1">&#39;consumptions_original_amount&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">F</span><span class="p">(</span><span class="s1">&#39;consumptions_count&#39;</span><span class="p">),</span> <span class="n">output_field</span><span class="o">=</span><span class="n">DecimalField</span><span class="p">()))</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span><span class="n">average_consume_amount_counter</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="n">Case</span><span class="p">(</span>  <span class="c1"># 比当前会员平均消费金额低的会员数</span>
+</span></span><span class="line"><span class="cl">            <span class="n">When</span><span class="p">(</span><span class="n">average_consume__lte</span><span class="o">=</span><span class="n">member_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;average_consume&#39;</span><span class="p">),</span> <span class="n">then</span><span class="o">=</span><span class="n">F</span><span class="p">(</span><span class="s1">&#39;membership_uid&#39;</span><span class="p">)))))</span>
+</span></span><span class="line"><span class="cl">    <span class="err">```</span>
+</span></span><span class="line"><span class="cl"> <span class="err">会有这样的</span><span class="p">[</span><span class="n">bug</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">code</span><span class="o">.</span><span class="n">djangoproject</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">ticket</span><span class="o">/</span><span class="mi">25307</span><span class="p">),</span>  <span class="mf">1.11</span><span class="err">以后应该已经修复了</span><span class="o">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">### 》 特殊场景执行raw sql可以大大提高性能   </span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">场景举例，读取数据库里的数据并上传。</span>  
+</span></span><span class="line"><span class="cl"><span class="err">我们看下面这样一个例子</span><span class="p">,</span> <span class="err">取到数据库的每行记录并写入文件。在测试过程中会发现</span><span class="mi">4000</span><span class="err">多条数据竟然耗时要</span><span class="mi">30</span><span class="err">多秒，性能是我们不能接受的。定位瓶颈不是一蹴而就的，从代码方面来说是需要逐步分析缩小范围，不确定的地方动用性能分析工具帮助定位。下面展示的代码和分析结果就是确定瓶颈范围后进行的最后一步的定位。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">```</span><span class="n">python</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">_fill_excel_data</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">    * 通用的填充 Excel 数据的函数，返回文件的 BytesIO 对象, xls格式上限是65536 rows 
+</span></span></span><span class="line"><span class="cl"><span class="s2">    * 这里data是QuerySet
+</span></span></span><span class="line"><span class="cl"><span class="s2">    &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wb</span> <span class="o">=</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">Workbook</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ws</span> <span class="o">=</span> <span class="n">wb</span><span class="o">.</span><span class="n">add_sheet</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">title</span> <span class="ow">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ws</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">row_num</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="k">func</span> <span class="ow">in</span> <span class="n">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+</span></span><span class="line"><span class="cl">        		<span class="n">tmp</span> <span class="o">=</span> <span class="k">func</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ws</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">row_num</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">attached_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wb</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">attached_file</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">attached_file</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们用 <code>line_profiler</code>分析这段代码的主要耗时在什么地方，下面是分析结果
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/%E4%B8%8B%E8%BD%BD%E5%88%86%E6%9E%90.jpeg"
+        data-srcset="https://pics.lxkaka.wang/%E4%B8%8B%E8%BD%BD%E5%88%86%E6%9E%90.jpeg, https://pics.lxkaka.wang/%E4%B8%8B%E8%BD%BD%E5%88%86%E6%9E%90.jpeg 1.5x, https://pics.lxkaka.wang/%E4%B8%8B%E8%BD%BD%E5%88%86%E6%9E%90.jpeg 2x"
+        data-sizes="auto"
+        alt="分析结果"
+        title="分析结果" />
+在分析结果我们清楚的看到，绝大部分耗时是在 <code>func(record)</code>这一行, 而<code>record</code>是QuerySet的一条记录，这行代码真正执行的操作时去数据库里拉取查询结果。所以我们找到了瓶颈。就是 <strong>每一行记录都去数据库查询一次，巨大的IO开销</strong>。</p>
+<ul>
+<li>
+<p>解决方案：减少数据库查询次数。实际上就是避开Django ORM的 lazy load特性，一次数据库查询就把所需记录load到内存中，然后在进行写文件操作。实现方案就是<strong>执行raw sql查询到所有记录</strong>。</p>
+</li>
+<li>
+<p>步骤：</p>
+<ol>
+<li>从 QuerySet.query解析raw sql</li>
+<li>执行raw sql</li>
+<li>处理结果</li>
+</ol>
+<p>代码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">sql</span><span class="p">,</span> <span class="n">params</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">sql_with_params</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">direct_fetch_with_sql</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;一些特殊场景可以用此函数来performing raw sql&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connections</span><span class="p">[</span><span class="s1">&#39;read&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">dictfetchall</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">dictfetchall</span><span class="p">(</span><span class="n">cursor</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34;把fetchall返回的tuple转换为dict&#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>最后优化代码如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">_fill_excel_data</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;&#34;&#34; 通用的填充 Excel 数据的函数，返回文件的 BytesIO 对象, xls格式上限是65536 rows &#34;&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wb</span> <span class="o">=</span> <span class="n">xlwt</span><span class="o">.</span><span class="n">Workbook</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ws</span> <span class="o">=</span> <span class="n">wb</span><span class="o">.</span><span class="n">add_sheet</span><span class="p">(</span><span class="n">sheet_name</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">title</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ws</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sql</span><span class="p">,</span> <span class="n">params</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">sql_with_params</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">data</span> <span class="o">=</span> <span class="n">direct_fetch_with_sql</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">record</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">row_num</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ws</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">row_num</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">func</span><span class="p">(</span><span class="n">record</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">attached_file</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">wb</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">attached_file</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">attached_file</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>经测试，性能得到几何级的提升。20万条记录写入文件并上传只需要30秒。</p>
+</li>
+</ul>
+<p><strong>注意</strong>：对于大数据量的QuerySet进行适当的分隔，不要撑爆内存。</p>
+<p>###《 单元测试是否需要覆写tearDown</p>
+<ul>
+<li>如果使用<code>Python</code>内建的<code>unittest.TestCase</code>来作为UT的基类, 注意需要覆写<code>tearDown</code>来实现case执行完后的清理工作
+如：</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">MyTestCae</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">business</span> <span class="o">=</span> <span class="n">Business</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;test&#39;</span><span class="p">,</span> <span class="n">province</span><span class="o">=</span><span class="s1">&#39;ShangHai&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Business</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>如果使用<code>Django</code>的<code>rest_framework</code>的<code>APITestCase</code>则不需要实现数据库的清理工作。可以看到下面这段代码，在<code>setUp</code>里开启transaction，执行完每个case后，<code>tearDown</code>会roll back transaction。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="nd">@classmethod</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">setUpClass</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">(</span><span class="n">TestCase</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">setUpClass</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="ow">not</span> <span class="n">connections_support_transactions</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">cls</span><span class="o">.</span><span class="n">cls_atomics</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_enter_atomics</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="bp">cls</span><span class="o">.</span><span class="n">fixtures</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">db_name</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_databases_names</span><span class="p">(</span><span class="n">include_mirrors</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">call_command</span><span class="p">(</span><span class="s1">&#39;loaddata&#39;</span><span class="p">,</span> <span class="o">*</span><span class="bp">cls</span><span class="o">.</span><span class="n">fixtures</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">                            <span class="s1">&#39;verbosity&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                            <span class="s1">&#39;commit&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                            <span class="s1">&#39;database&#39;</span><span class="p">:</span> <span class="n">db_name</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="p">})</span>
+</span></span><span class="line"><span class="cl">                    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">                        <span class="bp">cls</span><span class="o">.</span><span class="n">_rollback_atomics</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">cls_atomics</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                        <span class="k">raise</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">cls</span><span class="o">.</span><span class="n">setUpTestData</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">cls</span><span class="o">.</span><span class="n">_rollback_atomics</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">cls_atomics</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">raise</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nd">@classmethod</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">tearDownClass</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="n">connections_support_transactions</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">cls</span><span class="o">.</span><span class="n">_rollback_atomics</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">cls_atomics</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">connections</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">                <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">(</span><span class="n">TestCase</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">tearDownClass</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>所以，在写UT时一定要注意case之间的环境隔离问题，不要出现脏数据污染了其他case的情况。需要手动清理时，一定要覆写<code>tearDown</code>方法</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2017-09-05</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/django-use/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/django-use/" data-title="Django特殊使用场景集合(updated at 2017-12-21）" data-hashtags="Tech Notes,Django,BE"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/django-use/" data-hashtag="Tech Notes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/django-use/" data-title="Django特殊使用场景集合(updated at 2017-12-21）" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/django-use/" data-title="Django特殊使用场景集合(updated at 2017-12-21）"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/django-use/" data-title="Django特殊使用场景集合(updated at 2017-12-21）"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/tech-notes/">Tech Notes</a>,&nbsp;<a href="/tags/django/">Django</a>,&nbsp;<a href="/tags/be/">BE</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/elk-build/" class="prev" rel="prev" title="ELK stack日志系统搭建"><i class="fas fa-angle-left fa-fw"></i>ELK stack日志系统搭建</a>
+            <a href="/elx-process/" class="next" rel="next" title="ELK进阶之Logstash配置和Kibana应用">ELK进阶之Logstash配置和Kibana应用<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

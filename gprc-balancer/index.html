@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>gRPC 一致性 Hash balancer 实现 - lxkaka</title><meta name="Description" content="在 grpc 中自定义一致性 hash 负载均衡的实现"><meta property="og:url" content="https://lxkaka.wang/gprc-balancer/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="gRPC 一致性 Hash balancer 实现">
+  <meta property="og:description" content="在 grpc 中自定义一致性 hash 负载均衡的实现">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2021-02-21T11:52:38+08:00">
+    <meta property="article:modified_time" content="2021-02-21T11:52:38+08:00">
+    <meta property="article:tag" content="GRPC">
+    <meta property="article:tag" content="负载均衡">
+    <meta property="article:tag" content="Session Stickiness">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="gRPC 一致性 Hash balancer 实现">
+  <meta name="twitter:description" content="在 grpc 中自定义一致性 hash 负载均衡的实现">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/gprc-balancer/" /><link rel="prev" href="https://lxkaka.wang/docker-principle/" /><link rel="next" href="https://lxkaka.wang/golangci/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "gRPC 一致性 Hash balancer 实现",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/gprc-balancer\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "grpc, 负载均衡, session stickiness","wordcount":  2385 ,
+        "url": "https:\/\/lxkaka.wang\/gprc-balancer\/","datePublished": "2021-02-21T11:52:38+08:00","dateModified": "2021-02-21T11:52:38+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "在 grpc 中自定义一致性 hash 负载均衡的实现"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">gRPC 一致性 Hash balancer 实现</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/golang/"><i class="far fa-folder fa-fw"></i>Golang</a>&nbsp;<a href="/categories/grpc/"><i class="far fa-folder fa-fw"></i>Grpc</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-02-21">2021-02-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2385 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#grpc-负载均衡">grpc 负载均衡</a>
+      <ul>
+        <li><a href="#resolver">Resolver</a></li>
+        <li><a href="#balancer">Balancer</a></li>
+      </ul>
+    </li>
+    <li><a href="#核心模块原理">核心模块原理</a>
+      <ul>
+        <li><a href="#resolver-流程">Resolver 流程</a></li>
+        <li><a href="#balancer-流程">Balancer 流程</a></li>
+      </ul>
+    </li>
+    <li><a href="#一致性-hash-balancer-实现">一致性 Hash balancer 实现</a>
+      <ul>
+        <li><a href="#一致性-hash">一致性 Hash</a>
+          <ul>
+            <li><a href="#添加节点">添加节点</a></li>
+            <li><a href="#查询节点">查询节点</a></li>
+          </ul>
+        </li>
+        <li><a href="#balancer-实现">balancer 实现</a>
+          <ul>
+            <li><a href="#实现-build-方法">实现 Build 方法</a></li>
+            <li><a href="#实现-pick-方法">实现 Pick 方法</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#一致性-hash-balancer-使用">一致性 Hash balancer 使用</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在开发过程中我们遇到了需要 session 保持的场景，即同一个用户的请求需要我们路由到后端服务的同一个实例。如果是 http 请求我们可用利用 nginx 的 ip hash 负载均衡策略来实现此目的；如果服务之间的调用我们用的是 gprc， 该怎么实现呢？在这篇文章里我就介绍一下我们如何实现 grpc 中的 session 保持。
+在介绍实现 自定义 gprc balancer 之前，我们必须了解一下 grpc 中服务发现和负载均衡的原理。</p>
+<h2 id="grpc-负载均衡">grpc 负载均衡</h2>
+<p>下面这张图展示了在 grpc 中实现负载均衡的的两个核心模块 <code>resovler</code> 和 <code>balancer</code>。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/grpc-conn.png"
+        data-srcset="https://pics.lxkaka.wang/grpc-conn.png, https://pics.lxkaka.wang/grpc-conn.png 1.5x, https://pics.lxkaka.wang/grpc-conn.png 2x"
+        data-sizes="auto"
+        alt="gprc-balancing"
+        title="gprc-balancing" /></p>
+<h3 id="resolver">Resolver</h3>
+<p>gprc client 通过 server name 和 grpc server 交互式，resolver 负责解析 server name, 通过 server name 从注册中心实时获取当前 server 的地址列表，同步发送给 Balancer</p>
+<h3 id="balancer">Balancer</h3>
+<p>接收从 Resolver 发送的server 地址列表，建立并维护连接状态；每次当 Client 发起 RPC 调用时，按照一定算法从连接池中选择一个连接进行发起调用</p>
+<h2 id="核心模块原理">核心模块原理</h2>
+<h3 id="resolver-流程">Resolver 流程</h3>
+<p>代码 <code>resolver/resolver.go</code>重点定义如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// scheme://authority/endpoint
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Target</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Scheme</span>    <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Authority</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Endpoint</span>  <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 向grpc注册服务发现实现时，实际上注册的是Builder
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Builder</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 创建Resolver，当resolver发现服务列表更新，需要通过ClientConn接口通知上层
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">Build</span><span class="p">(</span><span class="nx">target</span> <span class="nx">Target</span><span class="p">,</span> <span class="nx">cc</span> <span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">BuildOption</span><span class="p">)</span> <span class="p">(</span><span class="nx">Resolver</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Scheme</span><span class="p">()</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Resolver</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 当有连接被出现异常时，会触发该方法，因为这时候可能是有服务实例挂了，需要立即实现一次服务发现
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">ResolveNow</span><span class="p">(</span><span class="nx">ResolveNowOption</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">ClientConn</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 服务列表和服务配置更新回调接口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">UpdateState</span><span class="p">(</span><span class="nx">State</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 服务列表更新通知接口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">NewAddress</span><span class="p">(</span><span class="nx">addresses</span> <span class="p">[]</span><span class="nx">Address</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"> 	<span class="c1">// 服务配置更新通知接口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">NewServiceConfig</span><span class="p">(</span><span class="nx">serviceConfig</span> <span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>其中 Builder 接口用来创建 Resolver，我们可以提供自己的服务发现实现，然后将其注册到 grpc 中，其中通过 scheme 来标识，而 Resolver 接口则是提供服务发现功能。当 resover 发现服务列表发生变更时，会通过 ClientConn 回调接口通知上层。
+那么注册进来的 resolver 在哪里用到的呢？当创建客户端的时候调用 DialContext 方法创建 ClientConn 的时候回进行如下操作</p>
+<ul>
+<li>拦截器处理</li>
+<li>各种配置项处理</li>
+<li>解析 target</li>
+<li>获取 resolver</li>
+<li>创建 ccResolverWrapper</li>
+<li>创建 clientConn 的时候回根据 target 解析出 scheme，然后根据 scheme 去找已注册对应的 resolver，如果没有找到则使用默认的 resolver。
+相关代码可以在 <code>grpc/clientconn.go</code> 中看到。</li>
+</ul>
+<h3 id="balancer-流程">Balancer 流程</h3>
+<p>代码 <code>balancer/balancer.go</code> 重点定义如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// 声明了balancer需要用到的回调接口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">ClientConn</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  	<span class="c1">// 根据地址创建网络连接
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">NewSubConn</span><span class="p">([]</span><span class="nx">resolver</span><span class="p">.</span><span class="nx">Address</span><span class="p">,</span> <span class="nx">NewSubConnOptions</span><span class="p">)</span> <span class="p">(</span><span class="nx">SubConn</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 移除无效网络连接
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">RemoveSubConn</span><span class="p">(</span><span class="nx">SubConn</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 更新Picker，Picker用于在执行rpc调用时执行负载均衡策略，选举一条连接发送请求
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">UpdateBalancerState</span><span class="p">(</span><span class="nx">s</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">State</span><span class="p">,</span> <span class="nx">p</span> <span class="nx">Picker</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 立即触发服务发现
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">ResolveNow</span><span class="p">(</span><span class="nx">resolver</span><span class="p">.</span><span class="nx">ResolveNowOption</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Target</span><span class="p">()</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 根据当前的连接列表，执行负载均衡策略选举一条连接发送rpc请求
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Picker</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Pick</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">PickOptions</span><span class="p">)</span> <span class="p">(</span><span class="nx">conn</span> <span class="nx">SubConn</span><span class="p">,</span> <span class="nx">done</span> <span class="kd">func</span><span class="p">(</span><span class="nx">DoneInfo</span><span class="p">),</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Builder用于创建Balancer，注册的时候也是注册builder
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Builder</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Build</span><span class="p">(</span><span class="nx">cc</span> <span class="nx">ClientConn</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">BuildOptions</span><span class="p">)</span> <span class="nx">Balancer</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Name</span><span class="p">()</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Balancer</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 当有连接状态变更时，回调
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">HandleSubConnStateChange</span><span class="p">(</span><span class="nx">sc</span> <span class="nx">SubConn</span><span class="p">,</span> <span class="nx">state</span> <span class="nx">connectivity</span><span class="p">.</span><span class="nx">State</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 当resolver发现新的服务地址列表时调用（有可能地址列表并没有真的更新）
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nf">HandleResolvedAddrs</span><span class="p">([]</span><span class="nx">resolver</span><span class="p">.</span><span class="nx">Address</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>当 Resolver 发现新的服务列表时，最终会调用 Balancer 的 HandleResolvedAddrs 方法进行通知；Balancer 通过 ClientConn 的接口创建网络连接，然后根据当前的网络连接连接构造新的 Picker，然后回调 ClientConn.UpdateBalancerState 更新 Picker。当发送 grpc 请求时，会先执行 Picker 的接口，根据具体的负载均衡策略选举一条网络连接，然后发送rpc请求。</p>
+<h2 id="一致性-hash-balancer-实现">一致性 Hash balancer 实现</h2>
+<h3 id="一致性-hash">一致性 Hash</h3>
+<p>在实现 balancer 之前，先简单介绍一下一致性 Hash
+基本原理是 hash ring(hash 环)，即将节点 node 本身也 hash 到环上，通过数据和节点的 hash 相对位置来决定数据归属，因此当有新 node 加入时只有一部分的数据迁移。但事实上，这样的一致性hash导致数据分布不均匀，因为 node 在 hash ring 上的分布不均匀。分布不均匀的问题通过引入虚拟节点来解决，虚拟节点是均匀分布在环上的，数据做两次 match，最终到实际节点上。这样来保证数据分布的均匀性。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/hash-ring.png"
+        data-srcset="https://pics.lxkaka.wang/hash-ring.png, https://pics.lxkaka.wang/hash-ring.png 1.5x, https://pics.lxkaka.wang/hash-ring.png 2x"
+        data-sizes="auto"
+        alt="consistent-hash"
+        title="consistent-hash" />
+我们这里用一致性 Hash 就是为了同一个用户的请求能路由到同一个 server 实例。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Ketama</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sync</span><span class="p">.</span><span class="nx">Mutex</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">hash</span>     <span class="nx">HashFunc</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">replicas</span> <span class="kt">int</span> <span class="c1">// 虚拟节点数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">keys</span>     <span class="p">[]</span><span class="kt">int</span> <span class="c1">// 构造的 hash ring
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">hashMap</span>  <span class="kd">map</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span><span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="添加节点">添加节点</h4>
+<p>在添加节点时，为每个节点创建 replica 个虚拟节点，并计算虚拟节点的 hash 值存入 hash ring，也就是 keys 这个 slice 中，同时把这些虚拟节点的 hash 值与 node 的对应关系保存在 hashMap。最后给 keys 排个序，就像在环上分布，顺时针递增一样。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">Ketama</span><span class="p">)</span> <span class="nf">Add</span><span class="p">(</span><span class="nx">nodes</span> <span class="o">...</span><span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">h</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">h</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">node</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">nodes</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">h</span><span class="p">.</span><span class="nx">replicas</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">key</span> <span class="o">:=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nf">hash</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">Salt</span> <span class="o">+</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span> <span class="o">+</span> <span class="nx">node</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">hashMap</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">h</span><span class="p">.</span><span class="nx">keys</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">h</span><span class="p">.</span><span class="nx">hashMap</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="p">=</span> <span class="nx">node</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sort</span><span class="p">.</span><span class="nf">Ints</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="查询节点">查询节点</h4>
+<p>Get 方法是获取数据对应的节点，相当于负载均衡中源 ip 对应到哪个节点。计算数据的 hash，并在 hash Ring 上二分查找第一个大于 hash 的虚拟节点，也就通过hashMap 找到了对应的真实节点。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">Ketama</span><span class="p">)</span> <span class="nf">Get</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">h</span><span class="p">.</span><span class="nf">IsEmpty</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="s">&#34;&#34;</span><span class="p">,</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">hash</span> <span class="o">:=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nf">hash</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">key</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">h</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">h</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">idx</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="nx">hash</span>
+</span></span><span class="line"><span class="cl">	<span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">idx</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">idx</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">str</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">hashMap</span><span class="p">[</span><span class="nx">h</span><span class="p">.</span><span class="nx">keys</span><span class="p">[</span><span class="nx">idx</span><span class="p">]]</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">str</span><span class="p">,</span> <span class="nx">ok</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="balancer-实现">balancer 实现</h3>
+<p>在了解了 grpc 负载均衡的工作原理之后，实现自定义 balancer 需要完成的工作：</p>
+<ul>
+<li>
+<p>实现 PickerBuilder，Build 方法返回 balancer.Picker</p>
+</li>
+<li>
+<p>实现 balancer.Picker，Pick 方法实现负载均衡算法逻辑</p>
+</li>
+<li>
+<p>调用 balancer.Registet 注册自定义 Balancer</p>
+</li>
+</ul>
+<h4 id="实现-build-方法">实现 Build 方法</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">consistentHashPickerBuilder</span><span class="p">)</span> <span class="nf">Build</span><span class="p">(</span><span class="nx">buildInfo</span> <span class="nx">base</span><span class="p">.</span><span class="nx">PickerBuildInfo</span><span class="p">)</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">V2Picker</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">grpclog</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;consistentHashPicker: newPicker called with buildInfo: %v&#34;</span><span class="p">,</span> <span class="nx">buildInfo</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">buildInfo</span><span class="p">.</span><span class="nx">ReadySCs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">base</span><span class="p">.</span><span class="nf">NewErrPickerV2</span><span class="p">(</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">ErrNoSubConnAvailable</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// 构造 consistentHashPicker
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">picker</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">consistentHashPicker</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">subConns</span><span class="p">:</span>          <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">SubConn</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">hash</span><span class="p">:</span>              <span class="nf">NewKetama</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="kc">nil</span><span class="p">),</span> <span class="c1">// 构造一致性hash 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">consistentHashKey</span><span class="p">:</span> <span class="nx">b</span><span class="p">.</span><span class="nx">consistentHashKey</span><span class="p">,</span> <span class="c1">// 用于计算hash的key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">sc</span><span class="p">,</span> <span class="nx">conInfo</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">buildInfo</span><span class="p">.</span><span class="nx">ReadySCs</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">node</span> <span class="o">:=</span> <span class="nx">conInfo</span><span class="p">.</span><span class="nx">Address</span><span class="p">.</span><span class="nx">Addr</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">picker</span><span class="p">.</span><span class="nx">hash</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">picker</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">node</span><span class="p">]</span> <span class="p">=</span> <span class="nx">sc</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">picker</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="实现-pick-方法">实现 Pick 方法</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">consistentHashPicker</span><span class="p">)</span> <span class="nf">Pick</span><span class="p">(</span><span class="nx">info</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">PickInfo</span><span class="p">)</span> <span class="p">(</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">PickResult</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">ret</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">PickResult</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">key</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">info</span><span class="p">.</span><span class="nx">Ctx</span><span class="p">.</span><span class="nf">Value</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">consistentHashKey</span><span class="p">).(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">targetAddr</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">hash</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="c1">// 根据key的hash值挑选出对应的节点
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ret</span><span class="p">.</span><span class="nx">SubConn</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">targetAddr</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">ret</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="一致性-hash-balancer-使用">一致性 Hash balancer 使用</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewClient</span><span class="p">(</span><span class="nx">cfg</span> <span class="o">*</span><span class="nx">warden</span><span class="p">.</span><span class="nx">ClientConfig</span><span class="p">)</span> <span class="p">(</span><span class="nx">rb</span><span class="p">.</span><span class="nx">ResourceTaskClient</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 初始化balancer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">balancer</span><span class="p">.</span><span class="nf">InitConsistentHashBuilder</span><span class="p">(</span><span class="s">&#34;test&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">cfg</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">cfg</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">warden</span><span class="p">.</span><span class="nx">ClientConfig</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">client</span> <span class="o">:=</span> <span class="nx">warden</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span><span class="nx">cfg</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">client</span><span class="p">.</span><span class="nf">UseOpt</span><span class="p">(</span><span class="nx">grpc</span><span class="p">.</span><span class="nf">WithBalancerName</span><span class="p">(</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">Name</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">cc</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Dial</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;discovery://default/%s&#34;</span><span class="p">,</span> <span class="nx">AppID</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span><span class="o">!=</span><span class="kc">nil</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">rb</span><span class="p">.</span><span class="nf">NewResourceTaskClient</span><span class="p">(</span><span class="nx">cc</span><span class="p">),</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Service</span><span class="p">)</span> <span class="nf">GrpcTest</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">(</span><span class="nx">reply</span> <span class="o">*</span><span class="nx">rb</span><span class="p">.</span><span class="nx">GetTaskResReply</span><span class="p">,</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">){</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 在context中塞入hash key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ctx</span> <span class="p">=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">WithValue</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;test&#34;</span><span class="p">,</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="mi">1000</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">reply</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">gClient</span><span class="p">.</span><span class="nf">GetTaskRes</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">rb</span><span class="p">.</span><span class="nx">GetTaskResReq</span><span class="p">{</span><span class="nx">TaskId</span><span class="p">:</span> <span class="s">&#34;ct340984037629763021&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>我们把选中的节点信息打印出来展示如下, 不同的 key 选取了不同的节点，如果同一个 key 那么请求还是路由到同一个节点。由此实现我们的 session 保持的目的。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">INFO 02/20-14:46:32.958 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:61 <span class="nb">hash</span> map: map<span class="o">[</span>543647748:10.217.28.143:9000 946644225:10.217.27.218:9000 2448604328:10.217.27.218:9000 2521173259:10.217.27.218:9000 3082607229:10.217.28.143:9000 3098647747:10.217.28.143:9000<span class="o">]</span>
+</span></span><span class="line"><span class="cl">INFO 02/20-14:46:32.958 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:62 <span class="nb">hash</span> key:71
+</span></span><span class="line"><span class="cl">INFO 02/20-14:46:32.958 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:66 ip addr:10.217.28.143:9000
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">INFO 02/20-14:48:05.270 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:61 <span class="nb">hash</span> map: map<span class="o">[</span>543647748:10.217.28.143:9000 946644225:10.217.27.218:9000 2448604328:10.217.27.218:9000 2521173259:10.217.27.218:9000 3082607229:10.217.28.143:9000 3098647747:10.217.28.143:9000<span class="o">]</span>
+</span></span><span class="line"><span class="cl">INFO 02/20-14:48:05.270 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:62 <span class="nb">hash</span> key:705
+</span></span><span class="line"><span class="cl">INFO 02/20-14:48:05.270 /Users/lxkaka/bili/cv-service/interface/balancer/conhash.go:66 ip addr:10.217.27.218:9000
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-02-21</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/gprc-balancer/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/gprc-balancer/" data-title="gRPC 一致性 Hash balancer 实现" data-hashtags="grpc,负载均衡,session stickiness"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/gprc-balancer/" data-hashtag="grpc"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/gprc-balancer/" data-title="gRPC 一致性 Hash balancer 实现" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/gprc-balancer/" data-title="gRPC 一致性 Hash balancer 实现"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/gprc-balancer/" data-title="gRPC 一致性 Hash balancer 实现"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/grpc/">GRPC</a>,&nbsp;<a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/">负载均衡</a>,&nbsp;<a href="/tags/session-stickiness/">Session Stickiness</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/docker-principle/" class="prev" rel="prev" title="Docker 核心原理"><i class="fas fa-angle-left fa-fw"></i>Docker 核心原理</a>
+            <a href="/golangci/" class="next" rel="next" title="golangci-lint 提效代码 review">golangci-lint 提效代码 review<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

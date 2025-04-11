@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Go - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/go/</link>
+        <description>Go - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 28 Nov 2020 17:08:36 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/go/" rel="self" type="application/rss+xml" /><item>
+    <title>Golang Context 探究</title>
+    <link>https://lxkaka.wang/golang-context/</link>
+    <pubDate>Sat, 28 Nov 2020 17:08:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-context/</guid>
+    <description><![CDATA[在用 Golang 开发过程中，我们一定能在代码里很多函数或方法都会传递 context, 也会经常遇到这样的报错 context deadline exceeded。你有想过或去探究过 context 到底是什么吗，为]]></description>
+</item><item>
+    <title>Python 和 Go 之间的 gRPC 交互</title>
+    <link>https://lxkaka.wang/python-grpc/</link>
+    <pubDate>Sat, 22 Aug 2020 10:33:59 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/python-grpc/</guid>
+    <description><![CDATA[因为不同的业务场景，异构的业务系统十分常见。异构服务之间的同步通信方式的选择不外乎 HTTP 和 RPC 两种。RPC 方式可以像调用本地方法一样调用远程服务提]]></description>
+</item><item>
+    <title>Python 和 Go 之间的 gRPC 交互</title>
+    <link>https://lxkaka.wang/python-grpc/</link>
+    <pubDate>Sat, 22 Aug 2020 10:33:59 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/python-grpc/</guid>
+    <description><![CDATA[因为不同的业务场景，异构的业务系统十分常见。异构服务之间的同步通信方式的选择不外乎 HTTP 和 RPC 两种。RPC 方式可以像调用本地方法一样调用远程服务提]]></description>
+</item></channel>
+</rss>

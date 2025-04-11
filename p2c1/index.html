@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>算法服务稳定性优化之负载控制 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/p2c1/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="算法服务稳定性优化之负载控制">
+  <meta property="og:description" content="在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2022-02-27T16:37:33+08:00">
+    <meta property="article:modified_time" content="2022-02-27T16:37:33+08:00">
+    <meta property="article:tag" content="负载均衡">
+    <meta property="article:tag" content="服务治理">
+    <meta property="article:tag" content="P2C">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="算法服务稳定性优化之负载控制">
+  <meta name="twitter:description" content="在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/p2c1/" /><link rel="prev" href="https://lxkaka.wang/locust/" /><link rel="next" href="https://lxkaka.wang/rbac-casbin/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "算法服务稳定性优化之负载控制",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/p2c1\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "负载均衡, 服务治理, P2C","wordcount":  2147 ,
+        "url": "https:\/\/lxkaka.wang\/p2c1\/","datePublished": "2022-02-27T16:37:33+08:00","dateModified": "2022-02-27T16:37:33+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">算法服务稳定性优化之负载控制</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/service/"><i class="far fa-folder fa-fw"></i>Service</a>&nbsp;<a href="/categories/grpc/"><i class="far fa-folder fa-fw"></i>Grpc</a>&nbsp;<a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>Backend</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-02-27">2022-02-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2147 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#快速失败">快速失败</a>
+          <ul>
+            <li><a href="#p2c">P2C</a>
+              <ul>
+                <li><a href="#核心逻辑">核心逻辑</a></li>
+                <li><a href="#关键实现">关键实现</a></li>
+              </ul>
+            </li>
+            <li><a href="#错误实例被选择概率大大降低">错误实例被选择概率大大降低</a></li>
+          </ul>
+        </li>
+        <li><a href="#优选空闲节点">优选空闲节点</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在我们的算法服务中，我们通过 gRPC server 对外提供服务。这里算法和一般的服务有一个很大的区别, 算法服务依赖于 GPU, 往往一次请求就能把单卡的性能吃到 80%。为了并发请求进来不互相影响我们往往会把 server 的处理线程池设为 1，这就意味着单个实例的并发数只有 1， 如果同一时刻实例接收到 2 个请求，则有一个请求会在 gRPC server 中排队。这样随之出现的问题就是如果先处理的请求耗时过长，那么排队的请求还来不及处理客户端就因为超时返回了。这种情况对于客户端来说得一直等到超时并且失败，非常不友好；再者客户端已经超时返回了，服务器还在处理已经返回的请求白白浪费资源。
+在这篇文章里我分享一下我们的优化思路，希望能帮到有类似场景的同学。</p>
+<h3 id="快速失败">快速失败</h3>
+<p>在上面我们提到在限制并发能力的情况下由于 gRPC server 的排队机制可能导致请求已经超时返回而服务器还在处理这个请求。很自然的想法就是我们把队列设置成 1, 同一时刻进来的多个请求只有一个会被处理，其他请求则返回失败。
+这样降低了服务器的负载，但客户端的请求还是失败了，并没有从根本上提升用户的体验。
+在服务器处理速率和请求速率相当的情况下，如果我们在快速失败的基础上能立即重试并且不让打到之前失败的实例上，这样能大大降低客户端的调用失败率。
+所以，关键就是如果让重试的请求不打到失败的实例。这里我们用的负载均衡算法是 <code>P2C</code>。</p>
+<h4 id="p2c">P2C</h4>
+<blockquote>
+<p>P2C 算法全称 Pick of 2 choices，相比 WRR，P2C 有着更科学的 LB 策略，它通过随机选择两个节点后在这俩节点里选择优胜者来避免羊群效应，并通过指数加权移动平均算法统计服务端的实时状态，从而做出最优选择。
+我们这里不详细介绍 <code>P2C</code>，只是把该算法节点选择的过程说清楚，让大家便于明白重试请求不容易打到失败的实例。</p>
+</blockquote>
+<h5 id="核心逻辑">核心逻辑</h5>
+<ol>
+<li>
+<p>在多个节点中随机选择两个节点:会随机的选择3次，如果其中一次选择的节点的健康条件满足要求，就中断选择，采用这两个节点</p>
+</li>
+<li>
+<p>比较 nodeA、nodeB 两个节点，选出负载最低（综合请求响应时间、服务器 cpu 负载、正在处理的请求数据、请求成功率）的节点作为被选中的节点
+下图说明了这个选择过程</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/p2c.png"
+        data-srcset="https://pics.lxkaka.wang/p2c.png, https://pics.lxkaka.wang/p2c.png 1.5x, https://pics.lxkaka.wang/p2c.png 2x"
+        data-sizes="auto"
+        alt="p2c"
+        title="p2c" /></p>
+</li>
+</ol>
+<h5 id="关键实现">关键实现</h5>
+<p>在<a href="https://www.lxkaka.wang/gprc-balancer/" target="_blank" rel="noopener noreffer">这里</a>我们介绍过实现自定义 gRPC 负载均衡器的关键就是</p>
+<ol>
+<li>实现 google.golang.org/grpc/balancer/base/base.go/PickerBuilder 接口, 这个接口是有服务节点更新的时候会调用接口里的 Build 方法</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">PickerBuilder</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Build returns a picker that will be used by gRPC to pick a SubConn.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">Build</span><span class="p">(</span><span class="nx">info</span> <span class="nx">PickerBuildInfo</span><span class="p">)</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">Picker</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="2">
+<li>还要实现 google.golang.org/grpc/balancer/balancer.go/Picker 接口。这个接口主要实现负载均衡，挑选一个节点供请求使用</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Picker</span> <span class="kd">interface</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">Pick</span><span class="p">(</span><span class="nx">info</span> <span class="nx">PickInfo</span><span class="p">)</span> <span class="p">(</span><span class="nx">PickResult</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="3">
+<li>注册自己实现的负载均衡器</li>
+</ol>
+<p>重点看一下节点筛选逻辑</p>
+<ul>
+<li>选择两个节点</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="c1">// choose two distinct nodes
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 总循环 3 次，随机从 subConns []*subConn 中选择两个节点 nodeB 和 nodeA，
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 如果满足 node.valid() 的要求，直接返回，不满足的话，返回最后一次的选择的两个节点
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">p2cPicker</span><span class="p">)</span> <span class="nf">prePick</span><span class="p">()</span> <span class="p">(</span><span class="nx">nodeA</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">,</span> <span class="nx">nodeB</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">lk</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">a</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">r</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">b</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">r</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">lk</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">b</span> <span class="o">&gt;=</span> <span class="nx">a</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">b</span> <span class="p">=</span> <span class="nx">b</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">nodeA</span><span class="p">,</span> <span class="nx">nodeB</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">a</span><span class="p">],</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">b</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">nodeA</span><span class="p">.</span><span class="nf">valid</span><span class="p">()</span> <span class="o">||</span> <span class="nx">nodeB</span><span class="p">.</span><span class="nf">valid</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">break</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>二选一</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">p2cPicker</span><span class="p">)</span> <span class="nf">pick</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">opts</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">PickInfo</span><span class="p">)</span> <span class="p">(</span><span class="nx">balancer</span><span class="p">.</span><span class="nx">PickResult</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">pc</span><span class="p">,</span> <span class="nx">upc</span> <span class="o">*</span><span class="nx">subConn</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">UnixNano</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">PickResult</span><span class="p">{},</span> <span class="nx">balancer</span><span class="p">.</span><span class="nx">ErrNoSubConnAvailable</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">pc</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">nodeA</span><span class="p">,</span> <span class="nx">nodeB</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">prePick</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// meta.Weight为服务发布者在disocvery中设置的权重
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">nodeA</span><span class="p">.</span><span class="nf">load</span><span class="p">()</span><span class="o">*</span><span class="nx">nodeB</span><span class="p">.</span><span class="nf">health</span><span class="p">()</span><span class="o">*</span><span class="nx">nodeB</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">Weight</span> <span class="p">&gt;</span> <span class="nx">nodeB</span><span class="p">.</span><span class="nf">load</span><span class="p">()</span><span class="o">*</span><span class="nx">nodeA</span><span class="p">.</span><span class="nf">health</span><span class="p">()</span><span class="o">*</span><span class="nx">nodeA</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">Weight</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">pc</span><span class="p">,</span> <span class="nx">upc</span> <span class="p">=</span> <span class="nx">nodeB</span><span class="p">,</span> <span class="nx">nodeA</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">pc</span><span class="p">,</span> <span class="nx">upc</span> <span class="p">=</span> <span class="nx">nodeA</span><span class="p">,</span> <span class="nx">nodeB</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// 如果选中的节点，在forceGap期间内没有被选中一次，那么强制一次
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// 利用强制的机会，来触发成功率、延迟的衰减
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// 原子锁conn.pick保证并发安全，放行一次
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">pick</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">upc</span><span class="p">.</span><span class="nx">pick</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">start</span><span class="o">-</span><span class="nx">pick</span> <span class="p">&gt;</span> <span class="nx">forceGap</span> <span class="o">&amp;&amp;</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">CompareAndSwapInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">upc</span><span class="p">.</span><span class="nx">pick</span><span class="p">,</span> <span class="nx">pick</span><span class="p">,</span> <span class="nx">start</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">pc</span> <span class="p">=</span> <span class="nx">upc</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">Warn</span><span class="p">(</span><span class="s">&#34;node inflight: %s, %d \n&#34;</span><span class="p">,</span> <span class="nx">pc</span><span class="p">.</span><span class="nx">addr</span><span class="p">.</span><span class="nx">Addr</span><span class="p">,</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">inflight</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// 节点未发生切换才更新pick时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">pc</span> <span class="o">!=</span> <span class="nx">upc</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">pick</span><span class="p">,</span> <span class="nx">start</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">AddInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">inflight</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">AddInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">reqs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="错误实例被选择概率大大降低">错误实例被选择概率大大降低</h4>
+<p>在下面的这段代码我们可以看到当请求调用发生错误时，节点健康值 <code>success</code> 会变的很小几乎为0 (采用指数加权移动平均算法更新)，这样当请求失败立即重试有极大的概率被路由到空闲的实例上。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="k">if</span> <span class="nx">di</span><span class="p">.</span><span class="nx">Err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">st</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">status</span><span class="p">.</span><span class="nf">FromError</span><span class="p">(</span><span class="nx">di</span><span class="p">.</span><span class="nx">Err</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// only counter the local grpc error, ignore any business error
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">st</span><span class="p">.</span><span class="nf">Code</span><span class="p">()</span> <span class="o">!=</span> <span class="nx">codes</span><span class="p">.</span><span class="nx">Unknown</span> <span class="o">&amp;&amp;</span> <span class="nx">st</span><span class="p">.</span><span class="nf">Code</span><span class="p">()</span> <span class="o">!=</span> <span class="nx">codes</span><span class="p">.</span><span class="nx">OK</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">success</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">oldSuc</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">success</span> <span class="p">=</span> <span class="nb">uint64</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">oldSuc</span><span class="p">)</span><span class="o">*</span><span class="nx">w</span> <span class="o">+</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">success</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="nx">w</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">pc</span><span class="p">.</span><span class="nx">success</span><span class="p">,</span> <span class="nx">success</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>下图是快速失败 + 立即重试策略的测试结果, 图中右半部分可以看到在使用了优化策略的情况下错误率大大降低，并且响应时间没有明显增加。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/fast-fail.png"
+        data-srcset="https://pics.lxkaka.wang/fast-fail.png, https://pics.lxkaka.wang/fast-fail.png 1.5x, https://pics.lxkaka.wang/fast-fail.png 2x"
+        data-sizes="auto"
+        alt="fast-fail"
+        title="fast-fail" /></p>
+<h3 id="优选空闲节点">优选空闲节点</h3>
+<p>在 <code>P2C</code> 算法中我们看到在比较节点的负载的时候是下面的方法, 其中 <code>inflight</code> 表示节点正在处理的请求数</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">sc</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">)</span> <span class="nf">load</span><span class="p">()</span> <span class="kt">uint64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lag</span> <span class="o">:=</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">math</span><span class="p">.</span><span class="nf">Sqrt</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">sc</span><span class="p">.</span><span class="nx">lag</span><span class="p">)))</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">load</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">sc</span><span class="p">.</span><span class="nx">svrCPU</span><span class="p">)</span> <span class="o">*</span> <span class="nx">lag</span> <span class="o">*</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">sc</span><span class="p">.</span><span class="nx">inflight</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">load</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// penalty是初始化没有数据时的惩罚值，默认为1e9 * 250
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">load</span> <span class="p">=</span> <span class="nx">penalty</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">load</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>既然我们有 <code>inflight</code> 这个指标，那我们选择节点的时候只选择 <code>inflight=1</code>的节点是不是就能完美解决上面的问题。理论上是的，但是实际上服务器就是成本，在满足业务需求的时候我们尽可能降低服务器成本，那么在这种情况下在生产环境很难一直有<em>空闲</em>的节点。所以在成本和性能的 trade off 下，我们使用的策略是在挑选两节点的阶段在 3次循环中优先挑选 <code>inflight=1</code>的节点。如果三次都没有符合条件的节点就退化成普通的 <code>P2C</code>。 <br>
+如代码所示</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">p2cPicker</span><span class="p">)</span> <span class="nf">prePick</span><span class="p">()</span> <span class="p">(</span><span class="nx">nodeA</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">,</span> <span class="nx">nodeB</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">lk</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">a</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">r</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">b</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">r</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">lk</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">b</span> <span class="o">&gt;=</span> <span class="nx">a</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">b</span> <span class="p">=</span> <span class="nx">b</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">nodeA</span><span class="p">,</span> <span class="nx">nodeB</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">a</span><span class="p">],</span> <span class="nx">p</span><span class="p">.</span><span class="nx">subConns</span><span class="p">[</span><span class="nx">b</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">nodeA</span><span class="p">.</span><span class="nf">valid</span><span class="p">()</span> <span class="o">||</span> <span class="nx">nodeB</span><span class="p">.</span><span class="nf">valid</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">break</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">sc</span> <span class="o">*</span><span class="nx">subConn</span><span class="p">)</span> <span class="nf">valid</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">sc</span><span class="p">.</span><span class="nf">health</span><span class="p">()</span> <span class="p">&gt;</span> <span class="mi">500</span> <span class="o">&amp;&amp;</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">sc</span><span class="p">.</span><span class="nx">svrCPU</span><span class="p">)</span> <span class="p">&lt;</span> <span class="mi">900</span> <span class="o">&amp;&amp;</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">sc</span><span class="p">.</span><span class="nx">inflight</span><span class="p">)</span> <span class="o">&lt;=</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这种优化策略，我们把他起名为 <code>P2C1</code>。</p>
+<p>下图是我们在快速失败的基础上使用了进一步的优化策略 <code>P2C1</code>, 可以看到图中第三部分错误请求基本没有了。我们的优化起到了良好的效果。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/p2c1.png"
+        data-srcset="https://pics.lxkaka.wang/p2c1.png, https://pics.lxkaka.wang/p2c1.png 1.5x, https://pics.lxkaka.wang/p2c1.png 2x"
+        data-sizes="auto"
+        alt="p2c1"
+        title="p2c1" /></p>
+<p>希望这篇文章里的优化思路和方法能给其他有类似限制场景的同学提供参考。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-02-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/p2c1/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/p2c1/" data-title="算法服务稳定性优化之负载控制" data-hashtags="负载均衡,服务治理,P2C"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/p2c1/" data-hashtag="负载均衡"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/p2c1/" data-title="算法服务稳定性优化之负载控制" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/p2c1/" data-title="算法服务稳定性优化之负载控制"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/p2c1/" data-title="算法服务稳定性优化之负载控制"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1/">负载均衡</a>,&nbsp;<a href="/tags/%E6%9C%8D%E5%8A%A1%E6%B2%BB%E7%90%86/">服务治理</a>,&nbsp;<a href="/tags/p2c/">P2C</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/locust/" class="prev" rel="prev" title="易于使用的性能测试工具-Locust"><i class="fas fa-angle-left fa-fw"></i>易于使用的性能测试工具-Locust</a>
+            <a href="/rbac-casbin/" class="next" rel="next" title="利用 Casbin 高效实现基于 RBAC 的权限系统">利用 Casbin 高效实现基于 RBAC 的权限系统<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

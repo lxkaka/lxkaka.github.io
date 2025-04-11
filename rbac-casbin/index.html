@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>利用 Casbin 高效实现基于 RBAC 的权限系统 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/rbac-casbin/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="利用 Casbin 高效实现基于 RBAC 的权限系统">
+  <meta property="og:description" content="在大部分的业务系统中权限控制是少不了的模块，它对这个系统的数据安全起着关键作用。既然权限系统或者模块这么重要且又很普适，当我们搭建一个权限系">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2022-03-25T16:03:57+08:00">
+    <meta property="article:modified_time" content="2022-03-25T16:03:57+08:00">
+    <meta property="article:tag" content="权限系统">
+    <meta property="article:tag" content="RBAC">
+    <meta property="article:tag" content="Casbin">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="利用 Casbin 高效实现基于 RBAC 的权限系统">
+  <meta name="twitter:description" content="在大部分的业务系统中权限控制是少不了的模块，它对这个系统的数据安全起着关键作用。既然权限系统或者模块这么重要且又很普适，当我们搭建一个权限系">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/rbac-casbin/" /><link rel="prev" href="https://lxkaka.wang/p2c1/" /><link rel="next" href="https://lxkaka.wang/msg-system/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "利用 Casbin 高效实现基于 RBAC 的权限系统",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/rbac-casbin\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "权限系统, RBAC, Casbin","wordcount":  1794 ,
+        "url": "https:\/\/lxkaka.wang\/rbac-casbin\/","datePublished": "2022-03-25T16:03:57+08:00","dateModified": "2022-03-25T16:03:57+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">利用 Casbin 高效实现基于 RBAC 的权限系统</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/service/"><i class="far fa-folder fa-fw"></i>Service</a>&nbsp;<a href="/categories/golang/"><i class="far fa-folder fa-fw"></i>Golang</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-03-25">2022-03-25</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1794 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#权限模型">权限模型</a>
+          <ul>
+            <li><a href="#aclaccess-control-list">ACL(Access Control List)</a></li>
+            <li><a href="#rbacrole-based-access-control">RBAC(Role-Based Access Control)</a></li>
+          </ul>
+        </li>
+        <li><a href="#casbin">Casbin</a></li>
+        <li><a href="#实现">实现</a>
+          <ul>
+            <li><a href="#功能">功能</a></li>
+            <li><a href="#模型">模型</a></li>
+            <li><a href="#初始化-casbin">初始化 Casbin</a></li>
+            <li><a href="#中间件">中间件</a></li>
+            <li><a href="#常用操作">常用操作</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在大部分的业务系统中权限控制是少不了的模块，它对这个系统的数据安全起着关键作用。既然权限系统或者模块这么重要且又很普适，当我们搭建一个权限系统是就没必要从头开始写起重复造轮子。在这篇文章里我们介绍一下如果利用开源的框架快速搭建一个权限系统，希望起到抛砖引玉的作用。
+在此之前我们得了解目前常用的权限模型。</p>
+<h3 id="权限模型">权限模型</h3>
+<h4 id="aclaccess-control-list">ACL(Access Control List)</h4>
+<p>权限直接赋予用户, 即每一个用户和某一项特定的权限绑定，如果是 n 个用户和 m 项权限，我们就需要创建 n*m 条权限记录。这种模式的缺点在于，但用户量达到一定量级的时候，那么就需要对每个用户都进行一次授权操作，那么这个工作量就会相当大。总体来说 ACL 对稍微复杂一点的场景就不太友好。</p>
+<h4 id="rbacrole-based-access-control">RBAC(Role-Based Access Control)</h4>
+<p>相比于 ACL 模型，RBAC 模型在用户与权限之间多了一个元素<strong>角色</strong>，通过权限关联角色、角色关联用户的方法来间接地赋予用户权限，从而实现用户与权限的解耦。RBAC 是目前权限系统中最为常用的模型。根据场景和需求复杂度不同，RBAC 又有几种变体。
+基本的RBAC模型中定义了三个对象和两个关系，三个对象分别是：user，role，permission。一个用户可以属于多个角色，而一个角色下面也可以有多个用户。同样，角色和权限之间也是这种多对多的关系。关系如下图。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rbac_model.png"
+        data-srcset="https://pics.lxkaka.wang/rbac_model.png, https://pics.lxkaka.wang/rbac_model.png 1.5x, https://pics.lxkaka.wang/rbac_model.png 2x"
+        data-sizes="auto"
+        alt="rbac"
+        title="rbac" /></p>
+<ul>
+<li>User（用户）：每个用户都有唯一的UID识别，并被授予不同的角色</li>
+<li>Role（角色）：不同角色具有不同的权限</li>
+<li>Permission（权限）：访问权限</li>
+<li>用户-角色映射：用户和角色之间的映射关系</li>
+<li>角色-权限映射：角色和权限之间的映射</li>
+</ul>
+<p>RBAC 的进阶变体这里就不做详细介绍, 我们简要介绍一下区别</p>
+<ul>
+<li>RBAC1：在角色中引入了继承的概念。简单理解就是，给角色可以分成几个等级，每个等级权限不同，从而实现更细粒度的权限管理。</li>
+<li>RBAC2：建立在RBAC0基础之上，仅是对用户、角色和权限三者之间增加了一些限制。这些限制可以分成两类，即静态职责分离SSD(Static Separation of Duty)和动态职责分离DSD(Dynamic Separation of Duty)</li>
+<li>RBAC3：RBAC1和RBAC2的合集，所以RBAC3既有角色分层，也包括可以增加各种限制</li>
+</ul>
+<p>总之根据 RBAC 模型去做设计基本上能满足我们对权限系统的要求。</p>
+<h3 id="casbin">Casbin</h3>
+<p><a href="https://casbin.org/docs/zh-CN/overview" target="_blank" rel="noopener noreffer">Casbin</a> 是一个强大的、高效的开源访问控制框架，其权限管理机制支持多种访问控制模型。这里的访问控制模型就包括 <strong>RBAC</strong>。<br>
+casbin的核心是一套基于PERM metamodel(Policy,Effect,Request,Matchers)的 DSL。Casbin 从用这种 DSL 定义的配置文件中读取访问控制模型，作为后续权限验证的基础。更多原理方面的文档大家可以参看上述的文档链接。</p>
+<h3 id="实现">实现</h3>
+<h4 id="功能">功能</h4>
+<p>我们的权限控制目标是可以在中间件中，统一对用户进行鉴权，如果没有权限，中止继续访问，返回无权限的状态码，而如果有权限，则放行。</p>
+<h4 id="模型">模型</h4>
+<p>定义 RBAC 模型</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-zed" data-lang="zed"><span class="line"><span class="cl"><span class="err">#</span><span class="w"> </span><span class="n">Request</span><span class="w"> </span><span class="kt">definition</span><span class="w"> </span><span class="err">即为请求定义，代表了可以传入什么样的参数来确定权限</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">[</span><span class="n">request_definition</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">act</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="err">#</span><span class="w"> </span><span class="n">Policy</span><span class="w"> </span><span class="kt">definition</span><span class="w"> </span><span class="err">代表了规则的组成</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">[</span><span class="n">policy_definition</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">act</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="err">#</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="err">是一个</span><span class="w"> </span><span class="n">RBAC系统</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_表示角色继承关系的前项和后项</span><span class="err">，即前项继承后项角色的权限</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">[</span><span class="n">role_definition</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="err">#</span><span class="w"> </span><span class="n">Policy</span><span class="w"> </span><span class="n">effect</span><span class="w"> </span><span class="err">则表示什么样的规则可以被允许</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">some</span><span class="p">(</span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">eft</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">allow</span><span class="p">))</span><span class="w"> </span><span class="err">这句就表示当前请求中包含的任何一个规则被允许的话，这个权限就会被允许</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">[</span><span class="n">policy_effect</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">some</span><span class="p">(</span><span class="n">where</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">eft</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">allow</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="err">#</span><span class="w"> </span><span class="err">是策略匹配程序的定义。表示请求与规则是如何起作用的</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">[</span><span class="n">matchers</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">sub</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">sub</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">obj</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">obj</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">act</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">act</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="初始化-casbin">初始化 Casbin</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;strconv&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/casbin/casbin/v2&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/casbin/casbin/v2/model&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">gormadapter</span> <span class="s">&#34;github.com/casbin/gorm-adapter/v3&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;gorm.io/gorm&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Permit</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="o">*</span><span class="nx">casbin</span><span class="p">.</span><span class="nx">Enforcer</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewPermit</span><span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">gorm</span><span class="p">.</span><span class="nx">DB</span><span class="p">)</span> <span class="o">*</span><span class="nx">Permit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 使用 mysql 作为 policy 的存储；使用 gormadapter 作为 policy 的管理 api
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nx">adapter</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">gormadapter</span><span class="p">.</span><span class="nf">NewAdapterByDB</span><span class="p">(</span><span class="nx">db</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 加载 model 配置
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">m</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">model</span><span class="p">.</span><span class="nf">NewModelFromString</span><span class="p">(</span><span class="nx">CasbinConf</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">enforcer</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">casbin</span><span class="p">.</span><span class="nf">NewEnforcer</span><span class="p">(</span><span class="nx">m</span><span class="p">,</span> <span class="nx">adapter</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">enforcer</span><span class="p">.</span><span class="nf">EnableAutoSave</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">enforcer</span><span class="p">.</span><span class="nf">EnableAutoNotifyWatcher</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">Permit</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Enforcer</span><span class="p">:</span> <span class="nx">enforcer</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="中间件">中间件</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">Permit</span><span class="p">)</span> <span class="nf">Permit</span><span class="p">(</span><span class="nx">action</span> <span class="kt">string</span><span class="p">)</span> <span class="nx">bm</span><span class="p">.</span><span class="nx">HandlerFunc</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="o">*</span><span class="nx">bm</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">mid</span>      <span class="kt">int64</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">err</span>      <span class="kt">error</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">obj</span>      <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">midStr</span>   <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">isPermit</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl">		<span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">midI</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">ctx</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="s">&#34;mid&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">ecode</span><span class="p">.</span><span class="nx">NoLogin</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 用户
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">mid</span> <span class="p">=</span> <span class="nx">midI</span><span class="p">.(</span><span class="kt">int64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 资源
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">obj</span> <span class="p">=</span> <span class="nx">ctx</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">Header</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="s">&#34;OBJ-ID&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">obj</span> <span class="o">==</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">ecode</span><span class="p">.</span><span class="nx">AppDenied</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">midStr</span> <span class="p">=</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">FormatInt</span><span class="p">(</span><span class="nx">mid</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 检查用户权限
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">isPermit</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">Enforce</span><span class="p">(</span><span class="nx">midStr</span><span class="p">,</span> <span class="nx">obj</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="p">!</span><span class="nx">isPermit</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="kc">nil</span><span class="p">,</span> <span class="nx">ecode</span><span class="p">.</span><span class="nx">AccessDenied</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ctx</span><span class="p">.</span><span class="nf">Abort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="常用操作">常用操作</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="c1">// 添加角色
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">permit</span><span class="p">.</span><span class="nf">AddPolicy</span><span class="p">(</span><span class="nx">roleName</span><span class="p">,</span> <span class="nx">roleId</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 赋予用户角色
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">permit</span><span class="p">.</span><span class="nf">AddRoleForUser</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nx">roleName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 查看具有某角色的所有用户
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">res</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">permit</span><span class="p">.</span><span class="nf">GetUsersForRole</span><span class="p">(</span><span class="nx">roleName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 移除用户具有的角色
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">permit</span><span class="p">.</span><span class="nf">DeleteRoleForUser</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nx">roleName</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 移除角色，跟角色相关联的用户都被移除
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">permit</span><span class="p">.</span><span class="nf">DeleteRole</span><span class="p">(</span><span class="nx">roleName</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>下图是接口权限访问控制的示例，可以看到在请求头带上了资源我们就实现了资源权限访问控制</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rbac_res.png"
+        data-srcset="https://pics.lxkaka.wang/rbac_res.png, https://pics.lxkaka.wang/rbac_res.png 1.5x, https://pics.lxkaka.wang/rbac_res.png 2x"
+        data-sizes="auto"
+        alt="rbac_res"
+        title="rbac_res" /></p>
+<p>以上就是我们利用 Casbin 实现了基于 RBAC 的权限控制，可以看到成本非常低。在一个规模不是很大的系统中去做权限设计我相信这是一个高效的选择。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-03-25</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/rbac-casbin/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/rbac-casbin/" data-title="利用 Casbin 高效实现基于 RBAC 的权限系统" data-hashtags="权限系统,RBAC,Casbin"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/rbac-casbin/" data-hashtag="权限系统"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/rbac-casbin/" data-title="利用 Casbin 高效实现基于 RBAC 的权限系统" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/rbac-casbin/" data-title="利用 Casbin 高效实现基于 RBAC 的权限系统"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/rbac-casbin/" data-title="利用 Casbin 高效实现基于 RBAC 的权限系统"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F/">权限系统</a>,&nbsp;<a href="/tags/rbac/">RBAC</a>,&nbsp;<a href="/tags/casbin/">Casbin</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/p2c1/" class="prev" rel="prev" title="算法服务稳定性优化之负载控制"><i class="fas fa-angle-left fa-fw"></i>算法服务稳定性优化之负载控制</a>
+            <a href="/msg-system/" class="next" rel="next" title="消息系统方案设计之站内消息和事件提醒">消息系统方案设计之站内消息和事件提醒<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

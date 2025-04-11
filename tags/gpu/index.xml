@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>GPU - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/gpu/</link>
+        <description>GPU - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 31 Jul 2021 12:52:18 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/gpu/" rel="self" type="application/rss+xml" /><item>
+    <title>为什么 GPU 能加速深度学习</title>
+    <link>https://lxkaka.wang/gpu-dl/</link>
+    <pubDate>Sat, 31 Jul 2021 12:52:18 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gpu-dl/</guid>
+    <description><![CDATA[接触过深度学习的同学都知道在训练和推理中使用 GPU 能加速，但是相对于 CPU 来说为什么 GPU 能在深度学习中提供更快的处理速度？我把自己学习和总结的成果分享]]></description>
+</item><item>
+    <title>容器中使用 GPU 的基础环境搭建</title>
+    <link>https://lxkaka.wang/docker-nvidia/</link>
+    <pubDate>Sat, 24 Oct 2020 13:09:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-nvidia/</guid>
+    <description><![CDATA[在 Linux 服务器上使用 GPU 跑深度学习的模型很正常不过。如果我们想用 docker 实现同样的需求，就需要做些额外的工作。本质上就是我们要在容器里能看到并且使用宿主]]></description>
+</item></channel>
+</rss>

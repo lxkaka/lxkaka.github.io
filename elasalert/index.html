@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>基于elastalert的监控报警系统 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/elasalert/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="基于elastalert的监控报警系统">
+  <meta property="og:description" content="监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2018-06-16T09:15:39+08:00">
+    <meta property="article:modified_time" content="2018-06-16T09:15:39+08:00">
+    <meta property="article:tag" content="Es">
+    <meta property="article:tag" content="Alert">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="基于elastalert的监控报警系统">
+  <meta name="twitter:description" content="监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/elasalert/" /><link rel="prev" href="https://lxkaka.wang/replica-research/" /><link rel="next" href="https://lxkaka.wang/http2/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "基于elastalert的监控报警系统",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/elasalert\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "es, alert","wordcount":  1206 ,
+        "url": "https:\/\/lxkaka.wang\/elasalert\/","datePublished": "2018-06-16T09:15:39+08:00","dateModified": "2018-06-16T09:15:39+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">基于elastalert的监控报警系统</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-06-16">2018-06-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1206 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#方案选择">方案选择</a></li>
+  </ul>
+
+  <ul>
+    <li><a href="#开发报警规则和报警方式">开发报警规则和报警方式</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>监控报警一般都是基于日志数据来做，总结起来就是根据监控指标查询一定时间段内的该指标的变化情况，当该指标超过设定的阈值时则触发报警规则，发出报警信息包括邮件，短信，微信甚至自动拨打电话等。
+要实现监控报警的功能应该几步来做：</p>
+<ol>
+<li>指定日志规范，生成日志</li>
+<li>收集日志</li>
+<li>查询分析日志</li>
+<li>触发报警规则</li>
+<li>报警</li>
+</ol>
+<p>其中第二步日志收集就是一项不小的工作。一般会有这三部分组成</p>
+<ul>
+<li>
+<p>Agent : 部署在各个应用服务器收集应用的日志</p>
+</li>
+<li>
+<p>Collector: 日志收集中心，把分散在Agent的日志统一收集到日志中心</p>
+</li>
+<li>
+<p>Storage: 存储层，日志收集之后的存储
+当数据量大的时候，可以采用 kafaka,redis这样的中间件来缓冲日志发送量，提高系统的可靠性。
+可以采用的方案有: Flume日志收集，ELK方案等</p>
+</li>
+</ul>
+<p>我们因为已经搭建了ELK日志收集平台，已经完成了第二步，要做监控报警自然就基于ELK来做。</p>
+<h2 id="方案选择">方案选择</h2>
+<p>先简单分析一下我们要做的事情</p>
+<ul>
+<li>设置报警规则</li>
+<li>查询ES中的特定指标</li>
+<li>分析是否达到阈值</li>
+<li>发报警邮件，微信</li>
+</ul>
+<p>经过调研，有这么几个选择：</p>
+<ul>
+<li>自己开发</li>
+<li>ELK提供了XPack, 具有报警的作用</li>
+<li>第三方开源方案
+首先试用了 Xpack本身的功能还是挺吸引人的 <strong>权限控制 + ELK集群监控</strong>，但因为监控报警功能不够灵活，达不到自己的需求且是收费的（穷.jpg);
+yelp开源了<a href="https://elastalert.readthedocs.io/en/latest/" target="_blank" rel="noopener noreffer"><code>Elastalert</code></a>, yelp也是先有了自己的ELK, 而后需要搭建监控报警系统的时候，开发了 Elastalert。跟我们的路线和需求非常匹配，那果断放弃重复造轮子。Elastalert非常灵活，除了通过配置进行报警规则设置，还可以自己开发独有的报警规则。
+经过在测试系统的对比，决定采用 <code>Elastalert</code>做作为监控报警系统的核心。</li>
+</ul>
+<p>下图展示了我们监控系统的组件及架构简图<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/elastalert.png"
+        data-srcset="https://pics.lxkaka.wang/elastalert.png, https://pics.lxkaka.wang/elastalert.png 1.5x, https://pics.lxkaka.wang/elastalert.png 2x"
+        data-sizes="auto"
+        alt="elastalert"
+        title="elastalert" /></p>
+<h1 id="服务搭建">服务搭建</h1>
+<ol>
+<li>
+<p>安装依赖</p>
+<ul>
+<li>新建 pyhton2.7 虚拟环境</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">&amp; sudo apt install -y virtualenv 
+</span></span><span class="line"><span class="cl">&amp; sudo apt install -y python-dev libffi-dev libssl-dev
+</span></span><span class="line"><span class="cl">&amp; virtualenv env
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>激活env</p>
+<ul>
+<li>安装 pip</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="o">$</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">setuptools</span> <span class="n">python</span><span class="o">-</span><span class="n">dev</span> <span class="n">build</span><span class="o">-</span><span class="n">essential</span> 
+</span></span><span class="line"><span class="cl"><span class="o">$</span> <span class="n">sudo</span> <span class="n">easy_install</span> <span class="n">pip</span> 
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>安装 elastalert
+先安装这个版本，解决依赖包boto3的问题, <code>error: python-dateutil 2.7.0 is installed but python-dateutil&lt;2.7.0,&gt;=2.1 is required by set(['botocore'])</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">$ pip install &#34;python-dateutil&lt;2.7.0,&gt;=2.1&#34;
+</span></span><span class="line"><span class="cl">&amp; pip install elastalert
+</span></span><span class="line"><span class="cl">&amp; pip install elasticsearch 
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果报错 permission则 denied pip install &ndash;user elastalert</p>
+</li>
+<li>
+<p>设置 elasticsearch
+把查询和报警的信息和元数据存到 elasticsearch 中。这样可以在 kibana 中查询到报警的错误，异常和执行情况。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">$ elastalert-create-index
+</span></span><span class="line"><span class="cl">New index name (Default elastalert_status)
+</span></span><span class="line"><span class="cl">Name of existing index to copy (Default None)
+</span></span><span class="line"><span class="cl">New index elastalert_status created
+</span></span><span class="line"><span class="cl">Done!
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>配置和设置规则</p>
+<ul>
+<li>把公共的配置写到 config.yaml<br>
+<code>vim config.yaml</code></li>
+</ul>
+<p>示例:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># The Elasticsearch hostname for metadata writeback
+</span></span><span class="line"><span class="cl"># Note that every rule can have its own Elasticsearch host
+</span></span><span class="line"><span class="cl">es_host: localhost
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"># The Elasticsearch port
+</span></span><span class="line"><span class="cl">es_port: 9200
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>创建报警规则
+<code>vim alert_rules/alert_frquency.yaml</code></li>
+</ul>
+<p>示例:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">name: Example rule
+</span></span><span class="line"><span class="cl">type: frequency
+</span></span><span class="line"><span class="cl">index: access
+</span></span><span class="line"><span class="cl">num_events: 50
+</span></span><span class="line"><span class="cl">timeframe:
+</span></span><span class="line"><span class="cl">    minutes: 5
+</span></span><span class="line"><span class="cl">filter:
+</span></span><span class="line"><span class="cl">- term:
+</span></span><span class="line"><span class="cl">    some_field: &#34;some_value&#34;
+</span></span><span class="line"><span class="cl">alert:
+</span></span><span class="line"><span class="cl">- &#34;email&#34;
+</span></span><span class="line"><span class="cl">email:
+</span></span><span class="line"><span class="cl">- &#34;elastalert@example.com&#34;
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>测试报警规则<br>
+<code>$ elastalert-test-rule alert_rules/alert_frequency.yam</code></p>
+</li>
+<li>
+<p>启动服务
+<code>$ python -m elastalert.elastalert --verbose --rule alert_frequency.yaml</code></p>
+</li>
+<li>
+<p>用supervisor管理监控服务</p>
+<ul>
+<li>安装 supervisor
+<code>sudo apt install -y supervisor</code></li>
+<li>配置elastalert</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="p">[</span><span class="n">program</span><span class="p">:</span><span class="n">elastalert</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">command</span><span class="o">=/</span><span class="n">home</span><span class="o">/</span><span class="n">xxx</span><span class="o">/</span><span class="n">elastalert</span><span class="o">/</span><span class="n">env</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">elastalert</span> <span class="o">--</span><span class="n">config</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">xxx</span><span class="o">/</span><span class="n">elastalert</span><span class="o">/</span><span class="n">config</span><span class="o">.</span><span class="n">yaml</span> <span class="o">--</span><span class="n">verbose</span>
+</span></span><span class="line"><span class="cl"><span class="n">autostart</span><span class="o">=</span><span class="bp">true</span>
+</span></span><span class="line"><span class="cl"><span class="n">autorestart</span><span class="o">=</span><span class="bp">true</span>
+</span></span><span class="line"><span class="cl"><span class="n">stdout_logfile</span><span class="o">=/</span><span class="k">var</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">supervisor</span><span class="o">/</span><span class="n">elastalert</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl"><span class="n">stderr_logfile</span><span class="o">=/</span><span class="k">var</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">supervisor</span><span class="o">/</span><span class="n">elastalert_error</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl"><span class="n">stopsignal</span><span class="o">=</span><span class="n">INT</span>
+</span></span><span class="line"><span class="cl"><span class="n">stderr_logfile_maxbytes</span><span class="o">=</span><span class="mi">5</span><span class="n">MB</span>
+</span></span><span class="line"><span class="cl"><span class="n">stdout_logfile_maxbytes</span><span class="o">=</span><span class="mi">5</span><span class="n">MB</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>启动服务<br>
+<code>sudo supervisorctl start elastalert</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="开发报警规则和报警方式">开发报警规则和报警方式</h2>
+<ul>
+<li>报警类型
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">AwesomeNewRule</span><span class="p">(</span><span class="n">RuleType</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">add_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">get_match_str</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="k">match</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">garbage_collect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># ...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>报警方式
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">AwesomeNewAlerter</span><span class="p">(</span><span class="n">Alerter</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">required_options</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s1">&#39;some_config_option&#39;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">alert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">matches</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="o">...</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">get_info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>报警 on-the-fly
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">MyEnhancement</span><span class="p">(</span><span class="n">BaseEnhancement</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="k">match</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="c1"># Drops a match if &#34;field_1&#34; == &#34;field_2&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="k">match</span><span class="p">[</span><span class="s1">&#39;field_1&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="k">match</span><span class="p">[</span><span class="s1">&#39;field_2&#39;</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">            <span class="k">raise</span> <span class="n">DropMatchException</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-06-16</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/elasalert/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/elasalert/" data-title="基于elastalert的监控报警系统" data-hashtags="es,alert"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/elasalert/" data-hashtag="es"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/elasalert/" data-title="基于elastalert的监控报警系统" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/elasalert/" data-title="基于elastalert的监控报警系统"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/elasalert/" data-title="基于elastalert的监控报警系统"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/es/">Es</a>,&nbsp;<a href="/tags/alert/">Alert</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/replica-research/" class="prev" rel="prev" title="MySQL主从同步延迟调查"><i class="fas fa-angle-left fa-fw"></i>MySQL主从同步延迟调查</a>
+            <a href="/http2/" class="next" rel="next" title="从实践出发理解HTTP2">从实践出发理解HTTP2<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

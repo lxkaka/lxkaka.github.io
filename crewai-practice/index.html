@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>crewAI 搭建 AI agent 的原理及应用 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/crewai-practice/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="crewAI 搭建 AI agent 的原理及应用">
+  <meta property="og:description" content="单独使用语言模型（LLM）对于简单的任务比如让模型写一段文案来说是可以的，但更复杂的任务往往只依靠 LLM 很难取得良好的效果甚至不可用。 所以 AI agent 的">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-01-12T17:13:36+08:00">
+    <meta property="article:modified_time" content="2024-01-12T17:13:36+08:00">
+    <meta property="article:tag" content="Ai Agent">
+    <meta property="article:tag" content="ReAct">
+    <meta property="article:tag" content="CrewAI">
+    <meta property="article:tag" content="Langchain">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="crewAI 搭建 AI agent 的原理及应用">
+  <meta name="twitter:description" content="单独使用语言模型（LLM）对于简单的任务比如让模型写一段文案来说是可以的，但更复杂的任务往往只依靠 LLM 很难取得良好的效果甚至不可用。 所以 AI agent 的">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/crewai-practice/" /><link rel="prev" href="https://lxkaka.wang/text-similarity/" /><link rel="next" href="https://lxkaka.wang/rag_rerank/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "crewAI 搭建 AI agent 的原理及应用",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/crewai-practice\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "AI agent, ReAct, crewAI, langchain","wordcount":  5073 ,
+        "url": "https:\/\/lxkaka.wang\/crewai-practice\/","datePublished": "2024-01-12T17:13:36+08:00","dateModified": "2024-01-12T17:13:36+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">crewAI 搭建 AI agent 的原理及应用</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a>&nbsp;<a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2024-01-12">2024-01-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5073 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#ai-agent">AI agent</a>
+          <ul>
+            <li><a href="#react">ReAct</a></li>
+          </ul>
+        </li>
+        <li><a href="#crewai">crewAI</a></li>
+        <li><a href="#实践">实践</a>
+          <ul>
+            <li><a href="#定义-agents">定义 agents</a></li>
+            <li><a href="#定义-tasks">定义 tasks</a></li>
+            <li><a href="#启动-agents">启动 agents</a></li>
+          </ul>
+        </li>
+        <li><a href="#分析工作流">分析工作流</a></li>
+        <li><a href="#react-问题">ReAct 问题</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>单独使用语言模型（LLM）对于简单的任务比如让模型写一段文案来说是可以的，但更复杂的任务往往只依靠 LLM 很难取得良好的效果甚至不可用。
+所以 AI agent 的提出就是为了弥补当前 LLM 在很多方面的能力不足。可以这么理解 LLM 就像人的大脑，可以理解人类的语言，agent 就好比给 LLM 装上了五官和四肢。</p>
+<h3 id="ai-agent">AI agent</h3>
+<p>AI 代理（AI agent）是指使用 AI 技术设计和编程的一种计算机程序，其可以独立地进行某些任务并对环境做出反应。AI 代理可以被视为一个智能体，它能够感知其环境，通过自己的决策和行动来改变环境，并通过学习和适应来提高其性能。这种智能体同时使用短期记忆（上下文学习）和长期记忆（从外部向量存储中检索信息），有能力通过逐步“思考”来计划、将目标分解为更小的任务，并反思自己的表现。AI 代理通常包含多种技术，如机器学习、自然语言处理、计算机视觉、规划和推理等，这些技术使代理能够自主地处理信息并作出决策。</p>
+<p><a href="https://python.langchain.com/docs/modules/agents/" target="_blank" rel="noopener noreffer">LangChain</a>中已经实现了我们想要的部分 agent 功能。agent 会自己分析问题，选择合适的工具，最终解决问题。其中应用很广泛的一类就是 <a href="https://react-lm.github.io/" target="_blank" rel="noopener noreffer">ReAct</a>。</p>
+<h4 id="react">ReAct</h4>
+<blockquote>
+<p>ReAct 是 Reasoning and Acting（也有一说是 Reason Act）缩写，意思是 LLM 可以根据逻辑推理（Reason），构建完整系列行动（Act），从而达成期望目标。LLM 灵感来源是人类行为和推理之间的协同关系。人类根据这种协同关系学习新知识，做出决策，然后执行。LLM 在逻辑推理上有着非常优秀的表现，因此有理由相信 LLM 也可以像人类一样进行逻辑推理，学习知识，做出决策，并执行。在实际使用中，LLM 会发生幻觉和错误判断的情况。这是因为 LLM 在训练的时候接触到的知识有限。因此对超出训练过程中使用的数据进行逻辑分析时，LLM 就会开始不懂装懂地编造一些理由。因此对于解决这个问题最好的办法是，可以保证 LLM 在做出分析决策时，必须将应该有的知识提供给 LLM。</p>
+</blockquote>
+<blockquote>
+<p>ReAct 方式的作用就是协调 LLM 和外部的信息获取，与其他功能交互。如果说 LLM 是大脑，那 ReAct 框架就是这个大脑的手脚和五官。同时具备帮助 LLM 模型获取信息、输出内容与执行决策的能力。对于一个指定的任务目标，ReAct 框架会自动补齐 LLM 应该具备的知识和相关信息，然后再让 LLM 做出决策，并执行 LLM 的决策。</p>
+</blockquote>
+<p>一个 ReAct 流程里，关键是三个概念：</p>
+<p>Thought：由 LLM 生成，是 LLM 产生行为和依据。可以根据 LLM 的思考，来衡量他要采取的行为是否合理。这是一个可用来判断本次决策是否合理的关键依据。相较于人类，thought 的存在可以让 LLM 的决策变得更加有可解释性和可信度。</p>
+<p>Act：Act 是指 LLM 判断本次需要执行的具体行为。Act 一般由两部分组成：行为和对象。用编程的说法就是 API 名称和对应的入参。LLM 模型最大的优势是，可以根据 Thought 的判断，选择需要使用的 API 并生成需要填入 API 的参数。从而保证了 ReAct 框架在执行层面的可行性。</p>
+<p>Obs：LLM 框架对于外界输入的获取。它就像 LLM 的 五官，将外界的反馈信息同步给 LLM，协助 LLM 进一步的做分析或者决策。</p>
+<p>一个完整的 ReAct 的行为，包涵以下几个流程：</p>
+<p>1.输入目标：任务的起点。可以是用户的手动输入，也可以是依靠触发器（比如系统故障报警）。</p>
+<p>2.LOOP：LLM 模型开始分析问题需要的步骤（Thought），按步骤执行 Act，根据观察到的信息（Obs），循环执行这个过程。直到判断任务目标达成。</p>
+<p>3.Finish：任务最终执行成功，返回最终结果。</p>
+<h3 id="crewai">crewAI</h3>
+<p>CrewAI 是一个基于角色扮演的 AI agent 团队自动化协作框架，它旨在为 AI agent 提供自动化设置，以促进 AI agent 之间的合作，使这些代理能够共同解决复杂问题。CrewAI 的主要构建模块包括代理、任务、工具和团队。</p>
+<p>在 CrewAI 中，agent 是一个被编程为执行任务、做出决策并与其他代理进行通信的自治单元。将 agent 视为团队的成员，具有特定的技能和特定的工作要做。agent 可以担任不同的角色，例如“研究员”、“作家”或“客户支持”，每个角色都有助于团队的总体目标。agent 的关键属性包括角色、目标、背景故事和工具集。
+任务是 CrewAI 中的基本工作单元，是给定代理应完成的小型、专注的任务。任务设计灵活，可根据需要进行简单和复杂的操作。任务的关键属性包括描述、分配给它的代理以及所需的任何特定工具。
+CrewAI 的主要优势在于它的自动化协作框架，它可以帮助 AI agent 之间更好地合作，共同解决复杂问题。CrewAI 通过提供自动化设置，使代理之间的合作变得更加容易，从而提高了团队的效率和生产力。</p>
+<h3 id="实践">实践</h3>
+<p>有了上述的知识之后我们再来是 crewAI 来搭建 agent 会变的容易，并且能够较好的理解  agent 的工作流。
+“每天吃什么是个烦人的问题”在这里我们就以解决这个问题为目的来搭建一个 AI agent 来帮我们安排工作日的午餐。</p>
+<h4 id="定义-agents">定义 agents</h4>
+<p>在这个任务里我们定义两个 agent 一个用来选择餐厅，另外一个用来安排顺序。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">FoodAgents</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">restaurant_select_agent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">Agent</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">role</span><span class="o">=</span><span class="s1">&#39;餐厅挑选达人&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">goal</span><span class="o">=</span><span class="s1">&#39;根据预算和距离，餐厅好评度挑选合适的餐厅名单&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">backstory</span><span class="o">=</span><span class="s1">&#39;擅长根据餐厅数据挑选就餐地方&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">tools</span><span class="o">=</span><span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="n">SearchTools</span><span class="o">.</span><span class="n">search_internet</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="n">BrowserTools</span><span class="o">.</span><span class="n">scrape_and_summarize_website</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">keeper_agent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">Agent</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">role</span><span class="o">=</span><span class="s1">&#39;每日午餐管家&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">goal</span><span class="o">=</span><span class="s1">&#39;根据预算合理安排最近一周工作日 5 天的每日午餐就餐餐厅&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">backstory</span><span class="o">=</span><span class="s1">&#39;在餐饮和营养方面拥有数十年经验的专家&#39;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="n">tools</span><span class="o">=</span><span class="p">[</span>
+</span></span><span class="line"><span class="cl">                <span class="n">SearchTools</span><span class="o">.</span><span class="n">search_internet</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="n">BrowserTools</span><span class="o">.</span><span class="n">scrape_and_summarize_website</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="定义-tasks">定义 tasks</h4>
+<p>给上述 agent 定义他们要完成的任务</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">FoodTasks</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">seclet_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">district</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">Task</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">description</span><span class="o">=</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">            作为餐厅挑选达人，你会根据距离、预算、餐厅好评度、餐厅品类挑选出最适合
+</span></span></span><span class="line"><span class="cl"><span class="s2">            工作日午餐就餐的餐厅。
+</span></span></span><span class="line"><span class="cl"><span class="s2">            挑选出的餐厅价格不能超出预算范围，就餐的时间不能过长。
+</span></span></span><span class="line"><span class="cl"><span class="s2">            用中文回复。
+</span></span></span><span class="line"><span class="cl"><span class="s2">            
+</span></span></span><span class="line"><span class="cl"><span class="s2">            预算:</span><span class="si">{</span><span class="n">budget</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">            工作地:</span><span class="si">{</span><span class="n">district</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">            &#34;&#34;&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">plan_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">,</span> <span class="n">budget</span><span class="p">,</span> <span class="n">district</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">Task</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">description</span><span class="o">=</span><span class="n">dedent</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;&#34;&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s2">            根据餐厅备选清单，你必须从就餐新鲜度和营养角度合理安排最近一周 5 天工作日每天的餐厅。
+</span></span></span><span class="line"><span class="cl"><span class="s2">            你最终的答案是一个完整的包含工作日 5 天的就餐计划格式化为 markdown，包括每日就餐餐厅名称，餐厅简介。
+</span></span></span><span class="line"><span class="cl"><span class="s2">            用中文回复。
+</span></span></span><span class="line"><span class="cl"><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">            预算:</span><span class="si">{</span><span class="n">budget</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">            工作地:</span><span class="si">{</span><span class="n">district</span><span class="si">}</span><span class="s2">
+</span></span></span><span class="line"><span class="cl"><span class="s2">            &#34;&#34;&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="启动-agents">启动 agents</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">RestaurantPlan</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">district</span><span class="p">,</span> <span class="n">budget</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">district</span> <span class="o">=</span> <span class="n">district</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">budget</span> <span class="o">=</span> <span class="n">budget</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="n">agents</span> <span class="o">=</span> <span class="n">FoodAgents</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">tasks</span> <span class="o">=</span> <span class="n">FoodTasks</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">restaurant_agent</span> <span class="o">=</span> <span class="n">agents</span><span class="o">.</span><span class="n">restaurant_select_agent</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="n">plan_agent</span> <span class="o">=</span> <span class="n">agents</span><span class="o">.</span><span class="n">keeper_agent</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">select_task</span> <span class="o">=</span> <span class="n">tasks</span><span class="o">.</span><span class="n">seclet_task</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">restaurant_agent</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">district</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">plan_task</span> <span class="o">=</span> <span class="n">tasks</span><span class="o">.</span><span class="n">plan_task</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">plan_agent</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">budget</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">            <span class="bp">self</span><span class="o">.</span><span class="n">district</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">crew</span> <span class="o">=</span> <span class="n">Crew</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">            <span class="n">agents</span><span class="o">=</span><span class="p">[</span><span class="n">restaurant_agent</span><span class="p">,</span> <span class="n">plan_agent</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="n">tasks</span><span class="o">=</span><span class="p">[</span><span class="n">select_task</span><span class="p">,</span> <span class="n">plan_task</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">            <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">=</span> <span class="n">crew</span><span class="o">.</span><span class="n">kickoff</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">result</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">budget</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&#34;预算：&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">district</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&#34;工作地点：&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">c</span> <span class="o">=</span> <span class="n">RestaurantPlan</span><span class="p">(</span><span class="n">district</span><span class="p">,</span> <span class="n">budget</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">result</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s2">&#34;工作日吃什么</span><span class="se">\n</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="分析工作流">分析工作流</h3>
+<p>Entering new AgentExecutor chain&hellip;</p>
+<ol>
+<li>下面的文本展示了让  LLM 推理的 prompt (为了便于展示省略了部分信息)</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl">    <span class="n">You</span> <span class="n">are</span> <span class="err">餐厅挑选大人</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl">    <span class="err">擅长根据餐厅数据挑选就餐地方</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Your</span> <span class="n">personal</span> <span class="n">goal</span> <span class="n">is</span><span class="p">:</span> <span class="err">根据预算和距离，餐厅好评度挑选合适的餐厅名单</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">TOOLS</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="o">------</span>
+</span></span><span class="line"><span class="cl">    <span class="n">You</span> <span class="n">have</span> <span class="n">access</span> <span class="n">to</span> <span class="n">the</span> <span class="n">following</span> <span class="n">tools</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">:</span> <span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">-</span> <span class="n">Useful</span> <span class="n">to</span> <span class="n">search</span> <span class="n">the</span> <span class="n">internet</span>
+</span></span><span class="line"><span class="cl">        <span class="n">about</span> <span class="n">a</span> <span class="n">a</span> <span class="n">given</span> <span class="n">topic</span> <span class="ow">and</span> <span class="k">return</span> <span class="n">relevant</span> <span class="n">results</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">:</span> <span class="n">xxxxxx</span><span class="err">`</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Ask</span> <span class="n">Question</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">:</span> <span class="n">xxx</span><span class="err">`</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">To</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">please</span> <span class="n">use</span> <span class="n">the</span> <span class="n">exact</span> <span class="n">following</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">Yes</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Action</span><span class="p">:</span> <span class="n">the</span> <span class="n">action</span> <span class="n">to</span> <span class="n">take</span><span class="p">,</span> <span class="n">should</span> <span class="n">be</span> <span class="n">one</span> <span class="n">of</span> <span class="p">[</span><span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">,</span> <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">,</span> <span class="n">Delegate</span> <span class="n">Work</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">,</span> <span class="n">Ask</span> <span class="n">Question</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Action</span> <span class="ne">Input</span><span class="p">:</span> <span class="n">the</span> <span class="n">input</span> <span class="n">to</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Observation</span><span class="p">:</span> <span class="n">the</span> <span class="n">result</span> <span class="n">of</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">When</span> <span class="n">you</span> <span class="n">have</span> <span class="n">a</span> <span class="n">response</span> <span class="k">for</span> <span class="n">your</span> <span class="n">task</span><span class="p">,</span> <span class="ow">or</span> <span class="k">if</span> <span class="n">you</span> <span class="k">do</span> <span class="ow">not</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">you</span> <span class="n">MUST</span> <span class="n">use</span> <span class="n">the</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">No</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Final</span> <span class="n">Answer</span><span class="p">:</span> <span class="p">[</span><span class="n">your</span> <span class="n">response</span> <span class="n">here</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="n">This</span> <span class="n">is</span> <span class="n">the</span> <span class="n">summary</span> <span class="n">of</span> <span class="n">your</span> <span class="n">work</span> <span class="n">so</span> <span class="n">far</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Begin</span><span class="o">!</span> <span class="n">This</span> <span class="n">is</span> <span class="n">VERY</span> <span class="n">important</span> <span class="n">to</span> <span class="n">you</span><span class="p">,</span> <span class="n">your</span> <span class="n">job</span> <span class="n">depends</span> <span class="n">on</span> <span class="n">it</span><span class="o">!</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">Current</span> <span class="n">Task</span><span class="p">:</span> 
+</span></span><span class="line"><span class="cl">    <span class="err">作为餐厅挑选大人，你会根据距离、预算、餐厅好评度、餐厅品类挑选出最适合</span>
+</span></span><span class="line"><span class="cl">    <span class="err">工作日午餐就餐的餐厅。</span>
+</span></span><span class="line"><span class="cl">    <span class="err">挑选出的餐厅价格不能超出预算范围，就餐的时间不能过长。</span>
+</span></span><span class="line"><span class="cl">    <span class="err">用中文回复。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">预算</span><span class="p">:</span><span class="mi">20</span><span class="o">-</span><span class="mi">50</span>
+</span></span><span class="line"><span class="cl">    <span class="err">工作地</span><span class="p">:</span><span class="err">长风大悦城</span>   
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="2">
+<li>LLM 推理结果</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">Yes</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span><span class="p">:</span> <span class="n">Delegate</span> <span class="n">Work</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span> <span class="ne">Input</span><span class="p">:</span> <span class="err">每日午餐管家</span><span class="o">|</span><span class="err">询问长风大悦城附近的餐厅有哪些</span><span class="o">|</span><span class="err">工作地</span><span class="p">:</span><span class="err">长风大悦城</span><span class="p">,</span> <span class="err">餐厅品类</span><span class="p">:</span><span class="err">不限</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>省略中间的搜索和总结搜索结果过程&hellip;
+3. 继续推理</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">You</span> <span class="n">are</span> <span class="err">每日午餐管家</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl"><span class="err">在餐饮和营养方面拥有数十年经验的专家</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Your</span> <span class="n">personal</span> <span class="n">goal</span> <span class="n">is</span><span class="p">:</span> <span class="err">根据预算合理安排最近一周工作日</span><span class="mi">5</span><span class="err">天的每日午餐就餐餐厅</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">TOOLS</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="n">You</span> <span class="n">have</span> <span class="n">access</span> <span class="n">to</span> <span class="n">the</span> <span class="n">following</span> <span class="n">tools</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">:</span> <span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">-</span> <span class="n">Useful</span> <span class="n">to</span> <span class="n">search</span> <span class="n">the</span> <span class="n">internet</span>
+</span></span><span class="line"><span class="cl">    <span class="n">about</span> <span class="n">a</span> <span class="n">a</span> <span class="n">given</span> <span class="n">topic</span> <span class="ow">and</span> <span class="k">return</span> <span class="n">relevant</span> <span class="n">results</span>
+</span></span><span class="line"><span class="cl"><span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">:</span> <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">(</span><span class="n">website</span><span class="p">)</span> <span class="o">-</span> <span class="n">Useful</span> <span class="n">to</span> <span class="n">scrape</span> <span class="ow">and</span> <span class="n">summarize</span> <span class="n">a</span> <span class="n">website</span> <span class="n">content</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">To</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">please</span> <span class="n">use</span> <span class="n">the</span> <span class="n">exact</span> <span class="n">following</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">Yes</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span><span class="p">:</span> <span class="n">the</span> <span class="n">action</span> <span class="n">to</span> <span class="n">take</span><span class="p">,</span> <span class="n">should</span> <span class="n">be</span> <span class="n">one</span> <span class="n">of</span> <span class="p">[</span><span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">,</span> <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span> <span class="ne">Input</span><span class="p">:</span> <span class="n">the</span> <span class="n">input</span> <span class="n">to</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl"><span class="n">Observation</span><span class="p">:</span> <span class="n">the</span> <span class="n">result</span> <span class="n">of</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">When</span> <span class="n">you</span> <span class="n">have</span> <span class="n">a</span> <span class="n">response</span> <span class="k">for</span> <span class="n">your</span> <span class="n">task</span><span class="p">,</span> <span class="ow">or</span> <span class="k">if</span> <span class="n">you</span> <span class="k">do</span> <span class="ow">not</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">you</span> <span class="n">MUST</span> <span class="n">use</span> <span class="n">the</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">No</span>
+</span></span><span class="line"><span class="cl"><span class="n">Final</span> <span class="n">Answer</span><span class="p">:</span> <span class="p">[</span><span class="n">your</span> <span class="n">response</span> <span class="n">here</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="n">This</span> <span class="n">is</span> <span class="n">the</span> <span class="n">summary</span> <span class="n">of</span> <span class="n">your</span> <span class="n">work</span> <span class="n">so</span> <span class="n">far</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl"><span class="n">Begin</span><span class="o">!</span> <span class="n">This</span> <span class="n">is</span> <span class="n">VERY</span> <span class="n">important</span> <span class="n">to</span> <span class="n">you</span><span class="p">,</span> <span class="n">your</span> <span class="n">job</span> <span class="n">depends</span> <span class="n">on</span> <span class="n">it</span><span class="o">!</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Current</span> <span class="n">Task</span><span class="p">:</span> <span class="err">询问长风大悦城附近的餐厅有哪些</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">This</span> <span class="n">is</span> <span class="n">the</span> <span class="n">context</span> <span class="n">you</span> <span class="n">are</span> <span class="n">working</span> <span class="n">with</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="err">工作地</span><span class="p">:</span><span class="err">长风大悦城</span><span class="p">,</span> <span class="err">餐厅品类</span><span class="p">:</span><span class="err">不限</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">Yes</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span><span class="p">:</span> <span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span> <span class="ne">Input</span><span class="p">:</span> <span class="s2">&#34;长风大悦城 附近 餐厅&#34;</span><span class="n">Title</span><span class="p">:</span> <span class="err">长风大悦城</span><span class="o">-</span> <span class="err">上海餐厅</span><span class="p">,</span><span class="err">酒吧</span><span class="p">,</span><span class="err">夜生活</span><span class="p">,</span><span class="n">Spa</span><span class="p">,</span><span class="err">娱乐</span><span class="p">,</span><span class="err">购物</span> <span class="o">-</span> <span class="n">Shanghai</span> <span class="n">WOW</span><span class="o">!</span>
+</span></span><span class="line"><span class="cl"><span class="n">Link</span><span class="p">:</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">shanghaiwow</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">merchant</span><span class="o">/</span><span class="n">detail</span><span class="o">/</span><span class="n">id</span><span class="o">/</span><span class="mi">2129</span>
+</span></span><span class="line"><span class="cl"><span class="n">Snippet</span><span class="p">:</span> <span class="err">新天地超隐蔽酒廊，为你揭秘魔都名流的奢华派对！</span> <span class="err">想要成功打入魔都精英人士的社交圈，</span> <span class="err">能顺利进入少数那几间高端会所，是关键所在。</span> <span class="err">近期我们在时尚潮人扎堆的新天地，</span> <span class="o">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">-----------------</span>
+</span></span><span class="line"><span class="cl"><span class="n">Title</span><span class="p">:</span> <span class="mi">1</span><span class="err">點點</span><span class="p">(</span><span class="err">長風大悅城店</span><span class="p">)</span><span class="err">餐廳、地址</span><span class="o">-</span> <span class="err">上海</span> <span class="o">-</span> <span class="n">Trip</span><span class="o">.</span><span class="n">com</span>
+</span></span><span class="line"><span class="cl"><span class="n">Link</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">hk</span><span class="o">.</span><span class="n">trip</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">travel</span><span class="o">-</span><span class="n">guide</span><span class="o">/</span><span class="n">shanghai</span><span class="o">-</span><span class="mi">2</span><span class="o">-</span><span class="n">restaurant</span><span class="o">/</span><span class="n">dian</span><span class="o">-</span><span class="n">dian</span><span class="o">-</span><span class="n">chang</span><span class="o">-</span><span class="n">feng</span><span class="o">-</span><span class="n">jing</span><span class="o">-</span><span class="n">pan</span><span class="o">-</span><span class="n">an</span><span class="o">-</span><span class="n">chang</span><span class="o">-</span><span class="n">dian</span><span class="o">-</span><span class="mi">61284402</span><span class="o">/</span>
+</span></span><span class="line"><span class="cl"><span class="n">Snippet</span><span class="p">:</span> <span class="mi">1</span><span class="err">點點</span><span class="p">(</span><span class="err">長風大悅城店</span><span class="p">)</span><span class="err">附近的餐廳</span> <span class="p">;</span> <span class="err">福和慧</span><span class="o">.</span> <span class="mf">4.8</span> <span class="err">·</span> <span class="err">條評價</span><span class="o">.</span> <span class="n">HK</span><span class="o">$</span><span class="mf">1249.</span> <span class="err">素食</span> <span class="p">;</span> <span class="err">甬府（黃浦店）</span><span class="o">.</span> <span class="mf">4.7</span> <span class="err">·</span> <span class="err">條評價</span><span class="o">.</span> <span class="n">HK</span><span class="o">$</span><span class="mf">1058.</span> <span class="err">江浙菜景觀餐廳</span> <span class="p">;</span> <span class="err">くろぎ</span><span class="n">Kurogi</span> <span class="err">黑木</span><span class="o">.</span> <span class="mf">4.7</span> <span class="err">·</span> <span class="err">條評價</span><span class="o">.</span> <span class="n">HK</span><span class="o">$</span><span class="mf">3599.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">-----------------</span>
+</span></span><span class="line"><span class="cl"><span class="n">Title</span><span class="p">:</span> <span class="err">顺峰顺水顺德菜</span><span class="p">(</span><span class="err">长风大悦城店</span><span class="p">)</span> <span class="o">-</span> <span class="n">you</span><span class="o">.</span><span class="n">ctrip</span><span class="o">.</span><span class="n">com</span>
+</span></span><span class="line"><span class="cl"><span class="n">Link</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">you</span><span class="o">.</span><span class="n">ctrip</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">food</span><span class="o">/</span><span class="mi">2</span><span class="o">/</span><span class="mf">78842745.</span><span class="n">html</span>
+</span></span><span class="line"><span class="cl"><span class="n">Snippet</span><span class="p">:</span> <span class="err">距餐厅</span><span class="mi">2</span><span class="n">km</span><span class="o">.</span> <span class="err">食廬</span><span class="p">(</span><span class="err">虹桥南丰城店</span><span class="p">)</span><span class="o">.</span> <span class="mf">4.5</span> <span class="p">;</span> <span class="err">距餐厅</span><span class="mf">2.1</span><span class="n">km</span><span class="o">.</span> <span class="n">Erman岩烧牛排</span><span class="p">(</span><span class="err">虹桥南丰城店</span><span class="p">)</span><span class="o">.</span> <span class="err">订</span><span class="o">.</span> <span class="mf">4.8</span> <span class="p">;</span> <span class="err">距餐厅</span><span class="mf">1.8</span><span class="n">km</span><span class="o">.</span> <span class="err">瑞华樟园</span><span class="o">.</span> <span class="mf">4.6</span> <span class="o">...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">-----------------</span>
+</span></span><span class="line"><span class="cl"><span class="n">Title</span><span class="p">:</span> <span class="err">味千拉面</span><span class="p">(</span><span class="err">长风大悦城店</span><span class="p">)</span><span class="err">平面地图</span><span class="o">-</span> <span class="err">餐饮美食</span> <span class="o">-</span> <span class="err">城市吧</span>
+</span></span><span class="line"><span class="cl"><span class="n">Link</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">ditu</span><span class="o">.</span><span class="n">city8</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">sh</span><span class="o">/</span><span class="n">cater</span><span class="o">/</span><span class="mi">8</span><span class="n">d8mim794w7vb060f5</span><span class="err">?</span><span class="n">map</span>
+</span></span><span class="line"><span class="cl"><span class="n">Snippet</span><span class="p">:</span> <span class="err">味千拉面</span><span class="p">(</span><span class="err">长风大悦城店</span><span class="p">)</span><span class="err">地址位于上海市普陀区大渡河路</span><span class="mi">196</span><span class="err">号长风大悦城</span><span class="n">F1</span><span class="err">，靠近中江路、云岭东路、大渡河路和古北路，联系电话为</span><span class="p">(</span><span class="mi">021</span><span class="p">)</span><span class="mi">61437703</span><span class="err">。</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="4">
+<li>LLM 推理结果</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">No</span>
+</span></span><span class="line"><span class="cl"><span class="n">Final</span> <span class="n">Answer</span><span class="p">:</span> <span class="n">Some</span> <span class="n">nearby</span> <span class="n">restaurants</span> <span class="n">to</span> <span class="err">长风大悦城</span> <span class="n">are</span><span class="p">:</span> <span class="mi">1</span><span class="err">點點</span><span class="p">,</span> <span class="err">湘庭精致湖南菜</span><span class="p">,</span> <span class="err">味千拉面</span><span class="p">,</span> <span class="err">顺峰顺水顺德菜</span><span class="p">,</span> <span class="err">西贝莜面村</span><span class="p">,</span> <span class="ow">and</span> <span class="err">大肆兄</span><span class="o">.</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="5">
+<li>继续推理</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">You</span> <span class="n">are</span> <span class="err">每日午餐管家</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl"><span class="err">在餐饮和营养方面拥有数十年经验的专家</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Your</span> <span class="n">personal</span> <span class="n">goal</span> <span class="n">is</span><span class="p">:</span> <span class="err">根据预算合理安排最近一周工作日</span><span class="mi">5</span><span class="err">天的每日午餐就餐餐厅</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">TOOLS</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="n">You</span> <span class="n">have</span> <span class="n">access</span> <span class="n">to</span> <span class="n">the</span> <span class="n">following</span> <span class="n">tools</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">:</span> <span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">-</span> <span class="n">Useful</span> <span class="n">to</span> <span class="n">search</span> <span class="n">the</span> <span class="n">internet</span>
+</span></span><span class="line"><span class="cl">    <span class="n">about</span> <span class="n">a</span> <span class="n">a</span> <span class="n">given</span> <span class="n">topic</span> <span class="ow">and</span> <span class="k">return</span> <span class="n">relevant</span> <span class="n">results</span>
+</span></span><span class="line"><span class="cl"><span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">:</span> <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">(</span><span class="n">website</span><span class="p">)</span> <span class="o">-</span> <span class="n">Useful</span> <span class="n">to</span> <span class="n">scrape</span> <span class="ow">and</span> <span class="n">summarize</span> <span class="n">a</span> <span class="n">website</span> <span class="n">content</span>
+</span></span><span class="line"><span class="cl"><span class="n">Delegate</span> <span class="n">Work</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">:</span> <span class="n">xxx</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Ask</span> <span class="n">Question</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">:</span> <span class="n">xxx</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">To</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">please</span> <span class="n">use</span> <span class="n">the</span> <span class="n">exact</span> <span class="n">following</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">Yes</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span><span class="p">:</span> <span class="n">the</span> <span class="n">action</span> <span class="n">to</span> <span class="n">take</span><span class="p">,</span> <span class="n">should</span> <span class="n">be</span> <span class="n">one</span> <span class="n">of</span> <span class="p">[</span><span class="n">Search</span> <span class="n">the</span> <span class="n">internet</span><span class="p">,</span> <span class="n">Scrape</span> <span class="n">website</span> <span class="n">content</span><span class="p">,</span> <span class="n">Delegate</span> <span class="n">Work</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">,</span> <span class="n">Ask</span> <span class="n">Question</span> <span class="n">to</span> <span class="n">Co</span><span class="o">-</span><span class="n">Worker</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">Action</span> <span class="ne">Input</span><span class="p">:</span> <span class="n">the</span> <span class="n">input</span> <span class="n">to</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl"><span class="n">Observation</span><span class="p">:</span> <span class="n">the</span> <span class="n">result</span> <span class="n">of</span> <span class="n">the</span> <span class="n">action</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">When</span> <span class="n">you</span> <span class="n">have</span> <span class="n">a</span> <span class="n">response</span> <span class="k">for</span> <span class="n">your</span> <span class="n">task</span><span class="p">,</span> <span class="ow">or</span> <span class="k">if</span> <span class="n">you</span> <span class="k">do</span> <span class="ow">not</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="p">,</span> <span class="n">you</span> <span class="n">MUST</span> <span class="n">use</span> <span class="n">the</span> <span class="n">format</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">No</span>
+</span></span><span class="line"><span class="cl"><span class="n">Final</span> <span class="n">Answer</span><span class="p">:</span> <span class="p">[</span><span class="n">your</span> <span class="n">response</span> <span class="n">here</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="n">This</span> <span class="n">is</span> <span class="n">the</span> <span class="n">summary</span> <span class="n">of</span> <span class="n">your</span> <span class="n">work</span> <span class="n">so</span> <span class="n">far</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">The</span> <span class="n">human</span> <span class="n">asks</span> <span class="n">the</span> <span class="n">AI</span> <span class="k">for</span> <span class="n">nearby</span> <span class="n">restaurants</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">area</span> <span class="n">of</span> <span class="err">长风大悦城</span> <span class="n">with</span> <span class="n">no</span> <span class="n">specific</span> <span class="n">cuisine</span> <span class="n">preference</span><span class="o">.</span> <span class="n">The</span> <span class="n">AI</span> <span class="n">suggests</span> <span class="mi">1</span><span class="err">點點</span><span class="p">,</span> <span class="err">湘庭精致湖南菜</span><span class="p">,</span> <span class="err">味千拉面</span><span class="p">,</span> <span class="err">顺峰顺水顺德菜</span><span class="p">,</span> <span class="err">西贝莜面村</span><span class="p">,</span> <span class="ow">and</span> <span class="err">大肆兄</span><span class="o">.</span>
+</span></span><span class="line"><span class="cl"><span class="n">Begin</span><span class="o">!</span> <span class="n">This</span> <span class="n">is</span> <span class="n">VERY</span> <span class="n">important</span> <span class="n">to</span> <span class="n">you</span><span class="p">,</span> <span class="n">your</span> <span class="n">job</span> <span class="n">depends</span> <span class="n">on</span> <span class="n">it</span><span class="o">!</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Current</span> <span class="n">Task</span><span class="p">:</span> 
+</span></span><span class="line"><span class="cl"><span class="err">根据餐厅备选清单，你必须从就餐新鲜度和营养角度合理安排最近一周</span><span class="mi">5</span><span class="err">天工作日每天的餐厅。</span>
+</span></span><span class="line"><span class="cl"><span class="err">你最终的答案是一个完整的包含工作日</span><span class="mi">5</span><span class="err">天的就餐计划格式化为</span> <span class="n">markdown</span><span class="err">，包括每日就餐餐厅名称，餐厅简介。</span>
+</span></span><span class="line"><span class="cl"><span class="err">用中文回复。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">预算</span><span class="p">:</span><span class="mi">20</span><span class="o">-</span><span class="mi">50</span>
+</span></span><span class="line"><span class="cl"><span class="err">工作地</span><span class="p">:</span><span class="err">长风大悦城</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">This</span> <span class="n">is</span> <span class="n">the</span> <span class="n">context</span> <span class="n">you</span> <span class="n">are</span> <span class="n">working</span> <span class="n">with</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="err">根据每日午餐管家提供的附近餐厅信息，我在网上搜索了其中的一个“點點”，发现其评价并不错。因此我建议去“點點”就餐。</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="6">
+<li>推理结果</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">Thought</span><span class="p">:</span> <span class="n">Do</span> <span class="n">I</span> <span class="n">need</span> <span class="n">to</span> <span class="n">use</span> <span class="n">a</span> <span class="k">tool</span><span class="err">?</span> <span class="n">No</span>
+</span></span><span class="line"><span class="cl"><span class="n">Final</span> <span class="n">Answer</span><span class="p">:</span> 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">根据预算和工作地点，我建议以下餐厅：</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">周一：味千拉面</span> <span class="o">-</span> <span class="err">该店提供新鲜的拉面和汤，是一个健康营养的选择。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">周二：大肆兄</span> <span class="o">-</span> <span class="err">这家店提供新鲜的沙拉和三明治，是一个轻松的午餐选择。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">周三：湘庭精致湖南菜</span> <span class="o">-</span> <span class="err">该店提供健康营养的湖南菜，是一个美味和健康的选择。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">周四：顺峰顺水顺德菜</span> <span class="o">-</span> <span class="err">这家店提供新鲜的广东美食，是一个丰富的午餐选择。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">周五：西贝莜面村</span> <span class="o">-</span> <span class="err">该店提供新鲜的面条和汤，是一个健康营养的选择。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="err">以上餐厅都在预算范围内，且都位于长风大悦城附近，可以保证就餐的新鲜度和营养角度的考虑。</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上面的工作流包含了多次搜索和多次推理，其中还有错误这些信息我们没有全部展示。但从列出的关键步骤我们可以看到</p>
+<ul>
+<li>LLM 根据 agent 输入的 prompt 产生 <code>thought</code> 比如“Do I need to use a tool? Yes”</li>
+<li>LLM 判断需要执行的 <code>Action</code>，比如调用我们定义好的 tool“Search the internet”</li>
+<li><code>Action Input</code> 作为执行动作的参数</li>
+<li><code>Observation</code> 动作执行后的输出，继续提供给 LLM 进一步推理</li>
+</ul>
+<h3 id="react-问题">ReAct 问题</h3>
+<ol>
+<li>不稳定 <br>
+非常依赖 LLM 的性能。即使目前最好的 LLM  gpt-4 仍然存在幻觉和内容输出不稳定的情况，这样导致最后的结果不够稳定;</li>
+<li>成本高  <br>
+如果使用推理性能好像闭源的 gpt-4 因为执行流程长，LLM 会被反复调用，这里的 token 成本会非常高；</li>
+<li>响应慢<br>
+LLM 推理慢，加上反复多次调用，整个执行过程时间会比较长</li>
+</ol>
+<p>目前 CrewAI 支持调用在 Ollama 框架下启动的语言模型，但是这块支持的还不够完善并且规模较小的 7B、13B 等开源模型性能不够好，导致整体 agent 生产环境的可用性还有待提高。这方面进展我们将持续关注。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-01-12</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/crewai-practice/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/crewai-practice/" data-title="crewAI 搭建 AI agent 的原理及应用" data-hashtags="AI agent,ReAct,crewAI,langchain"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/crewai-practice/" data-hashtag="AI agent"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/crewai-practice/" data-title="crewAI 搭建 AI agent 的原理及应用" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/crewai-practice/" data-title="crewAI 搭建 AI agent 的原理及应用"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/crewai-practice/" data-title="crewAI 搭建 AI agent 的原理及应用"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/ai-agent/">Ai Agent</a>,&nbsp;<a href="/tags/react/">ReAct</a>,&nbsp;<a href="/tags/crewai/">CrewAI</a>,&nbsp;<a href="/tags/langchain/">Langchain</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/text-similarity/" class="prev" rel="prev" title="快速搭建文本语义搜索"><i class="fas fa-angle-left fa-fw"></i>快速搭建文本语义搜索</a>
+            <a href="/rag_rerank/" class="next" rel="next" title="RAG 应用的关键步骤 - 优化搜索结果">RAG 应用的关键步骤 - 优化搜索结果<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

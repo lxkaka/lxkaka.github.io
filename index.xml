@@ -1,0 +1,80 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>lxkaka</title>
+        <link>https://lxkaka.wang/</link>
+        <description>lxkaka&#39;s blog</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 11 Apr 2025 12:14:42 &#43;0800</lastBuildDate>
+            <atom:link href="https://lxkaka.wang/index.xml" rel="self" type="application/rss+xml" />
+        <item>
+    <title>对话式指令革新标注管理：从手动Label Studio操作到MCP Server驱动的自动化工作流</title>
+    <link>https://lxkaka.wang/mcp-label-studio/</link>
+    <pubDate>Fri, 11 Apr 2025 12:14:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/mcp-label-studio/</guid>
+    <description><![CDATA[在AI训练数据准备过程中，高质量的标注数据是模型性能的关键保障。Label Studio作为一款功能强大的开源数据标注平台，提供了丰富的工具支]]></description>
+</item><item>
+    <title>实时语音服务构建实践：基于 OpenAI Real-time 协议的技术分享</title>
+    <link>https://lxkaka.wang/end-to-end-audio-service/</link>
+    <pubDate>Thu, 23 Jan 2025 15:16:44 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/end-to-end-audio-service/</guid>
+    <description><![CDATA[在这里和大家分享一下构建实时语音服务的实践经验，这个服务是基于 OpenAI 最新推出的 Real-time 协议实现的。 随着 AI 技术的快速发展，实时语音交互的应用前景非常广阔]]></description>
+</item><item>
+    <title>告别手动写代码：我的商品数据解析器 Agent 设计思路与方案</title>
+    <link>https://lxkaka.wang/llm-parser-agent/</link>
+    <pubDate>Fri, 27 Dec 2024 18:35:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/llm-parser-agent/</guid>
+    <description><![CDATA[我们经常需要从各种来源抓取和处理商品数据。这些数据格式五花八门，编写解析代码是一项十分繁重但是缺乏技术含量的工作。为了解决这个问题，我设计并]]></description>
+</item><item>
+    <title>自定义 Wordpress URL 的方案</title>
+    <link>https://lxkaka.wang/wordpress-url/</link>
+    <pubDate>Wed, 23 Oct 2024 12:05:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/wordpress-url/</guid>
+    <description><![CDATA[WordPress 是全球最流行的内容管理系统(CMS),截至2024年,已有超过43%的网站使用WordPress构建。作为一个开源项目,WordPress]]></description>
+</item><item>
+    <title>AB Test 框架方案设计</title>
+    <link>https://lxkaka.wang/ab-test-design/</link>
+    <pubDate>Fri, 06 Sep 2024 16:04:09 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/ab-test-design/</guid>
+    <description><![CDATA[作者注：文章的结构是我让 LLM 参考我的设计简稿生成的 引言 AB Test 是现代软件开发和产品管理中的一项关键技术。它允许团队通过比较网页或应用功能的两个或多]]></description>
+</item><item>
+    <title>Mongodb 默认存储引擎 WiredTiger 的数据结构探究</title>
+    <link>https://lxkaka.wang/wiredtiger/</link>
+    <pubDate>Mon, 08 Jul 2024 18:30:47 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/wiredtiger/</guid>
+    <description><![CDATA[我们知道 Mongodb 默认使用的存储引擎是 WiredTiger。了解存储引擎的数据结构是十分重要的尤其是对于服务端的同学，只有你了解了它才能更好的使用 M]]></description>
+</item><item>
+    <title>利用 Twilio 快速构建 web 语音聊天</title>
+    <link>https://lxkaka.wang/twilio-web/</link>
+    <pubDate>Wed, 29 May 2024 17:06:40 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/twilio-web/</guid>
+    <description><![CDATA[web 应用程序越来越强调交互性和实时通信功能。无论是在线客服、网络会议,还是网络电话等,都需要将语音和视频通信无缝集成到应用程序中,以提供更丰富]]></description>
+</item><item>
+    <title>基于文档的 RAG 应用优化方案</title>
+    <link>https://lxkaka.wang/rag_doc/</link>
+    <pubDate>Mon, 25 Mar 2024 17:33:29 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/rag_doc/</guid>
+    <description><![CDATA[基于内部文档的知识问答是我们内部 AI 助手的一个模块，这个模块构建在之前文章基础之上即完整的 RAG(Retrieval-Augmented Generation) 应用。 我们知道对于 RAG 应用来说，生成结果准确与否的]]></description>
+</item><item>
+    <title>RAG 应用的关键步骤 - 优化搜索结果</title>
+    <link>https://lxkaka.wang/rag_rerank/</link>
+    <pubDate>Wed, 28 Feb 2024 18:58:52 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/rag_rerank/</guid>
+    <description><![CDATA[在这篇文章里我们介绍了快速搭建语义搜索的实践方案。在这里我们会介绍语义搜索的进阶方案，包括使用开源模型构建文本 embedding、更好用的向]]></description>
+</item><item>
+    <title>crewAI 搭建 AI agent 的原理及应用</title>
+    <link>https://lxkaka.wang/crewai-practice/</link>
+    <pubDate>Fri, 12 Jan 2024 17:13:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/crewai-practice/</guid>
+    <description><![CDATA[单独使用语言模型（LLM）对于简单的任务比如让模型写一段文案来说是可以的，但更复杂的任务往往只依靠 LLM 很难取得良好的效果甚至不可用。 所以 AI agent 的]]></description>
+</item></channel>
+</rss>

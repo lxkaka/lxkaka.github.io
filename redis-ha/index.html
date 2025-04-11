@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Redis高可用简要梳理 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/redis-ha/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Redis高可用简要梳理">
+  <meta property="og:description" content="Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:published_time" content="2018-02-09T10:42:35+08:00">
+    <meta property="article:modified_time" content="2018-02-09T10:42:35+08:00">
+    <meta property="article:tag" content="Redis">
+    <meta property="article:tag" content="Redis">
+    <meta property="article:tag" content="Backend">
+    <meta property="article:tag" content="Backend">
+    <meta property="article:tag" content="High Availability">
+    <meta property="article:tag" content="High Availability">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Redis高可用简要梳理">
+  <meta name="twitter:description" content="Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/redis-ha/" /><link rel="prev" href="https://lxkaka.wang/io-models/" /><link rel="next" href="https://lxkaka.wang/build-wechat-service/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Redis高可用简要梳理",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/redis-ha\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "page","keywords": "redis, backend, high availability","wordcount":  2654 ,
+        "url": "https:\/\/lxkaka.wang\/redis-ha\/","datePublished": "2018-02-09T10:42:35+08:00","dateModified": "2018-02-09T10:42:35+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="page single special"><h1 class="single-title animated pulse faster">Redis高可用简要梳理</h1><div class="content" id="content"><p>Redis因为其高性能和易用性在我们后端的服务中发挥了巨大的作用，并且很多重要功能的实现都会依赖redis。除了常用的缓存，还有队列，发布订阅等重要用处。所以redis的服务高可用就显得尤为关键。这里从redis的高可用入手，梳理了一下目前主流的方案。</p>
+<h2 id="redis-sentinel">Redis-Sentinel</h2>
+<p>Redis-Sentinel是Redis官方推荐的高可用性(HA)解决方案，当用Redis做Master-slave的高可用方案时，假如master宕机了，Redis本身(包括它的很多客户端)都没有实现自动进行主备切换，而Redis-sentinel本身也是一个独立运行的进程，它能监控多个master-slave集群，发现master宕机后能进行自动切换。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/redis-se1.png"
+        data-srcset="https://pics.lxkaka.wang/redis-se1.png, https://pics.lxkaka.wang/redis-se1.png 1.5x, https://pics.lxkaka.wang/redis-se1.png 2x"
+        data-sizes="auto"
+        alt="单机sentinel"
+        title="单机sentinel" /></p>
+<p>它的主要功能有以下几点</p>
+<ul>
+<li>
+<p>不时地监控redis是否按照预期良好地运行;</p>
+</li>
+<li>
+<p>如果发现某个redis节点运行出现状况，能够通知另外一个进程(例如它的客户端);</p>
+</li>
+<li>
+<p>能够进行自动切换。当一个master节点不可用时，能够选举出master的多个slave(如果有超过一个slave的话)中的一个来作为新的master,其它的slave节点会将它所追随的master的地址改为被提升为master的slave的新地址。</p>
+</li>
+</ul>
+<h3 id="sentinel支持集群">Sentinel支持集群</h3>
+<p>很显然，只使用单个sentinel进程来监控redis集群是不可靠的，当sentinel进程宕掉后(sentinel本身也有单点问题，single-point-of-failure)整个集群系统将无法按照预期的方式运行。所以有必要将sentinel集群，这样有几个好处：</p>
+<ul>
+<li>
+<p>即使有一些sentinel进程宕掉了，依然可以进行redis集群的主备切换；</p>
+</li>
+<li>
+<p>如果只有一个sentinel进程，如果这个进程运行出错，或者是网络堵塞，那么将无法实现redis集群的主备切换（单点问题）;</p>
+</li>
+<li>
+<p>如果有多个sentinel，redis的客户端可以随意地连接任意一个sentinel来获得关于redis集群中的信息。</p>
+</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/redis-se2.png"
+        data-srcset="https://pics.lxkaka.wang/redis-se2.png, https://pics.lxkaka.wang/redis-se2.png 1.5x, https://pics.lxkaka.wang/redis-se2.png 2x"
+        data-sizes="auto"
+        alt="集群sentinel"
+        title="集群sentinel" /></p>
+<p>redis-sentinel方案提供了单点的高可用解决方案，但是当数据量和业务量极速增长时，单点的reids不可能无限的纵向扩容（增大内存), 这个时候就需要redis有集群的能力来扛。
+redis集群的几种实现方式如下：</p>
+<ul>
+<li>客户端分片<br>
+优点简单客户端sharding不支持动态增删节点。劣势很大服务端Redis实例群拓扑结构有变化时，每个客户端都需要更新调整。连接不能共享，当应用规模增大时，资源浪费制约优化。一般不采用。</li>
+<li>基于代理的分片，如codis和Twemproxy</li>
+<li>路由查询， redis-cluster</li>
+</ul>
+<h2 id="twemproxy">Twemproxy</h2>
+<p>Twemproxy也叫nutcraker，是twtter开源的一个redis和memcache代理服务器程序。redis作为一个高效的缓存服务器，非常具有应用价值。但在用户数据量增大时，需要运行多个redis实例，此时将迫切需要一种工具统一管理多个redis实例，避免在每个客户端管理所有连接带来的不方便和不易维护，Twemproxy即为此目标而生。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/twemproxy01.png"
+        data-srcset="https://pics.lxkaka.wang/twemproxy01.png, https://pics.lxkaka.wang/twemproxy01.png 1.5x, https://pics.lxkaka.wang/twemproxy01.png 2x"
+        data-sizes="auto"
+        alt="tweemproxy"
+        title="tweemproxy" /></p>
+<h3 id="主要工作方式">主要工作方式</h3>
+<p>分布式逻辑和存储引擎分开，逻辑层proxy代理，存储用的是原子redis，当每个层面需要添加删除节点必须重启服务生效（要重新利用散列函数生成KEY分片更新）<br>
+Proxy无状态，redis数据层有状态的，客户端可以请求任一proxy代理上面，再由其转发至正确的redis节点，该KEY分片算法至某个节点都是预先已经算好的，在proxy配置文件保存着，但是如果更新或者删除节点，又要根据一致性hash重新计算分片，并且重启服务。<br>
+一致性hash算法，增减节点需要配置proxy通知新的算法，重启服务</p>
+<h4 id="优点">优点：</h4>
+<ul>
+<li>比较轻，开发简单，对应用几乎透明</li>
+<li>历史悠久，方案成熟</li>
+</ul>
+<h4 id="缺点">缺点：</h4>
+<ul>
+<li>代理影响性能</li>
+<li>无法平滑地扩容/缩容</li>
+<li>运维比较困难</li>
+<li>proxy单点本身会有性能瓶颈</li>
+</ul>
+<h2 id="codis">Codis</h2>
+<p>codis由3大组件构成：</p>
+<ul>
+<li>codis-server : 修改过源码的redis, 支持slot，扩容迁移等</li>
+<li>codis-proxy : 支持多线程，go语言实现的内核</li>
+<li>codis Dashboard : 集群管理工具
+提供web图形界面管理集群。
+集群元数据存在在zookeeper或etcd。(Zookeeper/etcd存放数据路由表和codis-proxy节点的元信息，codis-config发起的命令通过其同步到各个存活的codis-proxy)
+提供独立的组件codis-ha负责redis节点主备切换。
+基于proxy的codis，客户端对路由表变化无感知。客户端需要从codis dashhoard调用list proxy命令获取所有proxy列表，并根据自身的轮询策略决定访问哪个proxy节点以实现负载均衡。<br>
+整个集群分为1024个哈希槽，分片算法位SlotId = crc32(key) % 1024，增减节点不需要重启服务
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/codis.png"
+        data-srcset="https://pics.lxkaka.wang/codis.png, https://pics.lxkaka.wang/codis.png 1.5x, https://pics.lxkaka.wang/codis.png 2x"
+        data-sizes="auto"
+        alt="codis"
+        title="codis" /></li>
+</ul>
+<h3 id="主要工作方式-1">主要工作方式</h3>
+<p>分布式逻辑和存储引擎分开，逻辑层codis-proxy，存储用的是修改过的codis-server,这种好处是proxy层可以自动扩展和收缩，存储层也同样可以，每个层面都可以热插拨<br>
+proxy无状态，codis-server分为组间，每个组存在一个主节点（必须有并且只能有一个）和多个从节点。客户端请求都是和proxy链接，链接哪个proxy都一样，然后由它根据zookeeper路由信息转发至正确节点，直接可以定位到正确节点上</p>
+<h4 id="优点-1">优点：</h4>
+<ul>
+<li>对应用几乎透明</li>
+<li>性能比 Twemproxy 好</li>
+<li>有图形化界面，扩容容易，运维方便</li>
+</ul>
+<h4 id="缺点-1">缺点：</h4>
+<ul>
+<li>代理影响性能</li>
+<li>组件过多，需要很多机器资源，部署比较难</li>
+<li>修改了 Redis 代码，导致和官方无法同步，新特性跟进缓慢</li>
+</ul>
+<h2 id="redis-cluster">Redis Cluster</h2>
+<h3 id="主要工作方式-2">主要工作方式</h3>
+<p>分布式的逻辑和存储引擎不分开，即又负责读写操作，又负责集群交互，升级困难，如果代码有bug，集群无法工作
+这个结构为无中心的组织，不好把控集群当前的存活状态，客户端可以向任一节点发送请求，再有其重定向正确的节点上。如果在第一次请求和重定向期间cluster拓扑结构改变，则需要再一次或者多次重定向至正确的节点，但是这方面性能可以忽悠不计<br>
+整个集群分为16384个哈希槽，分片算法位SlotId = crc16(key) % 16384，增减节点不需要重启服务。Redis 集群通过 Gossip 协议同步节点信息，基本思想是节点之间互相交换信息最终所有节点达到一致。BTW. redis sentinel集群判定redis主节点down掉也是采用gossip协议。关于Gossip参考<a href="https://en.wikipedia.org/wiki/Gossip_protocol" target="_blank" rel="noopener noreffer">wiki</a>。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/redis-cluster.png"
+        data-srcset="https://pics.lxkaka.wang/redis-cluster.png, https://pics.lxkaka.wang/redis-cluster.png 1.5x, https://pics.lxkaka.wang/redis-cluster.png 2x"
+        data-sizes="auto"
+        alt="redis-cluster"
+        title="redis-cluster" /></p>
+<h4 id="优点-2">优点：</h4>
+<ul>
+<li>组件 all-in-box，部署简单</li>
+<li>性能最快（没有proxy）</li>
+<li>自动故障转移、Slot 迁移中数据可用</li>
+<li>官方原生集群方案，更新与支持有保障</li>
+</ul>
+<h4 id="缺点-2">缺点：</h4>
+<ul>
+<li>实践不多</li>
+<li>客户端开放成本高（客户端不够成熟）</li>
+<li>多键操作支持有限</li>
+<li>reshard 操作不够自动化（redis-trib.rb ）</li>
+</ul>
+</div><div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></div></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Nginx Ingress 进阶——灰度发布 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/nginx-ingress/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Nginx Ingress 进阶——灰度发布">
+  <meta property="og:description" content="Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2019-12-27T16:53:43+08:00">
+    <meta property="article:modified_time" content="2019-12-27T16:53:43+08:00">
+    <meta property="article:tag" content="Kubernetes">
+    <meta property="article:tag" content="Nginx Ingress">
+    <meta property="article:tag" content="流量管理">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Nginx Ingress 进阶——灰度发布">
+  <meta name="twitter:description" content="Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/nginx-ingress/" /><link rel="prev" href="https://lxkaka.wang/k8s-harbor/" /><link rel="next" href="https://lxkaka.wang/mysql-lock/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Nginx Ingress 进阶——灰度发布",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/nginx-ingress\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "kubernetes, nginx ingress, 流量管理","wordcount":  1028 ,
+        "url": "https:\/\/lxkaka.wang\/nginx-ingress\/","datePublished": "2019-12-27T16:53:43+08:00","dateModified": "2019-12-27T16:53:43+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Nginx Ingress 进阶——灰度发布</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-12-27">2019-12-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1028 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#nginx-ingress-annotations">Nginx ingress annotations</a></li>
+        <li><a href="#部署服务">部署服务</a></li>
+        <li><a href="#根据权重转发">根据权重转发</a></li>
+        <li><a href="#根据请求头转发">根据请求头转发</a></li>
+        <li><a href="#根据特定的请求头和值转发">根据特定的请求头和值转发</a></li>
+        <li><a href="#根据-cookie-转发">根据 cookie 转发</a></li>
+        <li><a href="#总结">总结</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><a href="https://kubernetes.github.io/ingress-nginx/" target="_blank" rel="noopener noreffer">Nginx Ingress Controller</a> 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Nginx ingress controller 对外暴露 kubernetes 中的服务，作为外部流量的入口，是集群中非常关键的组件。我们这篇文章关注 nginx ingress 通过 annotation 提供的流量管理功能，利用 annotation 的配置可以轻松帮助我们实现金丝雀发布和A/B test。</p>
+<h3 id="nginx-ingress-annotations">Nginx ingress annotations</h3>
+<p>假设我们现在部署了两个版本的服务，老版本和 canary 版本</p>
+<ul>
+<li>nginx.ingress.kubernetes.io/canary-by-header
+请求头中如果包含了这个 annotation 设置的值，则流量被转发到 canary 版本的服务</li>
+<li>nginx.ingress.kubernetes.io/canary-by-header-value
+这个 annotation 是配合 <code>nginx.ingress.kubernetes.io/canary-by-header</code> 来使用的，当请求头对应上面配置的 header 的值与这个 annotation 匹配， 则流量转发到 canary 版本</li>
+<li>nginx.ingress.kubernetes.io/canary-weight
+根据权重来转发流量，配置的权重值为 0-100。如配置 30 ，则把 30% 的流量转发到 canary 版本</li>
+<li>nginx.ingress.kubernetes.io/canary-by-cookie
+根据请求头中的 cookie 转发流量，如果 cookie 与配置的 annotation 的值匹配，且 cookie 的 value 是 <code>always</code>, 则该请求会被转发到 canary 版本</li>
+</ul>
+<h3 id="部署服务">部署服务</h3>
+<p>这里我们服务的 deployment 就不展示了，service 配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yml" data-lang="yml"><span class="line"><span class="cl"><span class="c"># 测试版本</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">hello-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">hello-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l">TCP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">hello-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># canary 版本</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">canary-hello-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">labels</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">canary-hello-service</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l">TCP</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">selector</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l">canary-hello-service</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="根据权重转发">根据权重转发</h3>
+<p>ingress 配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">extensions/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">Ingress</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">canary</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/canary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/canary-weight</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;30&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l">canary-service.abc.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">backend</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l">canary-hello-service </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">servicePort</span><span class="p">:</span><span class="w"> </span><span class="m">80</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>测试结果如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 10<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="根据请求头转发">根据请求头转发</h3>
+<p><code>annotation</code> 配置如下（ingress 其余部分省略）</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">annotations</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary-by-header</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;test&#34;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>测试结果如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -H <span class="s1">&#39;test:always&#39;</span> http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="根据特定的请求头和值转发">根据特定的请求头和值转发</h3>
+<p>annotation 配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary-by-header</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;test&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary-by-header-value</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;abc&#34;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>测试结果如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -H <span class="s1">&#39;test:always&#39;</span> http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -H <span class="s1">&#39;test:abc&#39;</span> http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="根据-cookie-转发">根据 cookie 转发</h3>
+<p>使用 cookie 来进行流量管理的场景比较适合用于 A/B test，比如用户的请求 cookie 中含有特殊的标签，那么我们可以把这部分用户的请求转发到特定的服务进行处理。<br>
+annotation 配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">  </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="l">nginx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;true&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">nginx.ingress.kubernetes.io/canary-by-cookie</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;like_music&#34;</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>测试结果如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -b <span class="s1">&#39;like_music=1&#39;</span> http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">hello world-version1
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ <span class="k">for</span> i in <span class="k">$(</span>seq <span class="m">1</span> 5<span class="k">)</span><span class="p">;</span> <span class="k">do</span> curl -b <span class="s1">&#39;like_music=always&#39;</span> http://canary-service.abc.com<span class="p">;</span> <span class="nb">echo</span> <span class="s1">&#39;\n&#39;</span><span class="p">;</span> <span class="k">done</span>
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span><span class="line"><span class="cl">hello world-version2
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>三种 <code>annotation</code> 按如下顺序匹配<br>
+<code>canary-by-header &gt; canary-by-cookie &gt; canary-weight</code></p>
+<h3 id="总结">总结</h3>
+<p>我们从以上的测试结果来看，可以把流量的转发分成以下两类</p>
+<ol>
+<li>根据权重</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">    nginx.ingress.kubernetes.io/canary: &#34;true&#34;
+</span></span><span class="line"><span class="cl">    nginx.ingress.kubernetes.io/canary-weight: &#34;30&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                                         70%
+</span></span><span class="line"><span class="cl">                                      |------&gt; 生产版本
+</span></span><span class="line"><span class="cl">users --- 100% ---&gt; Nginx Ingress ----|  30%
+</span></span><span class="line"><span class="cl">                                      |------&gt; canary 版本
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="2">
+<li>根据用户</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">    nginx.ingress.kubernetes.io/canary: &#34;true&#34;
+</span></span><span class="line"><span class="cl">    nginx.ingress.kubernetes.io/canary-by-header: &#34;test&#34;
+</span></span><span class="line"><span class="cl">    nginx.ingress.kubernetes.io/canary-by-header-value: &#34;abc&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                                      others
+</span></span><span class="line"><span class="cl">                                  |-----------&gt; 生产版本
+</span></span><span class="line"><span class="cl">users ------&gt; Nginx Ingress ------| &#34;test:abc&#34;
+</span></span><span class="line"><span class="cl">                                  |-----------&gt; canary 版本
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-12-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/nginx-ingress/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/nginx-ingress/" data-title="Nginx Ingress 进阶——灰度发布" data-hashtags="kubernetes,nginx ingress,流量管理"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/nginx-ingress/" data-hashtag="kubernetes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/nginx-ingress/" data-title="Nginx Ingress 进阶——灰度发布" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/nginx-ingress/" data-title="Nginx Ingress 进阶——灰度发布"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/nginx-ingress/" data-title="Nginx Ingress 进阶——灰度发布"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/kubernetes/">Kubernetes</a>,&nbsp;<a href="/tags/nginx-ingress/">Nginx Ingress</a>,&nbsp;<a href="/tags/%E6%B5%81%E9%87%8F%E7%AE%A1%E7%90%86/">流量管理</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/k8s-harbor/" class="prev" rel="prev" title="k8s 中部署 Harbor"><i class="fas fa-angle-left fa-fw"></i>k8s 中部署 Harbor</a>
+            <a href="/mysql-lock/" class="next" rel="next" title="MySQL InnoDB 加锁实践分析">MySQL InnoDB 加锁实践分析<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

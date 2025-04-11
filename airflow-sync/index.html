@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Hive To AnalyticDB 数据同步方案设计 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/airflow-sync/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Hive To AnalyticDB 数据同步方案设计">
+  <meta property="og:description" content="最近在做同步数仓数据的工作，从设计到实现整个过程其实是挺有意思的。这里记录和分享一下我们的实施方案，也能给有类似需求的同学提供一些参考价值。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2020-05-22T13:58:15+08:00">
+    <meta property="article:modified_time" content="2020-05-22T13:58:15+08:00">
+    <meta property="article:tag" content="Hive">
+    <meta property="article:tag" content="AnalyticDB">
+    <meta property="article:tag" content="数据同步">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Hive To AnalyticDB 数据同步方案设计">
+  <meta name="twitter:description" content="最近在做同步数仓数据的工作，从设计到实现整个过程其实是挺有意思的。这里记录和分享一下我们的实施方案，也能给有类似需求的同学提供一些参考价值。">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/airflow-sync/" /><link rel="prev" href="https://lxkaka.wang/hsdb-class/" /><link rel="next" href="https://lxkaka.wang/orc-adb/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Hive To AnalyticDB 数据同步方案设计",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/airflow-sync\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "hive, AnalyticDB, 数据同步","wordcount":  1808 ,
+        "url": "https:\/\/lxkaka.wang\/airflow-sync\/","datePublished": "2020-05-22T13:58:15+08:00","dateModified": "2020-05-22T13:58:15+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Hive To AnalyticDB 数据同步方案设计</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-05-22">2020-05-22</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1808 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#需求">需求</a></li>
+    <li><a href="#目标">目标</a></li>
+    <li><a href="#方案设计">方案设计</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#扩展性">扩展性</a></li>
+            <li><a href="#延时低">延时低</a></li>
+            <li><a href="#容错率高">容错率高</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#存在的问题">存在的问题</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>最近在做同步数仓数据的工作，从设计到实现整个过程其实是挺有意思的。这里记录和分享一下我们的实施方案，也能给有类似需求的同学提供一些参考价值。</p>
+<h2 id="需求">需求</h2>
+<p>在调研了阿里云的 AnalyticDB MySQL 后，我们决定把业务系统使用 Presto 查询 Hive 数据的过程替换成业直接查询 ADB(文中 ADB 都指的是 AnalyticDB MySQL)。具体原因这里就不做展开，简单说三点就是第一解耦我们目前业务直接依赖 EMR， 第二是性能上有很好的提升， 第三点用钱买服务省心。<br>
+所以简单来说我们需要把数仓 DWS 层的数据同步到 ADB。</p>
+<h2 id="目标">目标</h2>
+<p>在明确了需求后，数仓数据同步的任务需要达到以下目标</p>
+<ul>
+<li>扩展性高
+新建的表或者删除表都不需要改动同步逻辑，或者其他代码</li>
+<li>延时低
+数仓的数据生产完毕或者更新完毕，相关的表就能开始同步</li>
+<li>容错率高
+不会出现漏同步，或者重复同步</li>
+</ul>
+<h2 id="方案设计">方案设计</h2>
+<p>为了达到上述的目标，数据同步的主要流程如下 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/sync-flow.png"
+        data-srcset="https://pics.lxkaka.wang/sync-flow.png, https://pics.lxkaka.wang/sync-flow.png 1.5x, https://pics.lxkaka.wang/sync-flow.png 2x"
+        data-sizes="auto"
+        alt="sync-flow"
+        title="sync-flow" /></p>
+<p>首先我们的同步任务最终执行的形式是 Airflow 中的一个 task，各个不同表的同步任务组成了 Airflow 中的一个 dag。</p>
+<h4 id="扩展性">扩展性</h4>
+<p>为了达到扩展性的要求，我们把需要同步的 table 和他的依赖 task 以及一些别的信息存入 mysql 表中(表名 sync_task)。上面提到的 dag 就是根据 sync_task 的有效记录动态生成的。所以无论新建同步任务或者删除同步任务，只需要更新 sync_task， 那么 dag 也会动态调整。<br>
+dag 示例代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># 读取同步记录</span>
+</span></span><span class="line"><span class="cl"><span class="n">sync_tasks</span> <span class="o">=</span> <span class="n">get_mysql_dataset</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mysql_conn_id</span><span class="o">=</span><span class="s2">&#34;mysql_metadata&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">schema</span><span class="o">=</span><span class="s2">&#34;metadata&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sql</span><span class="o">=</span><span class="sa">f</span><span class="s2">&#34;select * from sync_task where status = 1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 生成 dag 里的同步 task</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">sync_task</span> <span class="ow">in</span> <span class="n">sync_tasks</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">adb_table</span> <span class="o">=</span> <span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;adb_table&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sync_task_id</span> <span class="o">=</span> <span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;id&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sync_conditions</span> <span class="o">=</span> <span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;conditions&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">sync_conditions</span> <span class="ow">or</span> <span class="n">sync_conditions</span> <span class="o">==</span> <span class="s2">&#34;None&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sync_conditions</span> <span class="o">=</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">HiveRecordToMySqlOperator</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">task_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">&#34;sync_to_adb_</span><span class="si">{</span><span class="n">adb_table</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">sync_task_id</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dag</span><span class="o">=</span><span class="n">dag</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">hive_table</span><span class="o">=</span><span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;hive_table&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mysql_table</span><span class="o">=</span><span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;adb_table&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="n">mysql_conn_id</span><span class="o">=</span><span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;mysql_conn_id&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="n">dml_operator</span><span class="o">=</span><span class="n">sync_task</span><span class="p">[</span><span class="s2">&#34;dml_operator&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="n">conditions</span><span class="o">=</span><span class="n">sync_conditions</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sync_task_record_id</span><span class="o">=</span><span class="n">sync_task_id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="延时低">延时低</h4>
+<p>为了达到高效的同步，我们做了以下几点来保证</p>
+<ul>
+<li>多线程读取和写入   <br>
+我们知道在 Python 中多线程真正能分配到 CPU 时间片的只有一线程，所以很多情况下多线程没有太多用处。但是我们这个同步数据过程是典型的 IO 密集型任务，如果单线程的话 CPU 大部分时间处于空闲状态，这个时候多线程就有意义了，能显著的提高同步效率。 <br>
+示例代码如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="mi">5</span> <span class="o">*</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="n">rows</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">serialize_rows</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">lst</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">row</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_serialize_cell</span><span class="p">(</span><span class="n">cell</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="n">serialize_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">lst</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">placeholders</span> <span class="o">=</span> <span class="s2">&#34;,&#34;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&#34;</span><span class="si">%s</span><span class="s2">&#34;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">serialize_rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dml_operator</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">tmp_mysql_table</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">target_fields</span><span class="si">}</span><span class="s2"> VALUES (</span><span class="si">{</span><span class="n">placeholders</span><span class="si">}</span><span class="s2">)&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">task</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">_mysql_run</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">serialize_rows</span><span class="p">,</span> <span class="n">mysql</span><span class="p">,</span> <span class="n">tmp_mysql_table</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">all_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">rows</span> <span class="o">=</span> <span class="n">hive_cursor</span><span class="o">.</span><span class="n">fetchmany</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query_every</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>数据分片   <br>
+上面我们提到的多线程只利用了 airflow worker 的一个进程，所以如果我们把数据分片，每一片数据是一个独立的同步任务，那么自然就能生成一个 dag 中的 task, 多个数据分片就同时生成多个同步任务，这些任务能被 airflow scheduler 调度给不同的 worker 或者同一个 worker 的不同进程。     <br>
+示例代码如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># 获取同步数据量  
+</span></span><span class="line"><span class="cl"># 这里为了不消耗 EMR 的资源，我们去 hive metastore 表中获取待同步表的数据量，而不是使用 select count(*) 
+</span></span><span class="line"><span class="cl">hive_conn = HiveCliHook(hive_cli_conn_id=&#34;hive_cli_default&#34;)
+</span></span><span class="line"><span class="cl">hive_conn.run_cli(&#34;ANALYZE TABLE dm.delphi_membership_properties COMPUTE STATISTICS;&#34;)
+</span></span><span class="line"><span class="cl">table_rows = get_mysql_dataset(
+</span></span><span class="line"><span class="cl">    mysql_conn_id=&#34;hivemeta_db&#34;,
+</span></span><span class="line"><span class="cl">    schema=&#34;hivemeta&#34;,
+</span></span><span class="line"><span class="cl">    sql=&#34;select PARAM_KEY, PARAM_VALUE from TBLS as tb inner join TABLE_PARAMS as tp on(tb.TBL_ID=tp.TBL_ID) &#34;
+</span></span><span class="line"><span class="cl">        &#34;where tb.TBL_NAME=&#39;delphi_membership_properties&#39; and tp.PARAM_KEY=&#39;numRows&#39;;&#34;
+</span></span><span class="line"><span class="cl">)
+</span></span><span class="line"><span class="cl">if table_rows:
+</span></span><span class="line"><span class="cl">    table_count = int(table_rows[0][&#34;PARAM_VALUE&#34;])
+</span></span><span class="line"><span class="cl"># 这里分片数量可以根据实际的 worker 数和 worker 进程数，动态调整
+</span></span><span class="line"><span class="cl"># 下面只是一个简单的示例  
+</span></span><span class="line"><span class="cl">workers = multiprocessing.cpu_count() // 2
+</span></span><span class="line"><span class="cl">step = math.ceil(table_count / workers)
+</span></span><span class="line"><span class="cl">conf_ids = get_mysql_dataset(
+</span></span><span class="line"><span class="cl">    mysql_conn_id=&#34;mysql_metadata&#34;,
+</span></span><span class="line"><span class="cl">    schema=&#34;metadata&#34;,
+</span></span><span class="line"><span class="cl">    sql=&#34;select id from adb_sync_task where hive_table=&#39;dm.delphi_membership_properties&#39; and status=1&#34;,
+</span></span><span class="line"><span class="cl">)
+</span></span><span class="line"><span class="cl">mysql = MySqlHook(mysql_conn_id=&#34;mysql_metadata&#34;)
+</span></span><span class="line"><span class="cl">if conf_ids:
+</span></span><span class="line"><span class="cl">    conf_ids = [item[&#34;id&#34;] for item in conf_ids]
+</span></span><span class="line"><span class="cl"># 根据分片数，生成同步记录  
+</span></span><span class="line"><span class="cl">for i in range(workers):
+</span></span><span class="line"><span class="cl">    conditions = f&#34;limit {i * step},{step}&#34;
+</span></span><span class="line"><span class="cl">    if i &lt; len(conf_ids) and conf_ids[i]:
+</span></span><span class="line"><span class="cl">        sql = f&#34;update adb_sync_task set conditions=&#39;{conditions}&#39; where id={conf_ids[i]}&#34;
+</span></span><span class="line"><span class="cl">    else:
+</span></span><span class="line"><span class="cl">        sql = (
+</span></span><span class="line"><span class="cl">            f&#34;insert into adb_sync_task (dag_id, task_id, hive_table, adb_table, dml_operator, &#34;
+</span></span><span class="line"><span class="cl">            f&#34;conditions, extra_sql) values (&#39;ods_to_delphi_membership_dm&#39;,&#39;update_membership_properties_trigger_conf&#39;,&#34;
+</span></span><span class="line"><span class="cl">            f&#34;&#39;dm.delphi_membership_properties&#39;,&#39;delphi_membership_properties&#39;,&#39;REPLACE INTO&#39;,&#39;{conditions}&#39;,&#34;
+</span></span><span class="line"><span class="cl">            f&#34;&#39;primary key (membership_id));&#39;)&#34;
+</span></span><span class="line"><span class="cl">        )
+</span></span><span class="line"><span class="cl">    mysql.run(sql)
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>调整 dag 执行频率   <br>
+我们可以根据实际情况调整 dag 的执行频率， 比如可以调整到分钟级别，这样能尽快的跟上同步任务的依赖，能及时触发同步操作。</li>
+</ul>
+<h4 id="容错率高">容错率高</h4>
+<p>为了保证同步任务的正确执行，我们充分利用了 airflow 中的 task_instace, 每一次 task 的执行都会生成记录被 airflow 写入 mysql。</p>
+<ul>
+<li>不漏跑 <br>
+每次执行同步任务需要先确保依赖已经在当前时间之前成功执行     <br>
+示例代码如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># 筛选出同步任务依赖的 dag 最近的执行时间</span>
+</span></span><span class="line"><span class="cl"><span class="n">dep_sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;select end_date from task_instance where dag_id=&#39;</span><span class="si">{</span><span class="n">dag_id</span><span class="si">}</span><span class="s2">&#39; and task_id=&#39;</span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; and state=&#39;success&#39; order by end_date desc limit 1&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">dep_res</span> <span class="o">=</span> <span class="n">get_mysql_dataset</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mysql_conn_id</span><span class="o">=</span><span class="s2">&#34;airflow_db&#34;</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">&#34;airflow&#34;</span><span class="p">,</span> <span class="n">sql</span><span class="o">=</span><span class="n">dep_sql</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;dep：&#39;</span><span class="p">,</span> <span class="n">dep_sql</span><span class="p">,</span> <span class="n">dep_res</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 筛选出同步任务最近成功的执行时间</span>
+</span></span><span class="line"><span class="cl"><span class="n">sync_task_id</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;sync_to_adb_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mysql_table</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sync_task_record_id</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;select end_date from task_instance where task_id=&#39;</span><span class="si">{</span><span class="n">sync_task_id</span><span class="si">}</span><span class="s2">&#39; and state=&#39;success&#39; order by end_date desc limit 1&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">res</span> <span class="o">=</span> <span class="n">get_mysql_dataset</span><span class="p">(</span><span class="n">mysql_conn_id</span><span class="o">=</span><span class="s2">&#34;airflow_db&#34;</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">&#34;airflow&#34;</span><span class="p">,</span> <span class="n">sql</span><span class="o">=</span><span class="n">sql</span><span class="p">)</span>   
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>不重复跑       <br>
+因为没次任务的触发都会成 task_instace, 所以我们必须当前只有一个同步任务在跑，不能重复执行。<br>
+示例代码如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="c1"># 筛选出上次成功执行后的执行记录</span>
+</span></span><span class="line"><span class="cl"><span class="n">task_state_sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;select state from task_instance where task_id=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&#39; and execution_date &gt; &#39;</span><span class="si">{</span><span class="n">upstream_task_latest_success_time</span><span class="si">}</span><span class="s2">&#39;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">target_tasks</span> <span class="o">=</span> <span class="n">get_mysql_dataset</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mysql_conn_id</span><span class="o">=</span><span class="s2">&#34;airflow_db&#34;</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">&#34;airflow&#34;</span><span class="p">,</span> <span class="n">sql</span><span class="o">=</span><span class="n">task_state_sql</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">unfinished_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">target_tasks</span> <span class="k">if</span> <span class="n">_</span><span class="p">[</span><span class="s2">&#34;state&#34;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">State</span><span class="o">.</span><span class="n">unfinished</span><span class="p">()]</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 是否还有其他任务在执行  </span>
+</span></span><span class="line"><span class="cl"><span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">unfinished_tasks</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>一致性<br>
+在数据一致性方面，我们首先把数据写入中间表，完成后把目标表 rename 成 backup, 再把中间表 rename 为目标表。如果出现异常，我们还能使用 backup 表执行回滚操作。</p>
+</li>
+</ul>
+<p>dag 执行同步的示例效果如下图 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/sync-result.png"
+        data-srcset="https://pics.lxkaka.wang/sync-result.png, https://pics.lxkaka.wang/sync-result.png 1.5x, https://pics.lxkaka.wang/sync-result.png 2x"
+        data-sizes="auto"
+        alt="sync-result"
+        title="sync-result" /></p>
+<h2 id="存在的问题">存在的问题</h2>
+<p>当同步任务特别多且在同一时间段触发了较多的同步操作，那么我们的数据源 hive 和 airflow worker 都可能成为瓶颈，影响到数据同步。airflow worker 我们可以通过限制 task concurrency 和增加 worker（worker扩展比较容易）才解决。hive 的并发瓶颈需要我们去思考更好的方案，未来考虑直接从 OSS 同步数据。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-05-22</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/airflow-sync/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/airflow-sync/" data-title="Hive To AnalyticDB 数据同步方案设计" data-hashtags="hive,AnalyticDB,数据同步"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/airflow-sync/" data-hashtag="hive"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/airflow-sync/" data-title="Hive To AnalyticDB 数据同步方案设计" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/airflow-sync/" data-title="Hive To AnalyticDB 数据同步方案设计"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/airflow-sync/" data-title="Hive To AnalyticDB 数据同步方案设计"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/hive/">Hive</a>,&nbsp;<a href="/tags/analyticdb/">AnalyticDB</a>,&nbsp;<a href="/tags/%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5/">数据同步</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/hsdb-class/" class="prev" rel="prev" title="HSDB 告诉我们 Java 对象的内存地址"><i class="fas fa-angle-left fa-fw"></i>HSDB 告诉我们 Java 对象的内存地址</a>
+            <a href="/orc-adb/" class="next" rel="next" title="Hive To AnalyticDB 数据同步方案演进">Hive To AnalyticDB 数据同步方案演进<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

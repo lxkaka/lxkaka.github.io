@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Prometheus 监控业务指标 - lxkaka</title><meta name="Description" content="如何使用 promethues 监控业务指标"><meta property="og:url" content="https://lxkaka.wang/app-metrics/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Prometheus 监控业务指标">
+  <meta property="og:description" content="如何使用 promethues 监控业务指标">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2020-09-26T13:38:40+08:00">
+    <meta property="article:modified_time" content="2020-09-26T13:38:40+08:00">
+    <meta property="article:tag" content="Metrics">
+    <meta property="article:tag" content="监控">
+    <meta property="article:tag" content="Prometheus">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Prometheus 监控业务指标">
+  <meta name="twitter:description" content="如何使用 promethues 监控业务指标">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/app-metrics/" /><link rel="prev" href="https://lxkaka.wang/python-grpc/" /><link rel="next" href="https://lxkaka.wang/docker-nvidia/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Prometheus 监控业务指标",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/app-metrics\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "metrics, 监控, prometheus","wordcount":  2683 ,
+        "url": "https:\/\/lxkaka.wang\/app-metrics\/","datePublished": "2020-09-26T13:38:40+08:00","dateModified": "2020-09-26T13:38:40+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "如何使用 promethues 监控业务指标"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Prometheus 监控业务指标</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/monitor/"><i class="far fa-folder fa-fw"></i>Monitor</a>&nbsp;<a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>Backend</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>Infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-26">2020-09-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2683 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#可观测性">可观测性</a></li>
+    <li><a href="#指标">指标</a>
+      <ul>
+        <li><a href="#指标定义">指标定义</a></li>
+        <li><a href="#指标类型">指标类型</a>
+          <ul>
+            <li><a href="#counter">Counter</a></li>
+            <li><a href="#gauge">Gauge</a></li>
+            <li><a href="#summary">Summary</a></li>
+            <li><a href="#histogram">Histogram</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#应用指标监控">应用指标监控</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#暴露指标">暴露指标</a></li>
+            <li><a href="#定义指标">定义指标</a></li>
+            <li><a href="#生成指标">生成指标</a></li>
+            <li><a href="#抓取指标">抓取指标</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在 Kubernetes 已经成了事实上的容器编排标准之下，微服务的部署变得非常容易。但随着微服务规模的扩大，服务治理带来的挑战也会越来越大。在这样的背景下出现了服务可观测性(observability)的概念。在分布式系统里，系统的故障可能出现在任何节点，怎么能在出了故障的时候快速定位问题和解决问题，甚至是在故障出现之前就能感知到服务系统的异常，把故障扼杀在摇篮里。这就是可观测性的意义所在。</p>
+<h2 id="可观测性">可观测性</h2>
+<p>可观测性是由 logging, metrics, tracing 构建的, 简称为可观测性三支柱。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/observability1.png"
+        data-srcset="https://pics.lxkaka.wang/observability1.png, https://pics.lxkaka.wang/observability1.png 1.5x, https://pics.lxkaka.wang/observability1.png 2x"
+        data-sizes="auto"
+        alt="observability"
+        title="observability" /></p>
+<ul>
+<li>
+<p>Lgging，展现的是应用运行而产生的事件或者程序在执行的过程中间产生的一些日志，可以详细解释系统的运行状态，但是存储和查询需要消耗大量的资源。所以往往使用过滤器减少数据量。</p>
+</li>
+<li>
+<p>Metrics，是一种聚合数值，存储空间很小，可以观察系统的状态和趋势，但对于问题定位缺乏细节展示。这个时候使用等高线指标等多维数据结构来增强对于细节的表现力。例如统计一个服务的 TBS 的正确率、成功率、流量等，这是常见的针对单个指标或者某一个数据库的。</p>
+</li>
+<li>
+<p>Tracing，面向的是请求，可以轻松分析出请求中异常点，但与 logging 有相同的问题就是资源消耗较大。通常也需要通过采样的方式减少数据量。比如一次请求的范围，也就是从浏览器或者手机端发起的任何一次调用，一个流程化的东西，我们需要轨迹去追踪。</p>
+</li>
+</ul>
+<p>我们在这篇文章讨论的主题就是可观测性中的 metrics。在 k8s 作为基础设施的背景下，我们知道 k8s 本身是个复杂的容器编排系统，它本身的稳定运行至关重要。与之相伴的指标监控系统 Promethues 也已经成为了云原生服务下监控体系的事实标准。相信大家对资源层面比如 CPU, Memory, Network；应用层面比如 Http 请求数，请求耗时等指标的监控都有所了解。那么业务层面的指标又怎么利用 Prometheus 去监控和告警呢？这就是这篇文章的核心内容。
+以我们一个业务场景为例，在系统中有多种类型的 task 在运行，并且 task 的运行时间各异，task 本身有各种状态包括待执行、执行中、执行成功、执行失败等。如果想确保系统的稳定运行，我们必须对各个类型的 task 的运行状况s了如指掌。比如当前是否有任务挤压，失败任务是否过多，并且当超过阈值是否告警。<br>
+为了解决上述的监控告警问题，我们先得了解一下 Prometheus 的指标类型</p>
+<h2 id="指标">指标</h2>
+<h3 id="指标定义">指标定义</h3>
+<p>在形式上，所有的指标(Metric)都通过如下格式标示：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">&lt;metric name&gt;{&lt;label name&gt;=&lt;label value&gt;, ...}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>指标的名称(metric name)可以反映被监控样本的含义（比如，http_request_total - 表示当前系统接收到的HTTP请求总量）。指标名称只能由ASCII字符、数字、下划线以及冒号组成并必须符合正则表达式[a-zA-Z_:][a-zA-Z0-9_:]<em>。
+标签(label)反映了当前样本的特征维度，通过这些维度Prometheus可以对样本数据进行过滤，聚合等。标签的名称只能由ASCII字符、数字以及下划线组成并满足正则表达式[a-zA-Z_][a-zA-Z0-9_]</em>。</p>
+<h3 id="指标类型">指标类型</h3>
+<p>Prometheus定义了4种不同的指标类型(metric type)：Counter（计数器）、Gauge（仪表盘）、Histogram（直方图）、Summary（摘要）</p>
+<h4 id="counter">Counter</h4>
+<p>Counter类型的指标其工作方式和计数器一样，只增不减（除非系统发生重置）。常见的监控指标，如http_requests_total，node_cpu都是Counter类型的监控指标。 一般在定义Counter类型指标的名称时推荐使用_total作为后缀。
+通过 counter 指标我们可以和容易的了解某个事件产生的速率变化。
+例如，通过rate()函数获取HTTP请求量的增长率：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">rate(http_requests_total[5m])
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="gauge">Gauge</h4>
+<p>Gauge类型的指标侧重于反应系统的当前状态。因此这类指标的样本数据可增可减。常见指标如：node_memory_MemFree（主机当前空闲的内容大小）、node_memory_MemAvailable（可用内存大小）都是Gauge类型的监控指标。
+通过Gauge指标，我们可以直接查看系统的当前状态</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">node_memory_MemFree
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="summary">Summary</h4>
+<p>Summary 主用用于统计和分析样本的分布情况。比如某 Http 请求的响应时间大多数都在 100 ms 内，而个别请求的响应时间需要 5s，那么这中情况下统计指标的平均值就不能反映出真实情况。而如果通过 Summary 指标我们能立马看响应时间的9分位数，这样的指标才是有意义的。
+例如</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
+</span></span><span class="line"><span class="cl"># TYPE go_gc_duration_seconds summary
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds{quantile=&#34;0&#34;} 3.98e-05
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds{quantile=&#34;0.25&#34;} 5.31e-05
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds{quantile=&#34;0.5&#34;} 6.77e-05
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds{quantile=&#34;0.75&#34;} 0.0001428
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds{quantile=&#34;1&#34;} 0.0008099
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds_sum 0.0114183
+</span></span><span class="line"><span class="cl">go_gc_duration_seconds_count 85
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="histogram">Histogram</h4>
+<p>Histogram 类型的指标同样用于统计和样本分析。与 Summary 类型的指标相似之处在于 Histogram 类型的样本同样会反应当前指标的记录的总数(以_count作为后缀)以及其值的总量（以_sum作为后缀）。不同在于 Histogram 指标直接反应了在不同区间内样本的个数，区间通过标签len进行定义。同时对于Histogram的指标，可以通过 <code>histogram_quantile()</code> 函数计算出其值的分位数。
+例如</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl"># HELP prometheus_http_response_size_bytes Histogram of response size for HTTP requests.
+</span></span><span class="line"><span class="cl"># TYPE prometheus_http_response_size_bytes histogram
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;100&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;1000&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;10000&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;100000&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;1e+06&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_bucket{handler=&#34;/&#34;,le=&#34;+Inf&#34;} 1
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_sum{handler=&#34;/&#34;} 29
+</span></span><span class="line"><span class="cl">prometheus_http_response_size_bytes_count{handler=&#34;/&#34;} 1
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="应用指标监控">应用指标监控</h2>
+<h4 id="暴露指标">暴露指标</h4>
+<p>Prometheus 最常用的方式是通过 pull 去抓取 metrics。所以我们首先在服务通过 <code>/metrics</code> 接口暴露指标，这样 Promethues server 就能通过 http 请求抓取到我们的业务指标。
+接口示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">server</span> <span class="o">:=</span> <span class="nx">gin</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nx">server</span><span class="p">.</span><span class="nf">Use</span><span class="p">(</span><span class="nx">middlewares</span><span class="p">.</span><span class="nf">AccessLogger</span><span class="p">(),</span> <span class="nx">middlewares</span><span class="p">.</span><span class="nf">Metric</span><span class="p">(),</span> <span class="nx">gin</span><span class="p">.</span><span class="nf">Recovery</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">server</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/health&#34;</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">c</span><span class="p">.</span><span class="nf">JSON</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nx">StatusOK</span><span class="p">,</span> <span class="nx">gin</span><span class="p">.</span><span class="nx">H</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;message&#34;</span><span class="p">:</span> <span class="s">&#34;ok&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">server</span><span class="p">.</span><span class="nf">GET</span><span class="p">(</span><span class="s">&#34;/metrics&#34;</span><span class="p">,</span> <span class="nx">Monitor</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">Monitor</span><span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">gin</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">h</span> <span class="o">:=</span> <span class="nx">promhttp</span><span class="p">.</span><span class="nf">Handler</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">h</span><span class="p">.</span><span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="定义指标">定义指标</h4>
+<p>为了方便理解，这里选取了三种类型和两种业务场景的指标<br>
+示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//HTTPReqDuration metric:http_request_duration_seconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">HTTPReqDuration</span> <span class="o">*</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">HistogramVec</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//HTTPReqTotal metric:http_request_total
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">HTTPReqTotal</span> <span class="o">*</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">CounterVec</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// TaskRunning metric:task_running
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">TaskRunning</span> <span class="o">*</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">GaugeVec</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 监控接口请求耗时
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// 指标类型是 Histogram
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">HTTPReqDuration</span> <span class="p">=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewHistogramVec</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">HistogramOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Name</span><span class="p">:</span>    <span class="s">&#34;http_request_duration_seconds&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Help</span><span class="p">:</span>    <span class="s">&#34;http request latencies in seconds&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Buckets</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;method&#34;</span><span class="p">,</span> <span class="s">&#34;path&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// &#34;method&#34;、&#34;path&#34; 是 label
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 监控接口请求次数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// 指标类型是 Counter
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">HTTPReqTotal</span> <span class="p">=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewCounterVec</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">CounterOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;http_requests_total&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Help</span><span class="p">:</span> <span class="s">&#34;total number of http requests&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;method&#34;</span><span class="p">,</span> <span class="s">&#34;path&#34;</span><span class="p">,</span> <span class="s">&#34;status&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// &#34;method&#34;、&#34;path&#34;、&#34;status&#34; 是 label
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 监控当前在执行的 task 数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// 监控类型是 Gauge
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">TaskRunning</span> <span class="p">=</span> <span class="nx">prometheus</span><span class="p">.</span><span class="nf">NewGaugeVec</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">GaugeOpts</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Name</span><span class="p">:</span> <span class="s">&#34;task_running&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Help</span><span class="p">:</span> <span class="s">&#34;current count  of running task&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;type&#34;</span><span class="p">,</span> <span class="s">&#34;state&#34;</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// &#34;type&#34;、&#34;state&#34; 是 label
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="nx">prometheus</span><span class="p">.</span><span class="nf">MustRegister</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">HTTPReqDuration</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">HTTPReqTotal</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">TaskRunning</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>通过上述的代码我们就定义并且注册了我们的想要监控的指标。</p>
+<h4 id="生成指标">生成指标</h4>
+<p>示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">start</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nx">c</span><span class="p">.</span><span class="nf">Next</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">duration</span> <span class="o">:=</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">start</span><span class="p">))</span> <span class="o">/</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">path</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">URL</span><span class="p">.</span><span class="nx">Path</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 请求数加1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">controllers</span><span class="p">.</span><span class="nx">HTTPReqTotal</span><span class="p">.</span><span class="nf">With</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">Labels</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;method&#34;</span><span class="p">:</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">Method</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;path&#34;</span><span class="p">:</span>   <span class="nx">path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;status&#34;</span><span class="p">:</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">Writer</span><span class="p">.</span><span class="nf">Status</span><span class="p">()),</span>
+</span></span><span class="line"><span class="cl"><span class="p">}).</span><span class="nf">Inc</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//  记录本次请求处理时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">controllers</span><span class="p">.</span><span class="nx">HTTPReqDuration</span><span class="p">.</span><span class="nf">With</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">Labels</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;method&#34;</span><span class="p">:</span> <span class="nx">c</span><span class="p">.</span><span class="nx">Request</span><span class="p">.</span><span class="nx">Method</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;path&#34;</span><span class="p">:</span>   <span class="nx">path</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">}).</span><span class="nf">Observe</span><span class="p">(</span><span class="nx">duration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 模拟新建任务
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">controllers</span><span class="p">.</span><span class="nx">TaskRunning</span><span class="p">.</span><span class="nf">With</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">Labels</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;type&#34;</span><span class="p">:</span>  <span class="nf">shuffle</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;video&#34;</span><span class="p">,</span> <span class="s">&#34;audio&#34;</span><span class="p">}),</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;state&#34;</span><span class="p">:</span> <span class="nf">shuffle</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;process&#34;</span><span class="p">,</span> <span class="s">&#34;queue&#34;</span><span class="p">}),</span>
+</span></span><span class="line"><span class="cl"><span class="p">}).</span><span class="nf">Inc</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 模拟任务完成
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">controllers</span><span class="p">.</span><span class="nx">TaskRunning</span><span class="p">.</span><span class="nf">With</span><span class="p">(</span><span class="nx">prometheus</span><span class="p">.</span><span class="nx">Labels</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;type&#34;</span><span class="p">:</span>  <span class="nf">shuffle</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;video&#34;</span><span class="p">,</span> <span class="s">&#34;audio&#34;</span><span class="p">}),</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;state&#34;</span><span class="p">:</span> <span class="nf">shuffle</span><span class="p">([]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;process&#34;</span><span class="p">,</span> <span class="s">&#34;queue&#34;</span><span class="p">}),</span>
+</span></span><span class="line"><span class="cl"><span class="p">}).</span><span class="nf">Dec</span><span class="p">()</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="抓取指标">抓取指标</h4>
+<p>Promethues 抓取 target 配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># 抓取间隔</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l">5s</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># 目标</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">scrape_configs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;prometheus&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;prometheus:9090&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;local-service&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="l">/metrics</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;host.docker.internal:8000&#39;</span><span class="p">]</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>在实际应用中静态配置 target 地址不太适用，在 k8s 下 Promethues通过与 Kubernetes API 集成目前主要支持5种服务发现模式，分别是：Node、Service、Pod、Endpoints、Ingress。</p>
+<p>指标展示如下图<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/http_duration.png"
+        data-srcset="https://pics.lxkaka.wang/http_duration.png, https://pics.lxkaka.wang/http_duration.png 1.5x, https://pics.lxkaka.wang/http_duration.png 2x"
+        data-sizes="auto"
+        alt="http_duration"
+        title="http_duration" />
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/task_running.png"
+        data-srcset="https://pics.lxkaka.wang/task_running.png, https://pics.lxkaka.wang/task_running.png 1.5x, https://pics.lxkaka.wang/task_running.png 2x"
+        data-sizes="auto"
+        alt="task_running"
+        title="task_running" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-09-26</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/app-metrics/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/app-metrics/" data-title="Prometheus 监控业务指标" data-hashtags="metrics,监控,prometheus"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/app-metrics/" data-hashtag="metrics"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/app-metrics/" data-title="Prometheus 监控业务指标" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/app-metrics/" data-title="Prometheus 监控业务指标"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/app-metrics/" data-title="Prometheus 监控业务指标"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/metrics/">Metrics</a>,&nbsp;<a href="/tags/%E7%9B%91%E6%8E%A7/">监控</a>,&nbsp;<a href="/tags/prometheus/">Prometheus</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/python-grpc/" class="prev" rel="prev" title="Python 和 Go 之间的 gRPC 交互"><i class="fas fa-angle-left fa-fw"></i>Python 和 Go 之间的 gRPC 交互</a>
+            <a href="/docker-nvidia/" class="next" rel="next" title="容器中使用 GPU 的基础环境搭建">容器中使用 GPU 的基础环境搭建<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

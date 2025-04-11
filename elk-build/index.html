@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>ELK stack日志系统搭建 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/elk-build/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="ELK stack日志系统搭建">
+  <meta property="og:description" content="ELK简要说明 ELK 不是一款软件，而是 Elasticsearch、Logstash 和 Kibana 三种软件产品的首字母缩写。这三者都是开源软件，通常配合使用">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-08-26T12:56:48+08:00">
+    <meta property="article:modified_time" content="2017-08-26T12:56:48+08:00">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="ELK">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="ELK stack日志系统搭建">
+  <meta name="twitter:description" content="ELK简要说明 ELK 不是一款软件，而是 Elasticsearch、Logstash 和 Kibana 三种软件产品的首字母缩写。这三者都是开源软件，通常配合使用">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/elk-build/" /><link rel="prev" href="https://lxkaka.wang/https-charles/" /><link rel="next" href="https://lxkaka.wang/django-use/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "ELK stack日志系统搭建",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/elk-build\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Tech Notes, ELK","wordcount":  2540 ,
+        "url": "https:\/\/lxkaka.wang\/elk-build\/","datePublished": "2017-08-26T12:56:48+08:00","dateModified": "2017-08-26T12:56:48+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">ELK stack日志系统搭建</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2017-08-26">2017-08-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2540 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#elk简要说明">ELK简要说明</a></li>
+        <li><a href="#基于filebeat的架构">基于Filebeat的架构</a></li>
+        <li><a href="#搭建过程">搭建过程</a>
+          <ul>
+            <li><a href="#1-安装-java">1. 安装 JAVA</a></li>
+            <li><a href="#2-安装配置elasticsearch">2. 安装配置Elasticsearch</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h3 id="elk简要说明">ELK简要说明</h3>
+<blockquote>
+<p>ELK 不是一款软件，而是 Elasticsearch、Logstash 和 Kibana 三种软件产品的首字母缩写。这三者都是开源软件，通常配合使用，而且又先后归于 Elastic.co 公司名下，所以被简称为 ELK Stack。根据 Google Trend 的信息显示，ELK Stack 已经成为目前最流行的集中式日志解决方案。</p>
+</blockquote>
+<ul>
+<li>Elasticsearch：分布式搜索和分析引擎，具有高可伸缩、高可靠和易管理等特点。基于 Apache Lucene 构建，能对大容量的数据进行接近实时的存储、搜索和分析操作。通常被用作某些应用的基础搜索引擎，使其具有复杂的搜索功能；</li>
+<li>Logstash：数据收集引擎。它支持动态的从各种数据源搜集数据，并对数据进行过滤、分析、丰富、统一格式等操作，然后存储到用户指定的位置；</li>
+<li>Kibana：数据分析和可视化平台。通常与 Elasticsearch 配合使用，对其中数据进行搜索、分析和以统计图表的方式展示；</li>
+<li>Filebeat：ELK 协议栈的新成员，一个轻量级开源日志文件数据搜集器，基于 Logstash-Forwarder 源代码开发，是对它的替代。在需要采集日志数据的 server 上安装 Filebeat，并指定日志目录或日志文件后，Filebeat 就能读取数据，迅速发送到 Logstash 进行解析，亦或直接发送到 Elasticsearch 进行集中式存储和分析。</li>
+</ul>
+<h3 id="基于filebeat的架构">基于Filebeat的架构</h3>
+<p>Filebeat作为客户端，轻量及安全。我们采用Filebeat来作为日志的收集器，下图是整个ELK stack日志系统的架构。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/elk-stack.png"
+        data-srcset="https://pics.lxkaka.wang/elk-stack.png, https://pics.lxkaka.wang/elk-stack.png 1.5x, https://pics.lxkaka.wang/elk-stack.png 2x"
+        data-sizes="auto"
+        alt="els stack"
+        title="els stack" />
+因为免费的 ELK 没有任何安全机制，所以这里使用了 Nginx 作反向代理，避免用户直接访问 Kibana 服务器。加上配置 Nginx 实现简单的用户认证，一定程度上提高安全性。另外，Nginx 本身具有负载均衡的作用，能够提高系统访问性能。</p>
+<h3 id="搭建过程">搭建过程</h3>
+<p>环境为 Unbuntu 16.04</p>
+<h4 id="1-安装-java">1. 安装 JAVA</h4>
+<p>Elasticsearch 运行依赖java 8 ，推荐安装 Oracle JDK 1.8。我从ppa仓库安装java8</p>
+<ul>
+<li>
+<p>安装 <strong>python-software-properties</strong>，可以轻松添加repo</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">sudo apt-get update
+</span></span><span class="line"><span class="cl">sudo apt-get install -y python-software-properties soft-common-properties apt-transport-https
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>用 <strong>apt-add-repository</strong>添加 java8 PPA repo</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">sudo apt-add-repository ppa:webupd8team/java -y
+</span></span><span class="line"><span class="cl">sudo apt-get update
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>安装 java8</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">sudo apt-get install -y oracle-java8-installer
+</span></span><span class="line"><span class="cl">java -version  # 验证下 
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h4 id="2-安装配置elasticsearch">2. 安装配置Elasticsearch</h4>
+<p>从 elastic repository安装</p>
+<ul>
+<li>
+<p>首先添加 elastic repo key 到机器<br>
+<code>wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -</code></p>
+</li>
+<li>
+<p>添加 elastic 5.x repository 到 source.list.d 目录
+<code>echo &quot;deb https://artifacts.elastic.co/packages/5.x/apt stable main&quot; | sudo tee -a /etc/apt/sources.list.d/elastic-5.x.list</code></p>
+</li>
+<li>
+<p>生效elastic安装源，并安装</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">sudo apt-get update
+</span></span><span class="line"><span class="cl">sudp apt-get install -y elasticsearch
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>Elasticsearch安装完毕，然后配置 elasticsearch.yml</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">cd /etc/elasticsearch
+</span></span><span class="line"><span class="cl">vim elasticsearch.yml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>memory</strong> 部分，关闭内存交换，避免系统负载过高<br>
+<em>bootstrap.memorylock: true</em></p>
+<p><strong>Network</strong> 部分：<br>
+<em>network.host: localhost</em><br>
+<em>http.port: 9200</em><br>
+保存并推出vim</p>
+<p>修改 elasticsearch service 文件
+<code>vim /usr/lib/systemd/elasticsearch.service</code>
+<em>LimitMEMLOCK=infinity</em></p>
+<p>修改默认配置
+<code>vim /etc/default/elasticsearch</code>
+<em>MAX_LOCKED_MEMORY=unlimited</em></p>
+</li>
+<li>
+<p>配置完毕，启动服务
+启动并设置成开机自动启动</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">daemon</span><span class="o">-</span><span class="n">reload</span>
+</span></span><span class="line"><span class="cl"><span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">enable</span> <span class="n">elasticsearch</span>
+</span></span><span class="line"><span class="cl"><span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">start</span> <span class="n">elasticsearch</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>检查是否正常启动，是否在监听端口9200
+<code>netstat -plnt</code><br>
+显示如下，则正确启动</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>tcp6       0      0 :::9200                 :::*                    LISTEN      -
+tcp6       0      0 :::9300                 :::*                    LISTEN      -
+tcp6       0      0 :::22                   :::*                    LISTEN      -
+tcp6       0      0 127.0.0.1:9600          :::*                    LISTEN      -</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">访问下9200端口  
+</span></span><span class="line"><span class="cl">`curl -XGET &#39;localhost:9200&#39;`  
+</span></span><span class="line"><span class="cl">返回如下结果, 则elasticseach已经正常工作
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	{
+</span></span><span class="line"><span class="cl">	  &#34;name&#34; : &#34;node-1&#34;,
+</span></span><span class="line"><span class="cl">	  &#34;cluster_name&#34; : &#34;zaihui-elk&#34;,
+</span></span><span class="line"><span class="cl">	  &#34;cluster_uuid&#34; : &#34;L_BrQy4PRO2ed_8CXt3IuA&#34;,
+</span></span><span class="line"><span class="cl">	  &#34;version&#34; : {
+</span></span><span class="line"><span class="cl">	    &#34;number&#34; : &#34;5.5.2&#34;,
+</span></span><span class="line"><span class="cl">	    &#34;build_hash&#34; : &#34;b2f0c09&#34;,
+</span></span><span class="line"><span class="cl">	    &#34;build_date&#34; : &#34;2017-08-14T12:33:14.154Z&#34;,
+</span></span><span class="line"><span class="cl">	    &#34;build_snapshot&#34; : false,
+</span></span><span class="line"><span class="cl">	    &#34;lucene_version&#34; : &#34;6.6.0&#34;
+</span></span><span class="line"><span class="cl">	  },
+</span></span><span class="line"><span class="cl">	  &#34;tagline&#34; : &#34;You Know, for Search&#34;
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">#### 3. 安装和配置Kibana
+</span></span><span class="line"><span class="cl">ELK stack的各个组件安装配置方法基本一致  
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>sudo apt-get install -y kibana  # 安装
+vim /etc/kibana/kibana.yml   # 配置</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">配置如下必选项
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>server.port: 5601
+server.host: &ldquo;localhost&rdquo;
+elasticsearch.url: &ldquo;http://localhost:9200&rdquo;</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">启动并设置开机自动启动
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>sudo systemctl enable kibana
+sudo systemctl start kibana</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">检查是否正常启动（kibana是一个node服务）  
+</span></span><span class="line"><span class="cl">`netstat -plnt`  
+</span></span><span class="line"><span class="cl">输出如下，则正确安装配置
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      -
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -
+tcp        0      0 127.0.0.1:5601          0.0.0.0:*               LISTEN      -</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">### 4. 配置Nginx反向代理Kibana
+</span></span><span class="line"><span class="cl">* 安装 Nginx 和 apache2-utils包
+</span></span><span class="line"><span class="cl">`sudo apt-get install -y nginx apache2-utils`  
+</span></span><span class="line"><span class="cl">Nginx可以用apache2-utils来添加一些辅助功能，比如用 htpasswd 来管理用户访问权限  
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">* 配置kibana服务
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	cd /etc/niginx/
+</span></span><span class="line"><span class="cl">	vim /conf.d/kibana.conf
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">配置如下
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	server {
+</span></span><span class="line"><span class="cl">	    listen 80;
+</span></span><span class="line"><span class="cl">	 
+</span></span><span class="line"><span class="cl">	    server_name localhost;
+</span></span><span class="line"><span class="cl">	 
+</span></span><span class="line"><span class="cl">	    auth_basic &#34;Restricted Access&#34;;
+</span></span><span class="line"><span class="cl">	    auth_basic_user_file /etc/nginx/.kibana-user;
+</span></span><span class="line"><span class="cl">	 
+</span></span><span class="line"><span class="cl">	    location / {
+</span></span><span class="line"><span class="cl">	        proxy_pass http://localhost:5601;
+</span></span><span class="line"><span class="cl">	        proxy_http_version 1.1;
+</span></span><span class="line"><span class="cl">	        proxy_set_header Upgrade $http_upgrade;
+</span></span><span class="line"><span class="cl">	        proxy_set_header Connection &#39;upgrade&#39;;
+</span></span><span class="line"><span class="cl">	        proxy_set_header Host $host;
+</span></span><span class="line"><span class="cl">	        proxy_cache_bypass $http_upgrade;
+</span></span><span class="line"><span class="cl">	    }
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">* 用 htpasswd创建一个可访问账号
+</span></span><span class="line"><span class="cl">`sudo htppasswd -c /etc/nginx/.kibana-user lxkaka`
+</span></span><span class="line"><span class="cl">* 验证nginx配置正确，并启动nginx
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	nginx -t
+</span></span><span class="line"><span class="cl">	systemctl enable nginx
+</span></span><span class="line"><span class="cl">	systemctl restart nginx
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">#### 5. 安装和配置Logstash
+</span></span><span class="line"><span class="cl">* 安装和生成SSL证书  
+</span></span><span class="line"><span class="cl">`sudo apt-get install -y logstash`
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	logstash 支持SSL协议，可以用OpenSSL生成SSL证书来增加安全性，client可以此来验证elastic server。
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	cd /etc/logstash
+</span></span><span class="line"><span class="cl">	openssl req -subj /CN=elk-master -x509 -days 3650 -batch -nodes -newkey rsa:4096 -keyout logstash.key -out logstash.crt
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">* 配置输入，解析，输出三份配置  
+</span></span><span class="line"><span class="cl">当然三份配置都可以写到一个文件中，不过为了维护和清晰我觉得分开配置比较合适。
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	编辑来自filebeat的输入配置
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	cd /etc/logstash/
+</span></span><span class="line"><span class="cl">	vim conf.d/filebeat-input.conf
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	如下：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	input {
+</span></span><span class="line"><span class="cl">	  beats {
+</span></span><span class="line"><span class="cl">	    port =&gt; 5443
+</span></span><span class="line"><span class="cl">	    type =&gt; log
+</span></span><span class="line"><span class="cl">	    ssl =&gt; true
+</span></span><span class="line"><span class="cl">	    ssl_certificate =&gt; &#34;/etc/logstash/logstash.crt&#34;
+</span></span><span class="line"><span class="cl">	    ssl_key =&gt; &#34;/etc/logstash/logstash.key&#34;
+</span></span><span class="line"><span class="cl">	  }
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	编辑过滤解析配置文件(这里以解析niginx accesslog为例）
+</span></span><span class="line"><span class="cl">	`vim conf.d/nginxlog-filter.conf`
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	filter {
+</span></span><span class="line"><span class="cl">	    grok {
+</span></span><span class="line"><span class="cl">	        match =&gt; { &#34;message&#34; =&gt; &#34;%{IPORHOST:clientip} \[%{HTTPDATE:time}\] \&#34;%{WORD:verb} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}\&#34; %{NUMBER:http_status_code} %{NUMBER:bytes} \&#34;(?&lt;http_referer&gt;\S+)\&#34; \&#34;(?&lt;http_user_agent&gt;\S+)\&#34; \&#34;(?&lt;http_x_forwarded_for&gt;\S+)\&#34;&#34; }
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	    }
+</span></span><span class="line"><span class="cl">	    date {
+</span></span><span class="line"><span class="cl">	      match =&gt; [ &#34;timestamp&#34;,&#34;dd/MMM/yyyy:HH:mm:ss Z&#34;]
+</span></span><span class="line"><span class="cl">	    }
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	Logstash用插件 **gork**来按配置好的规则解析日志
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	编辑输出配置文件
+</span></span><span class="line"><span class="cl">	`vim conf.d/output-elasticsearch.conf`
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	output {
+</span></span><span class="line"><span class="cl">	    elasticsearch {
+</span></span><span class="line"><span class="cl">	        hosts =&gt; [&#34;localhost:9200&#34;]
+</span></span><span class="line"><span class="cl">	        index =&gt; &#34;logstash-nginx-access-%{+YYYY.MM.dd}&#34;
+</span></span><span class="line"><span class="cl">	    }
+</span></span><span class="line"><span class="cl">	    stdout {codec =&gt; rubydebug}
+</span></span><span class="line"><span class="cl">	}
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">* 配置完成，启动服务
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	sudo systemctl enable logstash
+</span></span><span class="line"><span class="cl">	sudo systemctl start logstash
+</span></span><span class="line"><span class="cl">	```
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">至此ELK在服务器上的搭建就算完成了，分别启动了以下服务
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      8931/nginx -g daemo
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1048/sshd
+tcp        0      0 127.0.0.1:5601          0.0.0.0:*               LISTEN      8570/node
+tcp6       0      0 :::9200                 :::*                    LISTEN      537/java
+tcp6       0      0 :::9300                 :::*                    LISTEN      537/java
+tcp6       0      0 :::22                   :::*                    LISTEN      1048/sshd
+tcp6       0      0 127.0.0.1:9600          :::*                    LISTEN      709/java
+tcp6       0      0 :::5443                 :::*                    LISTEN      709/java</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="c1">#### 6. 在客户机上安装Filebeat</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="err">安装和配置</span><span class="n">Filebeagt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">filebeat</span>
+</span></span><span class="line"><span class="cl">	<span class="n">cd</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">filebeat</span><span class="o">/</span>
+</span></span><span class="line"><span class="cl">	<span class="n">vim</span> <span class="n">filebeat</span><span class="o">.</span><span class="n">yml</span>
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="err">配置日志路径：</span>  
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="n">paths</span>
+</span></span><span class="line"><span class="cl">	 <span class="o">-</span> <span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">nginx</span><span class="o">/</span><span class="n">access</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="err">注释掉</span> <span class="n">Elasticsearch</span> <span class="n">output</span>  
+</span></span><span class="line"><span class="cl">	<span class="err">配置</span><span class="n">Logsstash</span> <span class="n">output</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="n">output</span><span class="o">.</span><span class="n">logstash</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1"># The Logstash hosts</span>
+</span></span><span class="line"><span class="cl">  <span class="n">hosts</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;elk-server:5443&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="n">bulk_max_size</span><span class="p">:</span> <span class="mi">2048</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ssl</span><span class="o">.</span><span class="n">certificate_authorities</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;/etc/filebeat/logstash.crt&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="n">template</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="s2">&#34;filebeat&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">template</span><span class="o">.</span><span class="n">path</span><span class="p">:</span> <span class="s2">&#34;filebeat.template.json&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">template</span><span class="o">.</span><span class="n">overwrite</span><span class="p">:</span> <span class="bp">false</span>
+</span></span><span class="line"><span class="cl"> 	<span class="err">```</span>
+</span></span><span class="line"><span class="cl"> 
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="err">复制</span> <span class="n">SSL证书</span>  
+</span></span><span class="line"><span class="cl"><span class="err">先前，已经在服务器端创建好了</span><span class="n">SSL证书</span><span class="err">，复制到客户端上</span><span class="p">(</span><span class="err">按照实际修改用户名，和</span><span class="n">host</span><span class="p">)</span>  
+</span></span><span class="line"><span class="cl"><span class="err">`</span><span class="n">scp</span> <span class="n">name</span><span class="err">@</span><span class="n">els</span><span class="o">-</span><span class="n">server</span><span class="p">:</span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">logstash</span><span class="o">/</span><span class="n">logstash</span><span class="o">.</span><span class="n">crt</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">filebeat</span><span class="o">/</span><span class="err">`</span>
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="err">启动并设置开机自动启动</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">enable</span> <span class="n">filebeat</span>
+</span></span><span class="line"><span class="cl">	<span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">start</span> <span class="n">filebeat</span>
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl"><span class="err">检查</span><span class="n">filebeat正常启动</span>
+</span></span><span class="line"><span class="cl"><span class="err">`</span><span class="n">sudo</span> <span class="n">systemctl</span> <span class="n">status</span> <span class="n">filebeat</span><span class="err">`</span>  
+</span></span><span class="line"><span class="cl"><span class="err">输出如下</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">	<span class="err">●</span> <span class="n">filebeat</span><span class="o">.</span><span class="n">service</span> <span class="o">-</span> <span class="n">filebeat</span>
+</span></span><span class="line"><span class="cl">	   <span class="n">Loaded</span><span class="p">:</span> <span class="n">loaded</span> <span class="p">(</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">systemd</span><span class="o">/</span><span class="n">system</span><span class="o">/</span><span class="n">filebeat</span><span class="o">.</span><span class="n">service</span><span class="p">;</span> <span class="n">enabled</span><span class="p">;</span> <span class="n">vendor</span> <span class="n">preset</span><span class="p">:</span> <span class="n">enabled</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	   <span class="n">Active</span><span class="p">:</span> <span class="n">active</span> <span class="p">(</span><span class="n">running</span><span class="p">)</span> <span class="n">since</span> <span class="n">Mon</span> <span class="mi">2017</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">21</span> <span class="mi">22</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">12</span> <span class="n">CST</span><span class="p">;</span> <span class="mi">4</span> <span class="n">days</span> <span class="n">ago</span>
+</span></span><span class="line"><span class="cl">	     <span class="n">Docs</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">www</span><span class="o">.</span><span class="n">elastic</span><span class="o">.</span><span class="n">co</span><span class="o">/</span><span class="n">guide</span><span class="o">/</span><span class="n">en</span><span class="o">/</span><span class="n">beats</span><span class="o">/</span><span class="n">filebeat</span><span class="o">/</span><span class="n">current</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">html</span>
+</span></span><span class="line"><span class="cl">	 <span class="n">Main</span> <span class="n">PID</span><span class="p">:</span> <span class="mi">1666</span> <span class="p">(</span><span class="n">filebeat</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	    <span class="n">Tasks</span><span class="p">:</span> <span class="mi">8</span>
+</span></span><span class="line"><span class="cl">	   <span class="n">Memory</span><span class="p">:</span> <span class="mf">13.3</span><span class="n">M</span>
+</span></span><span class="line"><span class="cl">	      <span class="n">CPU</span><span class="p">:</span> <span class="mi">1</span><span class="nb">min</span> <span class="mf">5.628</span><span class="n">s</span>
+</span></span><span class="line"><span class="cl">	   <span class="n">CGroup</span><span class="p">:</span> <span class="o">/</span><span class="n">system</span><span class="o">.</span><span class="n">slice</span><span class="o">/</span><span class="n">filebeat</span><span class="o">.</span><span class="n">service</span>
+</span></span><span class="line"><span class="cl">	           <span class="err">└─</span><span class="mi">1666</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">filebeat</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">filebeat</span> <span class="o">-</span><span class="n">c</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">filebeat</span><span class="o">/</span><span class="n">filebeat</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">path</span><span class="o">.</span><span class="n">home</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">filebeat</span> <span class="o">-</span><span class="n">path</span><span class="o">.</span><span class="n">config</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">filebeat</span> <span class="o">-</span><span class="n">pat</span>
+</span></span><span class="line"><span class="cl">	<span class="err">```</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">### 7. 验证测试</span>
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="err">访问</span><span class="n">elasticsearch</span> <span class="n">server的地址</span>  
+</span></span><span class="line"><span class="cl"><span class="err">输入设置的用户名和密码即能访问</span><span class="n">kibana</span>
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="err">创建默认</span><span class="n">index</span> <span class="s1">&#39;logstash-*&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="o">*</span> <span class="n">kibana遨游开始</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">!</span><span class="p">[</span><span class="n">kibana</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">pics</span><span class="o">.</span><span class="n">lxkaka</span><span class="o">.</span><span class="n">wang</span><span class="o">/</span><span class="n">kibana</span><span class="o">.</span><span class="n">jpg</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ELK</span> <span class="n">stack日志系统搭建至此完成</span><span class="err">，要让工具发挥它的价值，需要花更多的功夫来研究它。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2017-08-26</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/elk-build/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/elk-build/" data-title="ELK stack日志系统搭建" data-hashtags="Tech Notes,ELK"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/elk-build/" data-hashtag="Tech Notes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/elk-build/" data-title="ELK stack日志系统搭建" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/elk-build/" data-title="ELK stack日志系统搭建"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/elk-build/" data-title="ELK stack日志系统搭建"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/tech-notes/">Tech Notes</a>,&nbsp;<a href="/tags/elk/">ELK</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/https-charles/" class="prev" rel="prev" title="从Charles抓包理解HTTPS"><i class="fas fa-angle-left fa-fw"></i>从Charles抓包理解HTTPS</a>
+            <a href="/django-use/" class="next" rel="next" title="Django特殊使用场景集合(updated at 2017-12-21）">Django特殊使用场景集合(updated at 2017-12-21）<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

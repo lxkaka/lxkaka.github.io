@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>ELK进阶之Logstash配置和Kibana应用 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/elx-process/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="ELK进阶之Logstash配置和Kibana应用">
+  <meta property="og:description" content="在搭建好ELK之后，我们可能会有不同的类型的日志。当我们想把这些不同的日志收集起来并需要查看分析，这个时候就需要合理的配置logstash,">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2017-10-12T20:07:14+08:00">
+    <meta property="article:modified_time" content="2017-10-12T20:07:14+08:00">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="ELK">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="ELK进阶之Logstash配置和Kibana应用">
+  <meta name="twitter:description" content="在搭建好ELK之后，我们可能会有不同的类型的日志。当我们想把这些不同的日志收集起来并需要查看分析，这个时候就需要合理的配置logstash,">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/elx-process/" /><link rel="prev" href="https://lxkaka.wang/django-use/" /><link rel="next" href="https://lxkaka.wang/mongo-optimize-md/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "ELK进阶之Logstash配置和Kibana应用",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/elx-process\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Tech Notes, ELK","wordcount":  1401 ,
+        "url": "https:\/\/lxkaka.wang\/elx-process\/","datePublished": "2017-10-12T20:07:14+08:00","dateModified": "2017-10-12T20:07:14+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">ELK进阶之Logstash配置和Kibana应用</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2017-10-12">2017-10-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1401 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#配置logstash">配置Logstash</a></li>
+        <li><a href="#kibana应用">Kibana应用</a></li>
+        <li><a href="#elasticsearch-删除历史数据">elasticsearch 删除历史数据</a>
+          <ul>
+            <li><a href="#使用es-api-_delete_by_query">使用es api <strong>_delete_by_query</strong></a></li>
+            <li><a href="#使用-curatorhttpswwwelasticcoguideenelasticsearchclientcurator5xindexhtml">使用 <a href="https://www.elastic.co/guide/en/elasticsearch/client/curator/5.x/index.html">curator</a></a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在搭建好ELK之后，我们可能会有不同的类型的日志。当我们想把这些不同的日志收集起来并需要查看分析，这个时候就需要合理的配置logstash, 才能达到我们想要的结果。</p>
+<h3 id="配置logstash">配置Logstash</h3>
+<p>这里我们以三种日志为例，首先需要配置日志来源，即filebeat里的配置需要指明三种不同的日志，为了便于logstash的过配置，这里添加 <strong>tags</strong>来做区分。也可以添加field。 <br>
+示例如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="o">-</span> <span class="n">input_type</span><span class="p">:</span> <span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">paths</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="o">-</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">log</span><span class="o">/</span><span class="n">nginx</span><span class="o">/</span><span class="n">access</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">tags</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;nginx&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span> <span class="n">input_type</span><span class="p">:</span> <span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">paths</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="o">-</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">zaihui</span><span class="o">/</span><span class="n">server</span><span class="o">/</span><span class="n">logs</span><span class="o">/</span><span class="n">track</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">tags</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;track&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">-</span> <span class="n">input_type</span><span class="p">:</span> <span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">paths</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="o">-</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">zaihui</span><span class="o">/</span><span class="n">server</span><span class="o">/</span><span class="n">logs</span><span class="o">/</span><span class="n">access</span><span class="o">.</span><span class="n">log</span>
+</span></span><span class="line"><span class="cl">  <span class="n">tags</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;access&#34;</span><span class="p">]</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后针对不同的日志格式，我们采用logstash插件grok来匹配过滤。logstash配置实际上可以分为三种 <em>input</em>, <em>filter</em>, <em>output</em> 这三部分配置可以在同一文件中配置，不过我选择将这三部分配置分别放在三个文件中。这样配置起来既方便又清晰。</p>
+<ul>
+<li>
+<p>input 示例如下:</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">input {
+</span></span><span class="line"><span class="cl">  beats {
+</span></span><span class="line"><span class="cl">    port =&gt; 5443
+</span></span><span class="line"><span class="cl">    type =&gt; log
+</span></span><span class="line"><span class="cl">    ssl =&gt; false
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>filter 示例如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">filter</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="s2">&#34;nginx&#34;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tags</span><span class="p">]</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">grok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">match</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="s2">&#34;message&#34;</span> <span class="o">=&gt;</span> <span class="s2">&#34;\[%{HTTPDATE:time}\] %{IPORHOST:client} </span><span class="se">\&#34;</span><span class="s2">%{WORD:method} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}</span><span class="se">\&#34;</span><span class="s2"> %{NUMBER:status_code} %{NUMBER:bytes} </span><span class="se">\&#34;</span><span class="s2">(?&lt;http_referer&gt;\S+)</span><span class="se">\&#34;</span><span class="s2"> </span><span class="se">\&#34;</span><span class="s2">%{GREEDYDATA:http_user_agent}</span><span class="se">\&#34;</span><span class="s2"> </span><span class="se">\&#34;</span><span class="s2">%{GREEDYDATA:data}</span><span class="se">\&#34;</span><span class="s2">&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="s2">&#34;access&#34;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tags</span><span class="p">]</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">grok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">match</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="s2">&#34;message&#34;</span> <span class="o">=&gt;</span> <span class="s2">&#34;%{TIMESTAMP_ISO8601:datetime} %{IPORHOST:client} %{WORD:method} %{URIPATHPARAM:request} \$%{GREEDYDATA:payload}\$ %{NOTSPACE:protocol} %{NUMBER:status_code} %{NUMBER:duration} %{QUOTEDSTRING:agent}&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="s2">&#34;track&#34;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tags</span><span class="p">]</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">grok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">match</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="s2">&#34;message&#34;</span> <span class="o">=&gt;</span> <span class="s2">&#34;%{LOGLEVEL:log_level} %{TIMESTAMP_ISO8601:log_time} %{PATH:path} %{WORD:function} %{GREEDYDATA:content}&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="s2">&#34;_grokparsefailure&#34;</span> <span class="ow">in</span> <span class="p">[</span><span class="n">tags</span><span class="p">]</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">grok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">remove_tag</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s2">&#34;_grokparsefailure&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="n">mutate</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">remove_filed</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s2">&#34;offset&#34;</span><span class="p">,</span> <span class="s2">&#34;@version&#34;</span><span class="p">,</span> <span class="s2">&#34;beat.name&#34;</span><span class="p">,</span> <span class="s2">&#34;input_type&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>其中关键部分是 grok的pattern要写正确。这里常用的patterns在<a href="https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns" target="_blank" rel="noopener noreffer">这里查看</a>.<br>
+校验自己写的pattern对不对，在<a href="http://grokconstructor.appspot.com/do/match" target="_blank" rel="noopener noreffer">这里验证</a>.
+比如下面的就是正确的姿势
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/pattern_match.jpeg"
+        data-srcset="https://pics.lxkaka.wang/pattern_match.jpeg, https://pics.lxkaka.wang/pattern_match.jpeg 1.5x, https://pics.lxkaka.wang/pattern_match.jpeg 2x"
+        data-sizes="auto"
+        alt="pattern match"
+        title="pattern match" /></p>
+<p>如果需要解析nginx accec log
+日志格式形如<br>
+<em>[12/Oct/2017:22:00:15 +0800] 54.223.140.204 &ldquo;GET /api/v1/auths/jssdk_signature/?category=Customer HTTP/1.1&rdquo; 200 142 &ldquo;<a href="http://www.wozaihui.com/web/customer#/illegal%22" target="_blank" rel="noopener noreffer">http://www.wozaihui.com/web/customer#/illegal"</a> &ldquo;Mozilla/5.0 (linux) AppleWebKit/537.36 (KHTML, like Gecko) jsdom/11.1.0&rdquo; &ldquo;-&rdquo;</em></p>
+<pre><code>可参考如下pattern
+</code></pre>
+<p><code>\[%{HTTPDATE:time}\] %{IPORHOST:client} \&quot;%{WORD:method} %{URIPATHPARAM:request} HTTP/%{NUMBER:httpversion}\&quot; %{NUMBER:status_code} %{NUMBER:bytes} \&quot;(?&lt;http_referer&gt;\S+)\&quot; \&quot;%{GREEDYDATA:http_user_agent}\&quot; \&quot;%{GREEDYDATA:data}\&quot; </code></p>
+<ul>
+<li>
+<p>output示例<br>
+按照<strong>tags</strong>给日志添加 <strong>index</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">output {
+</span></span><span class="line"><span class="cl">  if &#34;nginx&#34; in [tags] {
+</span></span><span class="line"><span class="cl">    elasticsearch {
+</span></span><span class="line"><span class="cl">      hosts =&gt; [&#34;localhost:9200&#34;]
+</span></span><span class="line"><span class="cl">      index =&gt; &#34;nginx-access-%{+YYYY.MM.dd}&#34;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  if &#34;track&#34; in [tags] {
+</span></span><span class="line"><span class="cl">    elasticsearch {
+</span></span><span class="line"><span class="cl">      hosts =&gt; [&#34;localhost:9200&#34;]
+</span></span><span class="line"><span class="cl">      index =&gt; &#34;track-%{+YYYY.MM.dd}&#34;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  if &#34;access&#34; in [tags] {
+</span></span><span class="line"><span class="cl">    elasticsearch {
+</span></span><span class="line"><span class="cl">      hosts =&gt; [&#34;localhost:9200&#34;]
+</span></span><span class="line"><span class="cl">      index =&gt; &#34;access-%{+YYYY.MM.dd}&#34;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">  }
+</span></span><span class="line"><span class="cl">  stdout {codec =&gt; rubydebug}
+</span></span><span class="line"><span class="cl">  ```
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<h3 id="kibana应用">Kibana应用</h3>
+<ul>
+<li>按照logstash的output在 <code>Kibana &gt; Management &gt; Index Patterns</code>配置<strong>index</strong></li>
+<li><code>Kibana &gt; Discover</code> 提供一系列交互方式能非常直观的浏览并搜索数据。对数据定制过滤的过程是会被记录下来，可以理解成在查询过程中每一步操作都形成了报表，并以URL的方式可被调用，这样你就可以把URL发给其他人，在远端查看相同的过滤结果。</li>
+<li><code>Kibana &gt; Visualize</code> 可以根据自己的需求对不同的field定制图表，比如饼图，直方图，云图</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kibana_visualize.jpeg"
+        data-srcset="https://pics.lxkaka.wang/kibana_visualize.jpeg, https://pics.lxkaka.wang/kibana_visualize.jpeg 1.5x, https://pics.lxkaka.wang/kibana_visualize.jpeg 2x"
+        data-sizes="auto"
+        alt="kibana visualize"
+        title="kibana visualize" /></p>
+<ul>
+<li><code>Kibana &gt; Dashboard</code> 添加Visualize中的图表创建Dashboard。
+点“+”号按钮，选择已创建好的图表，然后在页面上拖拽布局。</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kibana_dashboard.jpeg"
+        data-srcset="https://pics.lxkaka.wang/kibana_dashboard.jpeg, https://pics.lxkaka.wang/kibana_dashboard.jpeg 1.5x, https://pics.lxkaka.wang/kibana_dashboard.jpeg 2x"
+        data-sizes="auto"
+        alt="kibana dashboard"
+        title="kibana dashboard" /></p>
+<pre><code>2018.07.12更新
+</code></pre>
+<h3 id="elasticsearch-删除历史数据">elasticsearch 删除历史数据</h3>
+<p>随着日志量的上升，机器硬盘总会达到上限，这就需要我们必须对历史数据做处理，释放硬盘空间。这里可以用两种方法来达到我们的目的。</p>
+<h4 id="使用es-api-_delete_by_query">使用es api <strong>_delete_by_query</strong></h4>
+<p>比如下面的示例，删除10天前的所有index</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">curl -H&#39;Content-Type:application/json&#39; -d&#39;{
+</span></span><span class="line"><span class="cl">    &#34;query&#34;: {
+</span></span><span class="line"><span class="cl">        &#34;range&#34;: {
+</span></span><span class="line"><span class="cl">            &#34;@timestamp&#34;: {
+</span></span><span class="line"><span class="cl">                &#34;lt&#34;: &#34;now-10d&#34;,
+</span></span><span class="line"><span class="cl">                &#34;format&#34;: &#34;epoch_millis&#34;
+</span></span><span class="line"><span class="cl">            }
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">&#39; -XPOST &#34;http://127.0.0.1:9200/*/_delete_by_query?pretty&#34;
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后使用 crontab 来定时执行上面的命令<br>
+每5分钟执行一次<br>
+<code>sudo crontal -e</code><br>
+<code>*/5 * * * * /usr/bin/curl -u username:password  -H'Content-Type:application/json' -d'{&quot;query&quot;:{&quot;range&quot;:{&quot;@timestamp&quot;:{&quot;lt&quot;:&quot;now-7d&quot;,&quot;format&quot;:&quot;epoch_millis&quot;}}}}' -XPOST &quot;http://127.0.0.1:9200/*-*/_delete_by_query?pretty&quot; &gt; /tmp/elk_clean.txt</code></p>
+<p>这种方法简单，易用。但是效率很低不适用大量数据的删除</p>
+<h4 id="使用-curatorhttpswwwelasticcoguideenelasticsearchclientcurator5xindexhtml">使用 <a href="https://www.elastic.co/guide/en/elasticsearch/client/curator/5.x/index.html" target="_blank" rel="noopener noreffer">curator</a></h4>
+<p></p>
+<ul>
+<li>
+<p>pip isntall elasticsearch-curator</p>
+</li>
+<li>
+<p>配置文件</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">  </span>---<span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">client</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">hosts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span>- <span class="m">127.0.0.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">9200</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">logging</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">loglevel</span><span class="p">:</span><span class="w"> </span><span class="l">INFO</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">logfile</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;/home/curator/logs/actions.log&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">logformat</span><span class="p">:</span><span class="w"> </span><span class="l">default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  	</span><span class="nt">blacklist</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;elasticsearch&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;urllib3&#39;</span><span class="p">]</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>定义删除操作</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">actions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">	</span><span class="nt">1</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l">delete_indices</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l">&gt;-</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="l">Delete indices older than 90 days (based on index name), for regex indices.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="l">Ignore the error if the filter does not result in an</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="l">actionable list of indices (ignore_empty_list) and exit cleanly.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">options</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">ignore_empty_list</span><span class="p">:</span><span class="w"> </span><span class="kc">True</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">timeout_override</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">continue_if_exception</span><span class="p">:</span><span class="w"> </span><span class="kc">False</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">disable_action</span><span class="p">:</span><span class="w"> </span><span class="kc">False</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span><span class="nt">filters</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span>- <span class="nt">filtertype</span><span class="p">:</span><span class="w"> </span><span class="l">pattern</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">regex</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l">^.*</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">exclude</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">		</span>- <span class="nt">filtertype</span><span class="p">:</span><span class="w"> </span><span class="l">age</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l">name</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">direction</span><span class="p">:</span><span class="w"> </span><span class="l">older</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">timestring</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;%Y.%m.%d&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l">days</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">unit_count</span><span class="p">:</span><span class="w"> </span><span class="m">120</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">			</span><span class="nt">exclude</span><span class="p">:</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>上面的示例表示删除120天前所有的索引</p>
+</li>
+<li>
+<p>执行<code>curator --config config.yml action.yml</code><br>
+当然也可以加入crontab来定时执行</p>
+</li>
+</ul>
+<p>这种方法虽然复杂，配置的条件需要详细阅读文档，但是功能强大，执行效率非常高。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2017-10-12</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/elx-process/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/elx-process/" data-title="ELK进阶之Logstash配置和Kibana应用" data-hashtags="Tech Notes,ELK"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/elx-process/" data-hashtag="Tech Notes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/elx-process/" data-title="ELK进阶之Logstash配置和Kibana应用" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/elx-process/" data-title="ELK进阶之Logstash配置和Kibana应用"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/elx-process/" data-title="ELK进阶之Logstash配置和Kibana应用"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/tech-notes/">Tech Notes</a>,&nbsp;<a href="/tags/elk/">ELK</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/django-use/" class="prev" rel="prev" title="Django特殊使用场景集合(updated at 2017-12-21）"><i class="fas fa-angle-left fa-fw"></i>Django特殊使用场景集合(updated at 2017-12-21）</a>
+            <a href="/mongo-optimize-md/" class="next" rel="next" title="Mongo查询优化-借助explain分析查询计划和执行信息">Mongo查询优化-借助explain分析查询计划和执行信息<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

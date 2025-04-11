@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Zeppelin - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/zeppelin/</link>
+        <description>Zeppelin - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 25 Feb 2020 11:46:10 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/zeppelin/" rel="self" type="application/rss+xml" /><item>
+    <title>在 IntelliJ 中使用 Zeppelin 提速数据开发</title>
+    <link>https://lxkaka.wang/zeppelin-intellij/</link>
+    <pubDate>Tue, 25 Feb 2020 11:46:10 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zeppelin-intellij/</guid>
+    <description><![CDATA[Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提]]></description>
+</item><item>
+    <title>在 IntelliJ 中使用 Zeppelin 提速数据开发</title>
+    <link>https://lxkaka.wang/zeppelin-intellij/</link>
+    <pubDate>Tue, 25 Feb 2020 11:46:10 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zeppelin-intellij/</guid>
+    <description><![CDATA[Apache Zeppelin 是一个可以通过浏览器实现交互式数据查询、数据分析、数据可视化并且能多人协作开发的 NoteBook(如果用过 jupyter 对此应该会很熟悉)。其前端提]]></description>
+</item></channel>
+</rss>

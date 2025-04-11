@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Hudi - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/hudi/</link>
+        <description>Hudi - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/hudi/" rel="self" type="application/rss+xml" /><item>
+    <title>实时数据入湖的选型和实践</title>
+    <link>https://lxkaka.wang/cdc-stream/</link>
+    <pubDate>Sun, 19 Mar 2023 11:08:28 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/cdc-stream/</guid>
+    <description><![CDATA[Hudi 作为最热的数据湖技术框架之一，用于构建具有增量数据处理管道的流式数据湖。其核心的能力包括对象存储上数据行级别的快速更新和删除，增量查询 (Incremental queries,Time]]></description>
+</item></channel>
+</rss>

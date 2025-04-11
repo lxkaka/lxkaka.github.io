@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>权限系统 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F/</link>
+        <description>权限系统 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 25 Mar 2022 16:03:57 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%9D%83%E9%99%90%E7%B3%BB%E7%BB%9F/" rel="self" type="application/rss+xml" /><item>
+    <title>利用 Casbin 高效实现基于 RBAC 的权限系统</title>
+    <link>https://lxkaka.wang/rbac-casbin/</link>
+    <pubDate>Fri, 25 Mar 2022 16:03:57 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/rbac-casbin/</guid>
+    <description><![CDATA[在大部分的业务系统中权限控制是少不了的模块，它对这个系统的数据安全起着关键作用。既然权限系统或者模块这么重要且又很普适，当我们搭建一个权限系]]></description>
+</item></channel>
+</rss>

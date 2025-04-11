@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>AB Test 框架方案设计 - lxkaka</title><meta name="Description" content=" AB test 基础设施设计和搭建"><meta property="og:url" content="https://lxkaka.wang/ab-test-design/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="AB Test 框架方案设计">
+  <meta property="og:description" content=" AB test 基础设施设计和搭建">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-09-06T16:04:09+08:00">
+    <meta property="article:modified_time" content="2024-09-06T16:04:09+08:00">
+    <meta property="article:tag" content="AB Test">
+    <meta property="article:tag" content="流量管理">
+    <meta property="article:tag" content="方案设计">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="AB Test 框架方案设计">
+  <meta name="twitter:description" content=" AB test 基础设施设计和搭建">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/ab-test-design/" /><link rel="prev" href="https://lxkaka.wang/wiredtiger/" /><link rel="next" href="https://lxkaka.wang/wordpress-url/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "AB Test 框架方案设计",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/ab-test-design\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "AB Test, 流量管理, 方案设计","wordcount":  1654 ,
+        "url": "https:\/\/lxkaka.wang\/ab-test-design\/","datePublished": "2024-09-06T16:04:09+08:00","dateModified": "2024-09-06T16:04:09+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": " AB test 基础设施设计和搭建"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">AB Test 框架方案设计</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/service/"><i class="far fa-folder fa-fw"></i>Service</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>Infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2024-09-06">2024-09-06</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1654 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#引言">引言</a></li>
+    <li><a href="#框架概述">框架概述</a></li>
+    <li><a href="#1-创建实验规则">1. 创建实验规则</a></li>
+    <li><a href="#2-基于规则的流量路由">2. 基于规则的流量路由</a></li>
+    <li><a href="#3-用户分段和请求头注入">3. 用户分段和请求头注入</a></li>
+    <li><a href="#4-用于流量分发的api网关">4. 用于流量分发的API网关</a></li>
+    <li><a href="#实现细节">实现细节</a>
+      <ul>
+        <li><a href="#用于获取头部的中间件">用于获取头部的中间件</a></li>
+        <li><a href="#日志记录">日志记录</a></li>
+      </ul>
+    </li>
+    <li><a href="#结论">结论</a></li>
+    <li><a href="#下一步">下一步</a></li>
+    <li><a href="#api-gateway">API Gateway</a>
+      <ul>
+        <li>
+          <ul>
+            <li><a href="#部署方式">部署方式</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><blockquote>
+<p>作者注：文章的结构是我让 LLM 参考我的设计简稿生成的</p>
+</blockquote>
+<h2 id="引言">引言</h2>
+<p>AB Test 是现代软件开发和产品管理中的一项关键技术。它允许团队通过比较网页或应用功能的两个或多个版本，来确定哪个表现更好，从而做出数据驱动的决策。在这篇文章中，介绍一下我们如何快速设计一个低成本和扩展性高的 AB Test 基础设施。</p>
+<h2 id="框架概述">框架概述</h2>
+<p>我们的AB测试框架设计注重简洁性和可扩展性。它由四个主要组件组成：</p>
+<ol>
+<li>创建实验规则</li>
+<li>基于规则的流量路由</li>
+<li>用户分段和请求头注入</li>
+<li>用于流量分发的API网关</li>
+</ol>
+<p>让我们详细探讨每个组件。</p>
+<h2 id="1-创建实验规则">1. 创建实验规则</h2>
+<p>我们AB测试框架的基础在于创建清晰灵活的实验规则。这些规则定义了每个测试的参数，包括：</p>
+<ul>
+<li>Project（项目名称，即实验标识符）</li>
+<li>Router（路由器，即分段或分桶名称）</li>
+<li>Weight（权重，即流量分配）</li>
+<li>Service（目标服务名称）</li>
+<li>URI（目标端点）</li>
+<li>Rewrite URI（可选的修改后端点）</li>
+</ul>
+<p>为了创建这些规则，我们实现了一个简单的API端点，接受JSON格式的数据。以下是创建规则的示例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl --location <span class="s1">&#39;127.0.0.1:8081/internal/ab/config&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>--header <span class="s1">&#39;Content-Type: application/json&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>--data <span class="s1">&#39;{
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;project&#34;: &#34;exp_discover_for_you_tab&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;router&#34;: &#34;ad_line&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;weight&#34;: 50,
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;uri&#34;: &#34;/recmd/homepage&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;rewrite_uri&#34;: &#34;/deal/homepage_recommendation_v2&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s1">  &#34;service&#34;: &#34;kaka-recmd-service.kaka.svc.clusterset.local&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s1">}&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这种灵活性使产品经理和开发人员能够轻松设置和修改实验，而无需更改底层代码。</p>
+<h2 id="2-基于规则的流量路由">2. 基于规则的流量路由</h2>
+<p>一旦规则设置完成，我们的框架就会创建流量路由配置。这些配置决定了如何在不同版本或正在测试的功能之间分配用户流量。</p>
+<p>路由机制考虑以下因素：</p>
+<ul>
+<li>用户参与的实验（project）</li>
+<li>用户所属的分段（router）</li>
+<li>分配给每个变体的权重（weight）</li>
+</ul>
+<p>这确保了流量按照预定义的比例进行分割，从而可以准确比较不同版本之间的表现。</p>
+<h2 id="3-用户分段和请求头注入">3. 用户分段和请求头注入</h2>
+<p>AB测试的一个关键方面是一致的用户分段。我们的框架通过以下方式处理这一问题：</p>
+<ol>
+<li>识别用户（通过cookies、用户ID或其他方式）</li>
+<li>确定用户有资格参与哪些实验</li>
+<li>为每个相关实验将用户分配到特定的分段</li>
+<li>将这些信息注入到请求头中</li>
+</ol>
+<p>具体而言，我们向每个Web请求添加一个自定义头部 <code>Kaka-Ex</code>，其中包含该用户的路由信息。这个头部可能看起来像这样：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">kaka-Ex: exp_discover_for_you_tab=ad_line
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这种方法确保用户在多次访问中始终看到相同的变体，这对于测试结果的有效性至关重要。</p>
+<h2 id="4-用于流量分发的api网关">4. 用于流量分发的API网关</h2>
+<p>我们AB测试框架的最后一个部分是API网关，它充当流量警察的角色，根据实验规则和用户分段将请求定向到适当的服务或端点。</p>
+<p>API网关的工作流程：</p>
+<ol>
+<li>读取来自传入请求的 <code>Kaka-Ex</code> 头部</li>
+<li>将头部信息与路由规则匹配</li>
+<li>将请求转发到适当的服务和URI</li>
+<li>如果规则中指定了，则可选地重写URI</li>
+</ol>
+<p>这种设置允许在测试中具有极大的灵活性，因为您可以将流量路由到完全不同的服务，或同一服务中的不同端点，而无需更改前端代码。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/20240906-184947.png"
+        data-srcset="https://pics.lxkaka.wang/20240906-184947.png, https://pics.lxkaka.wang/20240906-184947.png 1.5x, https://pics.lxkaka.wang/20240906-184947.png 2x"
+        data-sizes="auto"
+        alt="abtest-architech"
+        title="abtest-architech" /></p>
+<h2 id="实现细节">实现细节</h2>
+<h3 id="用于获取头部的中间件">用于获取头部的中间件</h3>
+<p>为了简化获取分段信息的过程，我们计划实现一个中间件，自动检索和处理 <code>kaka-Ex</code> 头部。这将使开发人员更容易在其应用程序代码中访问AB测试信息。</p>
+<h3 id="日志记录">日志记录</h3>
+<p>我们的框架会自动记录每个请求的AB测试信息。这包括：</p>
+<ul>
+<li>用户参与的实验</li>
+<li>分配给他们的分段</li>
+<li>他们看到的变体</li>
+</ul>
+<p>这些数据对于分析AB测试结果和基于用户行为做出明智决策至关重要。</p>
+<h2 id="结论">结论</h2>
+<p>这个AB测试框架为在应用程序中实现分割测试提供了一个强大、灵活且可扩展的解决方案。通过分离实验定义、用户分段和流量路由的关注点，我们创建了一个可以适应各种测试场景的系统。</p>
+<p>该框架的主要优势包括：</p>
+<ul>
+<li>通过简单的API轻松设置实验</li>
+<li>跨会话的一致用户体验</li>
+<li>灵活的流量路由，包括服务级别的分割</li>
+</ul>
+<p>在实施这个框架时，请记住AB测试的真正价值不仅在于技术实现，还在于提出正确的问题、形成清晰的假设，以及仔细分析结果以推动产品的有意义改进。</p>
+<h2 id="下一步">下一步</h2>
+<p>虽然这个框架为AB测试提供了坚实的基础，但总有改进的空间。未来可能的增强领域包括：</p>
+<ul>
+<li>自动日志记录，便于分析</li>
+<li>用于创建和管理实验的用户界面</li>
+<li>实时监控和可视化测试结果</li>
+</ul>
+<h2 id="api-gateway">API Gateway</h2>
+<p>这里我使用的 <a href="https://apisix.apache.org/" target="_blank" rel="noopener noreffer">APISIX</a></p>
+<h4 id="部署方式">部署方式</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">helm repo add apisix https://charts.apiseven.com
+</span></span><span class="line"><span class="cl">helm repo update
+</span></span><span class="line"><span class="cl">helm install apisix apisix/apisix -n apisix --create-namespace -f values.yaml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>推荐必须修改的配置如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># replicaCount: 1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># production 环境</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">replicaCount</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># 自定义 storage class 名称</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">etcd</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">persistence</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="l">standard-rwo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">25Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apisix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># 自定义 admin API key  </span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">admin</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">credentials</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l">xxxx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">viewer</span><span class="p">:</span><span class="w"> </span><span class="l">view</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># 自定义 dashboard 账号密码</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">dashboard</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">authentication</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">users</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l">xxx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l">xxx</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="m">3.0.1</span>-<span class="l">alpine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">global</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="l">standard-rwo</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-09-06</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/ab-test-design/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/ab-test-design/" data-title="AB Test 框架方案设计" data-hashtags="AB Test,流量管理,方案设计"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/ab-test-design/" data-hashtag="AB Test"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/ab-test-design/" data-title="AB Test 框架方案设计" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/ab-test-design/" data-title="AB Test 框架方案设计"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/ab-test-design/" data-title="AB Test 框架方案设计"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/ab-test/">AB Test</a>,&nbsp;<a href="/tags/%E6%B5%81%E9%87%8F%E7%AE%A1%E7%90%86/">流量管理</a>,&nbsp;<a href="/tags/%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1/">方案设计</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/wiredtiger/" class="prev" rel="prev" title="Mongodb 默认存储引擎 WiredTiger 的数据结构探究"><i class="fas fa-angle-left fa-fw"></i>Mongodb 默认存储引擎 WiredTiger 的数据结构探究</a>
+            <a href="/wordpress-url/" class="next" rel="next" title="自定义 Wordpress URL 的方案">自定义 Wordpress URL 的方案<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

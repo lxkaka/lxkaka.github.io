@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>kubectl 操作 Kubernetes 的权限控制 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/kubeconfig/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="kubectl 操作 Kubernetes 的权限控制">
+  <meta property="og:description" content="Kubernetes 集群的安全性的重要程度不用强调，当我们与集群交互时，不管是通过 kubernetes-dashborad 还是通过命令行工具 kubectl 都需要进行身份验证和鉴权。那么我们是怎么利用 k8s 本身提供">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2019-02-15T14:23:49+08:00">
+    <meta property="article:modified_time" content="2019-02-15T14:23:49+08:00">
+    <meta property="article:tag" content="Kubernetes">
+    <meta property="article:tag" content="Authentication">
+    <meta property="article:tag" content="Authorization">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="kubectl 操作 Kubernetes 的权限控制">
+  <meta name="twitter:description" content="Kubernetes 集群的安全性的重要程度不用强调，当我们与集群交互时，不管是通过 kubernetes-dashborad 还是通过命令行工具 kubectl 都需要进行身份验证和鉴权。那么我们是怎么利用 k8s 本身提供">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/kubeconfig/" /><link rel="prev" href="https://lxkaka.wang/jira-cas/" /><link rel="next" href="https://lxkaka.wang/pulsar/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "kubectl 操作 Kubernetes 的权限控制",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/kubeconfig\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "kubernetes, authentication, authorization","wordcount":  1806 ,
+        "url": "https:\/\/lxkaka.wang\/kubeconfig\/","datePublished": "2019-02-15T14:23:49+08:00","dateModified": "2019-02-15T14:23:49+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">kubectl 操作 Kubernetes 的权限控制</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-02-15">2019-02-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1806 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#创建具有对应权限的用户">创建具有对应权限的用户</a></li>
+        <li><a href="#创建-kubeconfig">创建 kubeconfig</a>
+          <ul>
+            <li><a href="#1-创建用户安全凭证ca-证书">1. 创建用户安全凭证(CA 证书)</a></li>
+            <li><a href="#2-生成-kubeconfig-文件">2. 生成 kubeconfig 文件</a></li>
+          </ul>
+        </li>
+        <li><a href="#使用-kubeconfig">使用 kubeconfig</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>Kubernetes 集群的安全性的重要程度不用强调，当我们与集群交互时，不管是通过 <strong>kubernetes-dashborad</strong> 还是通过命令行工具 <strong>kubectl</strong> 都需要进行身份验证和鉴权。那么我们是怎么利用 k8s 本身提供的能力来做身份验证和鉴权的呢？
+Kubernetes 集群的访问权限控制由 kube-apiserver 负责，kube-apiserver 的访问权限控制由身份验证(authentication)、授权(authorization)和准入控制（admission control）三步骤组成，这三步骤是按序进行的。</p>
+<ul>
+<li>
+<p>authentication
+k8s 支持 tls client certificate、basic auth、token 等方式对客户端发起的请求进行身份校验。APIServer 启动时，可以指定一种 Authentication 方法，也可以指定多种方法。如果指定了多种方法，那么 APIServer 将会逐个使用这些方法对客户端请求进行验证，只要请求数据通过其中一种方法的验证，APIServer 就会认为 Authentication 成功。</p>
+</li>
+<li>
+<p>authorization<br>
+APIServer 支持多种 authorization mode，包括 Node、RBAC、Webhook 等。APIServer 启动时，可以指定一种 authorization mode，也可以指定多种 authorization mode，如果是后者，只要 Request 通过了其中一种 mode 的授权，那么该环节的最终结果就是授权成功。authorization-mode 的默认配置是 ”Node,RBAC”。Node 授权器主要用于各个 node 上的 kubelet 访问 apiserver 时使用的，其他一般均由 RBAC 授权器来授权。<br>
+这里我们着重介绍一下 <strong>RBAC</strong></p>
+</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/rbac.png"
+        data-srcset="https://pics.lxkaka.wang/rbac.png, https://pics.lxkaka.wang/rbac.png 1.5x, https://pics.lxkaka.wang/rbac.png 2x"
+        data-sizes="auto"
+        alt="rbac"
+        title="rbac" /></p>
+<p><strong>RBAC</strong>(Role-Based Access Control)，它使用 &ldquo;rbac.authorization.k8s.io&rdquo; 实现授权决策，允许管理员通过 Kubernetes API 动态配置策略。在 RBAC API 中，一个角色(Role)包含了一组权限规则。
+<strong>Role</strong> 有两种：<strong>Role</strong> 和 <strong>ClusterRole</strong>。一个Role对象只能用于授予对某一单一命名空间（namespace）中资源的访问权限。ClusterRole对象可以授予与Role对象相同的权限，但由于它们属于集群范围对象。
+<strong>RoleBinding</strong>: 角色绑定则是定义了将一个角色的各种权限授予一个或者一组用户。 角色绑定包含了一组相关主体（即 subject, 包括用户——User、用户组——Group、或者服务账户——Service Account）以及对被授予角色的引用。 在命名空间中可以通过 <strong>RoleBinding</strong> 对象进行用户授权，而集群范围的用户授权则可以通过 <strong>ClusterRoleBinding</strong>对象完成。</p>
+<p>在上面的基础上我们来创建具有特定权限的用户<br>
+我们创建一个用户 <strong>release</strong> 从名字可以看出他是干什么的，我们赋予这个用户可以在集群中发布服务的权限。</p>
+<h3 id="创建具有对应权限的用户">创建具有对应权限的用户</h3>
+<ul>
+<li>创建 cluster role
+示例如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRole</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">cluster-release</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;extensions&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;apps&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;batch&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;*&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;update&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;get&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;watch&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;list&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;create&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;patch&#34;</span><span class="p">]</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>绑定用户，创建 ClusterRoleBinding</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io/v1beta1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRoleBinding</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">cluster-release</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">roleRef</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">ClusterRole</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">cluster-release</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">subjects</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l">rbac.authorization.k8s.io</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">User</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">release</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="创建-kubeconfig">创建 kubeconfig</h3>
+<p><strong>kubeconfig</strong> 其实就是集群的身份认证和鉴权的配置文件，它包含了集群信息，客户信息，上下文(context)等。并且根据不同的 context 可以实现多集群的访问。
+这里我们用  tls client certificate 来作为身份验证的安全凭证，之前也说过也可以用 token 的方式。</p>
+<h4 id="1-创建用户安全凭证ca-证书">1. 创建用户安全凭证(CA 证书)</h4>
+<ul>
+<li>给用户创建 private key(比如给用户release)
+<code>openssl genrsa -out release.key 2048</code>
+说明</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">在申请数字证书之前，您必须先生成证书私钥和证书请求文件(CSR,Cerificate Signing Request),CSR是您的公钥证书原始文件，包含了您的服务器信息和您的单位信息，需要提交给CA认证中心。在生成CSR文件时会同时生成私钥文件，请妥善保管和备份您的私钥。
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">生成CSR文件时，一般需要输入以下信息(中文需要UTF8编码)：
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Organization Name(O)：申请单位名称法定名称，可以是中文或英文
+</span></span><span class="line"><span class="cl">Organization Unit(OU)：申请单位的所在部门，可以是中文或英文
+</span></span><span class="line"><span class="cl">Country Code(C)：申请单位所属国家，只能是两个字母的国家码，如中国只能是：CN
+</span></span><span class="line"><span class="cl">State or Province(S)：申请单位所在省名或州名，可以是中文或英文
+</span></span><span class="line"><span class="cl">Locality(L)：申请单位所在城市名，可以是中文或英文
+</span></span><span class="line"><span class="cl">Common Name(CN)：申请SSL证书的具体网站域名
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>创建证书签名请求(csr) CN(这里是用户名) O(这里是组)要显示指明
+<code>openssl req -new -key release.key -out release.csr -subj &quot;/CN=release/O=k8s&quot;</code></p>
+</li>
+<li>
+<p>给用户release签发证书
+<code>openssl x509 -req -in release.csr -CA /etc/kubernetes/ssl/ca.pem -CAkey /etc/kubernetes/ssl/ca-key.pem -CAcreateserial -out release.crt -days 365</code></p>
+<p>至此我们应该生成了证书 release.crt 和 release.key。</p>
+</li>
+</ul>
+<h4 id="2-生成-kubeconfig-文件">2. 生成 kubeconfig 文件</h4>
+<ul>
+<li>
+<p>先要指明 api-server 的地址   <br>
+<code>export KUBE_APISERVER=https://172.31.xx.xx:6443</code></p>
+</li>
+<li>
+<p>设置k8s 集群信息  <br>
+<code>sudo kubectl config set-cluster cluster.local --certificate-authority=/etc/kubernetes/ssl/ca.pem --embed-certs=true --server=${KUBE_APISERVER} --kubeconfig=release.kubeconfig</code></p>
+</li>
+<li>
+<p>设置用户安全凭证  <br>
+<code>sudo kubectl config set-credentials release --client-certificate=release.crt --client-key=release.key --embed-certs=true --kubeconfig=release.kubeconfig</code></p>
+</li>
+<li>
+<p>设置 context  参数
+<code>sudo kubectl config set-context release-context --cluster=cluster.local --user=release --kubeconfig=release.kubeconfig</code></p>
+</li>
+<li>
+<p>设置默认 context
+<code>sudo kubectl config use-context release-context --kubeconfig=release.kubeconfig</code></p>
+<p>至此生成好了 kubeconfig 文件。 <br>
+<code>kubectl config view</code> 可以查看生成好的内容。</p>
+</li>
+</ul>
+<h3 id="使用-kubeconfig">使用 kubeconfig</h3>
+<p>我们可以用生成好的 kubeconfig 文件来赋予 <strong>kubectl</strong> 操作集群的能力
+示例如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="k">FROM</span><span class="s"> ubuntu:16.04</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">COPY</span> kubectl /usr/local/bin/<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">RUN</span> chmod +x /usr/local/bin/kubectl<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">RUN</span> mkdir /root/.kube<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">COPY</span> config /root/.kube/<span class="err">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>下面这张图总结了我们的工作<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kubectl-auth.png"
+        data-srcset="https://pics.lxkaka.wang/kubectl-auth.png, https://pics.lxkaka.wang/kubectl-auth.png 1.5x, https://pics.lxkaka.wang/kubectl-auth.png 2x"
+        data-sizes="auto"
+        alt="kubectl-auth"
+        title="kubectl-auth" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-02-15</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/kubeconfig/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/kubeconfig/" data-title="kubectl 操作 Kubernetes 的权限控制" data-hashtags="kubernetes,authentication,authorization"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/kubeconfig/" data-hashtag="kubernetes"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/kubeconfig/" data-title="kubectl 操作 Kubernetes 的权限控制" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/kubeconfig/" data-title="kubectl 操作 Kubernetes 的权限控制"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/kubeconfig/" data-title="kubectl 操作 Kubernetes 的权限控制"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/kubernetes/">Kubernetes</a>,&nbsp;<a href="/tags/authentication/">Authentication</a>,&nbsp;<a href="/tags/authorization/">Authorization</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/jira-cas/" class="prev" rel="prev" title="JIRA 集成单点登录系统 CAS"><i class="fas fa-angle-left fa-fw"></i>JIRA 集成单点登录系统 CAS</a>
+            <a href="/pulsar/" class="next" rel="next" title="Pulsar(新一代高性能消息系统)核心总结">Pulsar(新一代高性能消息系统)核心总结<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

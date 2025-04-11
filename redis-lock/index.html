@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Golang 实现的 Redis 分布式锁 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/redis-lock/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Golang 实现的 Redis 分布式锁">
+  <meta property="og:description" content="最近在做一个功能的时候需要用到分布式锁，发现我们的公共库里好像没有可以直接拿来用的分布式锁，那就自己实现一个。首先想到方案就是 Redis 分布式锁。一">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2021-10-23T17:53:11+08:00">
+    <meta property="article:modified_time" content="2021-10-23T17:53:11+08:00">
+    <meta property="article:tag" content="Golang">
+    <meta property="article:tag" content="Redis">
+    <meta property="article:tag" content="分布式锁">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Golang 实现的 Redis 分布式锁">
+  <meta name="twitter:description" content="最近在做一个功能的时候需要用到分布式锁，发现我们的公共库里好像没有可以直接拿来用的分布式锁，那就自己实现一个。首先想到方案就是 Redis 分布式锁。一">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/redis-lock/" /><link rel="prev" href="https://lxkaka.wang/metrics-best-practice/" /><link rel="next" href="https://lxkaka.wang/kafka-rebalance/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Golang 实现的 Redis 分布式锁",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/redis-lock\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "golang, redis, 分布式锁","wordcount":  2639 ,
+        "url": "https:\/\/lxkaka.wang\/redis-lock\/","datePublished": "2021-10-23T17:53:11+08:00","dateModified": "2021-10-23T17:53:11+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Golang 实现的 Redis 分布式锁</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/golang/"><i class="far fa-folder fa-fw"></i>Golang</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-10-23">2021-10-23</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2639 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#实现方式">实现方式</a>
+          <ul>
+            <li><a href="#setnx--expire">SETNX + EXPIRE</a></li>
+            <li><a href="#set-扩展命令">SET 扩展命令</a></li>
+            <li><a href="#lua脚本实现">Lua脚本实现</a></li>
+            <li><a href="#多实例-redis-问题">多实例 Redis 问题</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>最近在做一个功能的时候需要用到分布式锁，发现我们的公共库里好像没有可以直接拿来用的分布式锁，那就自己实现一个。首先想到方案就是 Redis 分布式锁。一个相对完备的分布式锁应该满足以下几点：</p>
+<ul>
+<li>
+<p>互斥性。互斥是锁的基本特征，同一时刻锁只能被一个协程持有，执行操作。</p>
+</li>
+<li>
+<p>超时释放。通过超时释放，可以避免死锁，防止不必要的协程等待和资源浪费。</p>
+</li>
+<li>
+<p>可重入性。一个协程在持有锁的情况可以对其再次请求加锁，防止锁在协程执行完操作之前释放。</p>
+</li>
+<li>
+<p>高性能和高可用。加锁和释放锁的过程性能开销要尽可能的低，同时也要保证高可用，防止分布式锁意外失效。</p>
+</li>
+</ul>
+<p>由于我们有现成的 redis 集群，所以选择 Redis 分布式锁实现成本是最低的，并且基本能满足以上特点。</p>
+<p>这里我们就总结一下 redis 实现分布式锁的几种方式和分别存在的问题</p>
+<h3 id="实现方式">实现方式</h3>
+<h4 id="setnx--expire">SETNX + EXPIRE</h4>
+<p>最基本的做法就是利用 Redis 的 SETNX 指令，该指令只在 key 不存在的情况下，将 key 的值设置为 value，若 key 已经存在，则 SETNX 命令不做任何动作。key 是锁的唯一标识，可以按照业务需要锁定的资源来命名。
+在使用 SETNX 拿到锁以后，必须给 key 设置一个过期时间，以保证即使没有被显式释放，在获取锁达到一定时间后也要自动释放，防止资源被长时间独占。由于 SETNX 不支持设置过期时间，所以需要额外的 EXPIRE 指令。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">dao</span><span class="p">)</span> <span class="nf">RedisLock</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">lockValue</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">ttl</span> <span class="kt">int64</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">redis</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">redis</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;SET&#34;</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">lockValue</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">||</span> <span class="nx">result</span> <span class="o">!=</span> <span class="s">&#34;OK&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">redis</span><span class="p">.</span><span class="nx">ErrNil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">err</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;Error on acquiring lock for %s, %v&#34;</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 设置过期时间	
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">ok</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">redis</span><span class="p">.</span><span class="nf">Bool</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">redis</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;EXPIRE&#34;</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">ttl</span><span class="p">));</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;Erron on expiring lock for %s, %v&#34;</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>	
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这样实现的分布式锁仍然存在一个严重的问题，由于 SETNX 和 EXPIRE 这两个操作是非原子性的，如果程序在执行 SETNX 和 EXPIRE 之间发生异常，SETNX 执行成功，但 EXPIRE 没有执行，导致锁不会过期，其他协程无法正常获取锁。</p>
+<h4 id="set-扩展命令">SET 扩展命令</h4>
+<p>为了解决 SETNX 和 EXPIRE 两个操作非原子性的问题，可以使用 Redis 的 SET 指令的扩展参数，使得 SETNX 和 EXPIRE 这两个操作可以原子执行，如下面代码所示。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">d</span> <span class="o">*</span><span class="nx">dao</span><span class="p">)</span> <span class="nf">RedisLock</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">lockValue</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">ttl</span> <span class="kt">int64</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">result</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">redis</span><span class="p">.</span><span class="nf">String</span><span class="p">(</span><span class="nx">d</span><span class="p">.</span><span class="nx">redis</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;SET&#34;</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">lockValue</span><span class="p">,</span> <span class="s">&#34;EX&#34;</span><span class="p">,</span> <span class="nx">ttl</span><span class="p">,</span> <span class="s">&#34;NX&#34;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">||</span> <span class="nx">result</span> <span class="o">!=</span> <span class="s">&#34;OK&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">redis</span><span class="p">.</span><span class="nx">ErrNil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">err</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;Error on acquiring lock for %s, %v&#34;</span><span class="p">,</span> <span class="nx">lockKey</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在这个 SET 指令中：</p>
+<ul>
+<li>NX 表示只有当 lockKey 对应的 key 值不存在的时候才能 SET 成功。保证了只有第一个请求的协程才能获得锁，而其它协程在锁被释放之前都无法获得锁。</li>
+<li>EX ttl 表示这个锁 ttl 秒钟后会自动过期，业务可以根据实际情况设置这个时间的大小。
+其中 <em>EX</em> 也可以替换成 <em>PX</em> 可以使锁过期时间精确到毫秒。</li>
+</ul>
+<p>但是这种方式仍然不能彻底解决分布式锁超时问题：</p>
+<ul>
+<li>
+<p>锁被提前释放。假如协程程 A 在加锁和释放锁之间的逻辑执行的时间过长（或者协程 A 执行过程中被堵塞），以至于超出了锁的过期时间后进行了释放，但协程 A 在想加锁部分的逻辑还没有执行完，那么这时候协程 B 就可以提前重新获取这把锁，导致代码不能严格的串行执行，而产生意外情况。</p>
+</li>
+<li>
+<p>锁被误删。假如以上情形中的协程 A 执行完后，它并不知道此时的锁持有者是协程 B，协程 A 会继续执行 DEL 指令来释放锁，如果协程 B 在临界区的逻辑还没有执行完，协程 A 实际上释放了协程 B 的锁。</p>
+</li>
+</ul>
+<p>为了避免以上情况，建议不要在执行时间过长的场景中使用 Redis 分布式锁，同时一个比较安全的做法是在执行 DEL 释放锁之前对锁进行判断，验证当前锁的持有者是否是自己。<br>
+具体实现就是在加锁时将 value 设置为一个唯一的随机数(可以使用 UUID 或者生成随机数)，释放锁时先判断随机数是否一致，然后再执行释放操作，确保不会错误地释放其它协程持有的锁，除非是锁过期了被服务器自动释放</p>
+<h4 id="lua脚本实现">Lua脚本实现</h4>
+<ul>
+<li>Lua 脚本保证原子性，把多个操作在 Redis 中实现成一个操作，也就是单命令操作</li>
+<li>使用了 set key value px milliseconds nx</li>
+<li>value 具有唯一性</li>
+<li>加锁时首先判断 key 的 value 是否和之前设置的一致，一致则修改过期时间
+代码如下</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span><span class="lnt">145
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">redislock</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;context&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;crypto/sha1&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/hex&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;io&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;math/rand&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;strconv&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;sync/atomic&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">const</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">letters</span>     <span class="p">=</span> <span class="s">&#34;abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lockCommand</span> <span class="p">=</span> <span class="s">`if redis.call(&#34;GET&#34;, KEYS[1]) == ARGV[1] then
+</span></span></span><span class="line"><span class="cl"><span class="s">    redis.call(&#34;SET&#34;, KEYS[1], ARGV[1], &#34;PX&#34;, ARGV[2])
+</span></span></span><span class="line"><span class="cl"><span class="s">    return &#34;OK&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">else
+</span></span></span><span class="line"><span class="cl"><span class="s">    return redis.call(&#34;SET&#34;, KEYS[1], ARGV[1], &#34;NX&#34;, &#34;PX&#34;, ARGV[2])
+</span></span></span><span class="line"><span class="cl"><span class="s">end`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">delCommand</span> <span class="p">=</span> <span class="s">`if redis.call(&#34;GET&#34;, KEYS[1]) == ARGV[1] then
+</span></span></span><span class="line"><span class="cl"><span class="s">    return redis.call(&#34;DEL&#34;, KEYS[1])
+</span></span></span><span class="line"><span class="cl"><span class="s">else
+</span></span></span><span class="line"><span class="cl"><span class="s">    return 0
+</span></span></span><span class="line"><span class="cl"><span class="s">end`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">randomLen</span>       <span class="p">=</span> <span class="mi">16</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">tolerance</span>       <span class="p">=</span> <span class="mi">500</span> <span class="c1">// milliseconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">millisPerSecond</span> <span class="p">=</span> <span class="mi">1000</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// A RedisLock is a redis lock.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 这里的 redis 是对 redigo 的一层内部封装
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">RedisLock</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">store</span>   <span class="o">*</span><span class="nx">redis</span><span class="p">.</span><span class="nx">Redis</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">seconds</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">key</span>     <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">id</span>      <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Script</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">keyCount</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">src</span>      <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">hash</span>     <span class="kt">string</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rand</span><span class="p">.</span><span class="nf">Seed</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">().</span><span class="nf">UnixNano</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// NewRedisLock returns a RedisLock.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">NewRedisLock</span><span class="p">(</span><span class="nx">store</span> <span class="o">*</span><span class="nx">redis</span><span class="p">.</span><span class="nx">Redis</span><span class="p">,</span> <span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">RedisLock</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">RedisLock</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">store</span><span class="p">:</span> <span class="nx">store</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">key</span><span class="p">:</span>   <span class="nx">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">id</span><span class="p">:</span>    <span class="nf">randomStr</span><span class="p">(</span><span class="nx">randomLen</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">NewScript</span><span class="p">(</span><span class="nx">keyCount</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">src</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">Script</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">h</span> <span class="o">:=</span> <span class="nx">sha1</span><span class="p">.</span><span class="nf">New</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">io</span><span class="p">.</span><span class="nf">WriteString</span><span class="p">(</span><span class="nx">h</span><span class="p">,</span> <span class="nx">src</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">Script</span><span class="p">{</span><span class="nx">keyCount</span><span class="p">,</span> <span class="nx">src</span><span class="p">,</span> <span class="nx">hex</span><span class="p">.</span><span class="nf">EncodeToString</span><span class="p">(</span><span class="nx">h</span><span class="p">.</span><span class="nf">Sum</span><span class="p">(</span><span class="kc">nil</span><span class="p">))}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Acquire acquires the lock.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rl</span> <span class="o">*</span><span class="nx">RedisLock</span><span class="p">)</span> <span class="nf">Acquire</span><span class="p">()</span> <span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">seconds</span> <span class="p">=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadUint32</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">rl</span><span class="p">.</span><span class="nx">seconds</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keyCount</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span> <span class="p">=</span> <span class="nf">NewScript</span><span class="p">(</span><span class="nx">keyCount</span><span class="p">,</span> <span class="nx">lockCommand</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keysAndArgs</span> <span class="p">=</span> <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">rl</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">seconds</span><span class="p">)</span><span class="o">*</span><span class="nx">millisPerSecond</span> <span class="o">+</span> <span class="nx">tolerance</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">conn</span> <span class="o">:=</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Conn</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="s">&#34;EVAL&#34;</span><span class="p">,</span> <span class="nx">s</span><span class="p">.</span><span class="nf">args</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">src</span><span class="p">,</span> <span class="nx">keysAndArgs</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">redis</span><span class="p">.</span><span class="nx">ErrNil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;Error on acquiring lock for %s, %v&#34;</span><span class="p">,</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">resp</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">reply</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">resp</span><span class="p">.(</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">ok</span> <span class="o">&amp;&amp;</span> <span class="nx">reply</span> <span class="o">==</span> <span class="s">&#34;OK&#34;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">true</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="s">&#34;Unknown reply when acquiring lock for %s: %v&#34;</span><span class="p">,</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">resp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Release releases the lock.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rl</span> <span class="o">*</span><span class="nx">RedisLock</span><span class="p">)</span> <span class="nf">Release</span><span class="p">()</span> <span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keyCount</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span> <span class="p">=</span> <span class="nf">NewScript</span><span class="p">(</span><span class="nx">keyCount</span><span class="p">,</span> <span class="nx">delCommand</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">keysAndArgs</span> <span class="p">=</span> <span class="p">[]</span><span class="kd">interface</span><span class="p">{}{</span><span class="nx">rl</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">conn</span> <span class="o">:=</span> <span class="nx">rl</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Conn</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">conn</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="s">&#34;EVAL&#34;</span><span class="p">,</span> <span class="nx">s</span><span class="p">.</span><span class="nf">args</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">src</span><span class="p">,</span> <span class="nx">keysAndArgs</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">reply</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">resp</span><span class="p">.(</span><span class="kt">int64</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">reply</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 设置锁的过期时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rl</span> <span class="o">*</span><span class="nx">RedisLock</span><span class="p">)</span> <span class="nf">SetExpire</span><span class="p">(</span><span class="nx">seconds</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreUint32</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">rl</span><span class="p">.</span><span class="nx">seconds</span><span class="p">,</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">seconds</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 创建随机值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">randomStr</span><span class="p">(</span><span class="nx">n</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">string</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">b</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">b</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">b</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">letters</span><span class="p">[</span><span class="nx">rand</span><span class="p">.</span><span class="nf">Intn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">letters</span><span class="p">))]</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nb">string</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 构造执行 eval 命令的参数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">Script</span><span class="p">)</span> <span class="nf">args</span><span class="p">(</span><span class="nx">spec</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">keysAndArgs</span> <span class="p">[]</span><span class="kd">interface</span><span class="p">{})</span> <span class="p">[]</span><span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">args</span> <span class="p">[]</span><span class="kd">interface</span><span class="p">{}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">s</span><span class="p">.</span><span class="nx">keyCount</span> <span class="p">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">args</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{},</span> <span class="mi">1</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="nx">keysAndArgs</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nx">spec</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">copy</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="nx">keysAndArgs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">args</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kd">interface</span><span class="p">{},</span> <span class="mi">2</span><span class="o">+</span><span class="nb">len</span><span class="p">(</span><span class="nx">keysAndArgs</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nx">spec</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">keyCount</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">copy</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">2</span><span class="p">:],</span> <span class="nx">keysAndArgs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">args</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>使用示例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="nx">lock</span> <span class="o">:=</span> <span class="nx">redislock</span><span class="p">.</span><span class="nf">NewRedisLock</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">dao</span><span class="p">.</span><span class="nf">GetRedis</span><span class="p">(),</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;tortflow_lock_%d_%d&#34;</span><span class="p">,</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Aid</span><span class="p">,</span> <span class="nx">req</span><span class="p">.</span><span class="nx">Cid</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="nx">lock</span><span class="p">.</span><span class="nf">SetExpire</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">ok</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">lock</span><span class="p">.</span><span class="nf">Acquire</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">defer</span> <span class="nx">lock</span><span class="p">.</span><span class="nf">Release</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="o">||</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">Error</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="s">&#34;xxx do not get lock&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 待锁逻辑
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="o">...</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="多实例-redis-问题">多实例 Redis 问题</h4>
+<p>加锁时只作用在一个 Redis 节点上，即使 Redis 通过 Sentinel 或者 redis cluster 保证了高可用，但由于 Redis 的复制是异步的，Master 节点获取到锁后在未完成数据同步的情况下发生故障转移，此时其他协程依然可以获取到锁，这样当然也会出现问题。<br>
+在 Redis 的分布式环境中，Redis 的作者 antirez 提供了 RedLock 的算法来实现一个分布式锁。
+简单介绍一下 RedLock 的核心逻辑就是，每次加锁的时候尝试向redis集群中每个节点申请加锁，当前节点加锁失败则跳过继续向下一个节点执行加锁请求，只有大于一半的节点加锁成功才认为分布式锁成功；释放锁时同样需配合 lua 脚本向所有的 redis 节点发起释放锁请求。
+在 Golang 中有根据 RedLock 实现的<a href="https://github.com/go-redsync/redsync" target="_blank" rel="noopener noreffer">版本</a>。针对这个库就不做过多介绍，感兴趣的点链接直达。</p>
+<p>RedLock 算法并不是没有问题的。在这篇<a href="https://github.com/go-redsync/redsync" target="_blank" rel="noopener noreffer">文章</a>中大佬就指出了相关问题，因为节点间时钟同步问题或者 GC 造成的停顿而使锁不被唯一占用。并且每次 RedLock 每次获取锁都要去所有实例上获取，那如果有某台实例响应慢，那就是会拖慢整体获取锁的速度，这在某些场景下获取是不太可以接受的。在我们的业务中我们使用的 redis 且都是有 proxy 的，已经屏蔽了 Redis 实例，所以对于我们来说是不可用的。</p>
+<p>我们之所以用 Redis 作为分布式锁，很大程度上是因为 Redis 本身高效和原子性操作方便等特点，即使在高并发的情况下也能很好的保证性能。在需要严格保证数据安全的情况下就得加上其他兜底措施或者是才用其他分布式锁。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-10-23</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/redis-lock/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/redis-lock/" data-title="Golang 实现的 Redis 分布式锁" data-hashtags="golang,redis,分布式锁"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/redis-lock/" data-hashtag="golang"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/redis-lock/" data-title="Golang 实现的 Redis 分布式锁" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/redis-lock/" data-title="Golang 实现的 Redis 分布式锁"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/redis-lock/" data-title="Golang 实现的 Redis 分布式锁"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/golang/">Golang</a>,&nbsp;<a href="/tags/redis/">Redis</a>,&nbsp;<a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">分布式锁</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/metrics-best-practice/" class="prev" rel="prev" title="使用 Promethues 实现应用监控的一些实践"><i class="fas fa-angle-left fa-fw"></i>使用 Promethues 实现应用监控的一些实践</a>
+            <a href="/kafka-rebalance/" class="next" rel="next" title="从一个消费慢的例子深入理解 kafka rebalance">从一个消费慢的例子深入理解 kafka rebalance<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

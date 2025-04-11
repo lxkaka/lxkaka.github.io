@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Mongodb 默认存储引擎 WiredTiger 的数据结构探究 - lxkaka</title><meta name="Description" content="对以 Mongodb 默认存储引擎 WiredTiger 数据结构的探究"><meta property="og:url" content="https://lxkaka.wang/wiredtiger/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Mongodb 默认存储引擎 WiredTiger 的数据结构探究">
+  <meta property="og:description" content="对以 Mongodb 默认存储引擎 WiredTiger 数据结构的探究">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2024-07-08T18:30:47+08:00">
+    <meta property="article:modified_time" content="2024-07-08T18:30:47+08:00">
+    <meta property="article:tag" content="WiredTiger">
+    <meta property="article:tag" content="Mongodb">
+    <meta property="article:tag" content="B-Tree">
+    <meta property="article:tag" content="LSM-Tree">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Mongodb 默认存储引擎 WiredTiger 的数据结构探究">
+  <meta name="twitter:description" content="对以 Mongodb 默认存储引擎 WiredTiger 数据结构的探究">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/wiredtiger/" /><link rel="prev" href="https://lxkaka.wang/twilio-web/" /><link rel="next" href="https://lxkaka.wang/ab-test-design/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Mongodb 默认存储引擎 WiredTiger 的数据结构探究",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/wiredtiger\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "WiredTiger, Mongodb, B-tree, LSM-tree","wordcount":  2906 ,
+        "url": "https:\/\/lxkaka.wang\/wiredtiger\/","datePublished": "2024-07-08T18:30:47+08:00","dateModified": "2024-07-08T18:30:47+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "对以 Mongodb 默认存储引擎 WiredTiger 数据结构的探究"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Mongodb 默认存储引擎 WiredTiger 的数据结构探究</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><i class="far fa-folder fa-fw"></i>数据库</a>&nbsp;<a href="/categories/%E5%AD%98%E5%82%A8/"><i class="far fa-folder fa-fw"></i>存储</a>&nbsp;<a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2024-07-08">2024-07-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2906 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#lsm-tree">LSM tree</a></li>
+    <li><a href="#b-tree">B-tree</a>
+      <ul>
+        <li><a href="#为什么-mongodb-默认使用-b-tree-作为其数据存储机制">为什么 MongoDB 默认使用 B-tree 作为其数据存储机制？</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#怎么理解-wiredtiger-moves-from-one-leaf-page-to-the-next-by-going-back-through-the-parent-page">怎么理解 WiredTiger moves from one leaf page to the next by going back through the parent page.</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我们知道 Mongodb 默认使用的存储引擎是 <a href="https://www.mongodb.com/docs/manual/core/wiredtiger/" target="_blank" rel="noopener noreffer">WiredTiger</a>。了解存储引擎的数据结构是十分重要的尤其是对于服务端的同学，只有你了解了它才能更好的使用 Mongodb。关于  Mongodb 我们在这里不做介绍，我们主要四回答以下两个问题才搞清楚 WiredTiger 的数据存储结构。</p>
+<h1 id="问题一-b-tree-还是-lsm-tree-">问题一 B-tree 还是 LSM tree ?</h1>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/20240709-104734.jpeg"
+        data-srcset="https://pics.lxkaka.wang/20240709-104734.jpeg, https://pics.lxkaka.wang/20240709-104734.jpeg 1.5x, https://pics.lxkaka.wang/20240709-104734.jpeg 2x"
+        data-sizes="auto"
+        alt="b-tree_vs_lsm"
+        title="b-tree_vs_lsm" /></p>
+<h2 id="lsm-tree">LSM tree</h2>
+<p>MongoDB 中的 LSM (Log-Structured Merge-tree) 是 WiredTiger 存储引擎提供的一种索引数据结构选项。它主要有这些特性：</p>
+<ol>
+<li>内存写入缓冲:<br>
+新的写入操作首先被添加到内存中的一个称为memtable的数据结构中。
+memtable通常使用平衡树(如红黑树或AVL树)实现,以保持键的有序性。
+2， 顺序写入磁盘:<br>
+当 memtable 达到一定大小阈值时,其内容会被刷新到磁盘上,形成一个不可变的 SSTable (Sorted String Table)文件。
+这个过程是异步进行的,不会阻塞新的写入请求。</li>
+<li>多层结构:<br>
+LSM树通常维护多层SSTable文件。
+较新的数据在较高层(如Level 0),较旧的数据在较低层。
+每一层的大小通常比上一层大几倍。</li>
+<li>读取操作:  s
+读取时,首先检查 memtable。
+如果 memtable 中没有找到,则按从新到旧的顺序检查SSTable文件。
+可能使用布隆过滤器来快速确定一个key是否可能存在于某个SSTable中。</li>
+<li>合并和压缩:<br>
+后台进行定期的合并和压缩操作,将多个小的SSTable合并成更大的SSTable。
+这个过程会删除过时的数据,保留最新的值。</li>
+<li>写放大:<br>
+LSM树的设计会导致写放大,即实际写入磁盘的数据量大于用户请求写入的数据量。
+这是因为同一条数据可能被多次写入不同的SSTable。</li>
+<li>空间放大:<br>
+由于存在多个版本的数据和未压缩的文件,LSM树可能会导致一定程度的空间放大。</li>
+<li>读放大:<br>
+读取操作可能需要检查多个 SSTable,导致读放大。
+这可以通过布隆过滤器和缓存等技术来缓解。</li>
+<li>配置选项:<br>
+MongoDB允许用户通过命令行参数来选择使用LSM索引,并配置相关参数。</li>
+<li>性能特点:<br>
+LSM树在写入密集的场景下表现优异,特别是对于随机插入操作。
+读取性能,尤其是点查询,可能不如B树索引。</li>
+</ol>
+<h2 id="b-tree">B-tree</h2>
+<p>B-tree 是 Mongodb 中默认使用的数据结构。特性包括这些:</p>
+<ol>
+<li>树形结构:<br>
+B-tree是一种自平衡的树形数据结构。
+它由根节点、内部节点和叶子节点组成。
+每个节点可以包含多个键值对和指向子节点的指针。</li>
+<li>节点组成: <br>
+每个节点(称为bucket)有固定大小,通常为8192字节。
+节点包含keynode和keydata两部分。
+keynode存储固定大小的结构,包含指向子节点的指针和文档位置。
+keydata存储可变长度的BSON格式键值。</li>
+<li>数据排序:<br>
+键值对在节点内按键的顺序排列。
+这种排序允许快速的查找、范围查询和排序操作。</li>
+<li>查询过程:<br>
+从根节点开始,根据键值比较逐层向下遍历。
+通常只需3-4次I/O操作就能定位到目标文档。</li>
+<li>插入和分裂:<br>
+当节点满时,会发生分裂操作。
+分裂会创建新节点,并将一半数据移到新节点中。
+这个过程可能会一直传播到根节点,保持树的平衡。</li>
+<li>性能特点:<br>
+提供稳定的查询性能,最坏情况下复杂度为O(log n)。
+适合大规模数据集和磁盘存储系统。</li>
+<li>灵活性:<br>
+支持精确匹配、范围查询和排序操作。
+可以创建复合索引,包含多个字段。</li>
+<li>优化技术:<br>
+使用前缀压缩等技术来减少索引大小和提高效率。</li>
+</ol>
+<h3 id="为什么-mongodb-默认使用-b-tree-作为其数据存储机制">为什么 MongoDB 默认使用 B-tree 作为其数据存储机制？</h3>
+<p>B-tree 能够在读取和写入操作之间提供良好的平衡。 B-tree 结构支持高效的数据检索和范围查询，因为数据是有序存储的，这使得对连续键值范围的查询变得快速和直接。此外， B-tree的设计允许在不影响整体性能的情况下进行高效的插入和更新操作，这对于维护数据的一致性和完整性至关重要。</p>
+<p>B-tree 的这些特性使其成为在需要频繁读写操作的场景中的一个理想选择。MongoDB 作为一个通用的 NoSQL 数据库，需要能够处理各种各样的工作负载，包括但不限于实时分析、内容管理和移动应用程序后端。在这些应用中，平衡读写性能对于确保系统响应性和用户体验至关重要。</p>
+<p>此外， B-tree的结构允许 MongoDB 实现强大的事务支持，这对于需要高度数据一致性和原子性操作的应用来说是非常重要的。通过使用 B-tree，MongoDB 能够确保事务的原子性、一致性、隔离性和持久性（ACID 属性）。
+总的来说，MongoDB 选择  B-tree作为默认存储机制，是为了在广泛的应用场景中提供平衡的读写性能、高效的查询能力和强大的事务支持。</p>
+<h1 id="问题二-b-tree-还是-b-tree">问题二 B-tree 还是 B+ tree</h1>
+<p>有不少文档有的说 Mongodb 使用的是 B-tree, 有的说是 B+ tree。 这个问题让我也很郁闷，在这里我们追根溯源一下。这篇<a href="https://groups.google.com/g/wiredtiger-users/c/1YHbNXPw-1A?pli=1" target="_blank" rel="noopener noreffer">帖子</a>相信能回答。</p>
+<p>在网页内容中，用户 Ars Roseregen 表达了对 WiredTiger 索引数据结构的疑惑。他认为 WiredTiger 使用的是 B-Tree，直到他查阅了一些文档，这些文档称 WiredTiger 使用的是 B-Tree（具体指的是 B+Tree）。然而，当他检查 WiredTiger 的源代码时，没有找到叶节点之间的指针，这是 B+Tree 的一个典型特征。这个发现让他感到困惑，因为另一份文档又提到 WiredTiger 使用的是 B-Tree。</p>
+<p>WiredTiger 团队成员 Keith Smith 回应了这个问题，解释说他们称为 “B-Trees”，但这种称呼可能并不精确。他指出，WiredTiger 的设计包含了一些不符合传统 B-Tree 或 B+Tree 定义的优化。WiredTiger 的 B-Trees 存储了所有的键和值在叶子页面中，这一点与 B+Trees 相似。但是，WiredTiger 没有提供从一个叶子页面直接到另一个叶子页面的链接，因为它总是将更新后的页面写入到文件的新位置。WiredTiger 通过父页面来移动到下一个叶子页面，这种方法因为缓存机制而高效。最后，Keith Smith 引用了 Douglas Comer 的论文，指出即使在 B+Trees 中，叶子节点的链接也不是一个严格的要求。</p>
+<h2 id="怎么理解-wiredtiger-moves-from-one-leaf-page-to-the-next-by-going-back-through-the-parent-page">怎么理解 WiredTiger moves from one leaf page to the next by going back through the parent page.</h2>
+<p>WiredTiger 如何通过父页面移动到下一个叶子页面
+在 WiredTiger 的索引结构中，当需要从一个叶子页面移动到另一个叶子页面时，它并不直接链接到下一个叶子页面。相反，它采用了一种通过父页面来实现这种移动的机制。这意味着：<br>
+树状结构的特点：WiredTiger 的索引结构类似于树形结构，其中每个节点都有一个或多个子节点。叶子页面位于树的底部，包含了实际的数据。
+无直接链接：与 B+Tree 不同，WiredTiger 的叶子页面之间并没有直接的链接指针，通常 B+Tree 的叶子页面会有一个指向下一个叶子页面的指针，以便顺序遍历。</p>
+<p>通过父页面导航：当需要访问当前叶子页面之后的叶子页面时，WiredTiger 会首先返回到它们共同的父页面。父页面包含了指向其子叶子页面的指针。</p>
+<p>高效的缓存策略：WiredTiger 的设计利用了缓存策略，通常在访问叶子页面时，相关的父页面也会被缓存。这样，当需要通过父页面移动到下一个叶子页面时，可以直接从缓存中获取父页面的信息，从而提高效率。</p>
+<p>文件写入优化：WiredTiger 在更新页面时，通常会将更新后的页面写入到文件的新位置。这种做法避免了在原有位置进行更新，从而减少了碎片化，并且允许在不同的文件版本之间进行快速切换。</p>
+<p>灵活性和性能：通过这种设计，WiredTiger 能够在保持高性能的同时，提供更大的灵活性。它可以更好地管理磁盘空间，并且在处理大量数据时，能够更有效地进行页面的读写操作。</p>
+<p>总结来说，WiredTiger 通过父页面来移动到下一个叶子页面的设计，是一种优化的策略，它利用了缓存机制，以提高数据访问的效率和性能。这种设计虽然与传统的 B-Tree 或 B+Tree 有所不同，但它为数据库的索引结构提供了更多的灵活性和优化空间。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2024-07-08</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/wiredtiger/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/wiredtiger/" data-title="Mongodb 默认存储引擎 WiredTiger 的数据结构探究" data-hashtags="WiredTiger,Mongodb,B-tree,LSM-tree"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/wiredtiger/" data-hashtag="WiredTiger"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/wiredtiger/" data-title="Mongodb 默认存储引擎 WiredTiger 的数据结构探究" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/wiredtiger/" data-title="Mongodb 默认存储引擎 WiredTiger 的数据结构探究"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/wiredtiger/" data-title="Mongodb 默认存储引擎 WiredTiger 的数据结构探究"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/wiredtiger/">WiredTiger</a>,&nbsp;<a href="/tags/mongodb/">Mongodb</a>,&nbsp;<a href="/tags/b-tree/">B-Tree</a>,&nbsp;<a href="/tags/lsm-tree/">LSM-Tree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/twilio-web/" class="prev" rel="prev" title="利用 Twilio 快速构建 web 语音聊天"><i class="fas fa-angle-left fa-fw"></i>利用 Twilio 快速构建 web 语音聊天</a>
+            <a href="/ab-test-design/" class="next" rel="next" title="AB Test 框架方案设计">AB Test 框架方案设计<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

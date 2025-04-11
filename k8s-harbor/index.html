@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>k8s 中部署 Harbor - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/k8s-harbor/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="k8s 中部署 Harbor">
+  <meta property="og:description" content="随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2019-11-15T12:15:34+08:00">
+    <meta property="article:modified_time" content="2019-11-15T12:15:34+08:00">
+    <meta property="article:tag" content="Harbor">
+    <meta property="article:tag" content="Registry">
+    <meta property="article:tag" content="K8s">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="k8s 中部署 Harbor">
+  <meta name="twitter:description" content="随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/k8s-harbor/" /><link rel="prev" href="https://lxkaka.wang/k8s-kafka/" /><link rel="next" href="https://lxkaka.wang/nginx-ingress/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "k8s 中部署 Harbor",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/k8s-harbor\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "harbor, registry, k8s","wordcount":  1819 ,
+        "url": "https:\/\/lxkaka.wang\/k8s-harbor\/","datePublished": "2019-11-15T12:15:34+08:00","dateModified": "2019-11-15T12:15:34+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">k8s 中部署 Harbor</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-11-15">2019-11-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1819 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#harbor-架构">Harbor 架构</a>
+          <ul>
+            <li><a href="#数据层">数据层</a></li>
+          </ul>
+        </li>
+        <li><a href="#核心组件">核心组件</a></li>
+        <li><a href="#鉴权过程">鉴权过程</a></li>
+        <li><a href="#k8s-部署">k8s 部署</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。
+Harbor 作为 CNCF 托管的开药 docker registry 项目是我们的首先。它除了提供存储、签名、扫描镜像的功能，还有常用的功能如鉴权、授权、权限管理等来增强 docker registry 的安全性。
+除此之外，Harbor 还有从其他 registry 复制镜像的功能，新版本集成了 chartmuseum 从而可以作为 Helm Charts 的 repository。Harbor 一个重要的特点是它是通过可插拔的方式来
+集合第三方组件来提供不同的功能，比如用于镜像签名的 notary；镜像扫描的 clair; 镜像存储，推送和拉取的 docker registry；helm charts 存储，管理的 chartmuseum。</p>
+<p>在之前我们其实已经通过 docker-compose 搭建了 Harbor。这里主要介绍的是 Harbor 的工作原理和在 k8s 中部署 Harbor。
+首先，我们结合 Harbor 的架构来介绍一下各个组件的功能。</p>
+<h3 id="harbor-架构">Harbor 架构</h3>
+<p>下面这张图是来自 Harbor github 的官方架构图，结合这张图我们介绍一下关键的组件</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/harbor-architecture-1.10.png"
+        data-srcset="https://pics.lxkaka.wang/harbor-architecture-1.10.png, https://pics.lxkaka.wang/harbor-architecture-1.10.png 1.5x, https://pics.lxkaka.wang/harbor-architecture-1.10.png 2x"
+        data-sizes="auto"
+        alt="harbor-arch"
+        title="harbor-arch" /></p>
+<h4 id="数据层">数据层</h4>
+<ul>
+<li>
+<p>redis
+用于数据缓存和定时，异步任务的临时存储</p>
+</li>
+<li>
+<p>镜像存储<br>
+支持的方式非常多，比如本地磁盘，网络文件系统(NAS), 对象存储(S3, OSS)等等</p>
+</li>
+<li>
+<p>数据库<br>
+新版本使用 PostgreSQL, 用来存储 Harbor 里创建的 projects, users, roles , replication policies, tag retention policies, clair 从各大开源社区获取的CVE漏洞缺陷数据以及镜像层的扫描结构数据</p>
+</li>
+</ul>
+<h3 id="核心组件">核心组件</h3>
+<ul>
+<li>
+<p>proxy
+用 nginx 作为反向代理，转发来自浏览器和 docker 客户端的请求到不同的后端服务，比如 core, registry, token service, 网页客户端入口服务等</p>
+</li>
+<li>
+<p>core
+核心模块，包括鉴权和授权；配置管理；项目管理；项目容量管理；代理 chartmuseum; 镜像复制管理; 镜像扫描管理；webhook 提供的回调等等</p>
+</li>
+<li>
+<p>job service
+处理定时任务和异步任务，主要包括镜像同步，镜像扫描任务</p>
+</li>
+<li>
+<p>chart museum
+第三方开源 chart repository, 提供 helm chart 的管理和 api 访问</p>
+</li>
+<li>
+<p>docker registry
+第三方 registry 服务, 镜像处理的核心组件，处理镜像的上传、下拉等，直接操作镜像存储服务，如 S3、nas 等</p>
+</li>
+<li>
+<p>notary
+第三方内容信任服务，用来保证镜像在 pull，push 和传输过程中的一致性和完整性</p>
+</li>
+</ul>
+<h3 id="鉴权过程">鉴权过程</h3>
+<p>这里我们重点描述一下 docker 客户端登录 Harbor 的过程<br>
+在客户端登录我们自然首先会输入以下命令<br>
+<code>docker login harbor.abc.com</code><br>
+然后输入我们的用户名和密码<br>
+1.客户端首先发送一个 GET 请求 <em>harbor.abc.com/v2</em> 到 registry 服务</p>
+<p>2.registry 服务配置的是通过 JWT token 鉴权，所以返回的是一个 401 错误码，并且同时会在 response 的 header<br>
+里通知客户端去获取 token 的真正地址。Harbor 里这个地址指向的是 core service</p>
+<p>3.客户度收到 401 和 response, 接着发送获取 token 的请求到指定的 url, 这个 url 会是 <em>harbor.abc.com/service.token</em>，在 request 的
+header 中包含用户民和密码</p>
+<p>4.token service（被包含在 core 的容器中）接收到请求后，解析请求拿到用户民和密码，然后去数据库中验证用户的有效性。token service 可以
+配置对接外部的 LDAP/AD 来进行认证。认证成功后，返回 200 并且 response body 中包含由私钥产生的 JWT token</p>
+<p>5.docker 客户端收到 200 请求，则登录成功。打印出 <code>Login Succeeded</code></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">|---------------|           |----------|           |---------------|
+</span></span><span class="line"><span class="cl">| docker client |           | registry |           | token service |
+</span></span><span class="line"><span class="cl">|---------------|           |----------|           |---------------|
+</span></span><span class="line"><span class="cl">     |   1. harbor.abc.com/v2   |                         |            
+</span></span><span class="line"><span class="cl">     |-------------------------&gt;|                         |                         
+</span></span><span class="line"><span class="cl">     |        2. return 401     |                         |                         
+</span></span><span class="line"><span class="cl">     |&lt;-------------------------|                         |                         
+</span></span><span class="line"><span class="cl">     |        3. harbor.abc.com/service/token             |                        
+</span></span><span class="line"><span class="cl">     |---------------------------------------------------&gt;|                                                   
+</span></span><span class="line"><span class="cl">     |        4. return 200                               |           
+</span></span><span class="line"><span class="cl">     |&lt;---------------------------------------------------|
+</span></span><span class="line"><span class="cl">     |                          |                         |
+</span></span><span class="line"><span class="cl">     |   5. login success       |                         |
+</span></span><span class="line"><span class="cl"> 
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>push 镜像的过程和登录类似，主要区别在<br>
+鉴权那一步，会具体检查用户是否有往对应项目推送 image 的权限。</p>
+<h3 id="k8s-部署">k8s 部署</h3>
+<p>推荐使用 Helm 安装</p>
+<ul>
+<li>
+<p>下载 harbor helm chart
+<code>wget https://github.com/goharbor/harbor-helm/archive/v1.2.2.tar.gz</code></p>
+</li>
+<li>
+<p>解压，复制一份 values.yaml 进行定制
+推荐使用 ingress 对外暴露服务 <br>
+主要需要修改的配置是数据持久化和镜像存储，这里我们使用 NAS 通过区分 subpath, 把同一个 PVC 挂载到不同的容器</p>
+</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># The persistence is enabled by default and a default StorageClass</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># is needed in the k8s cluster to provision volumes dynamicly.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Specify another StorageClass in the &#34;storageClass&#34; or set &#34;existingClaim&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># if you have already existing persistent volumes to use</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c">#</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># For storing images and charts, you can also use &#34;azure&#34;, &#34;gcs&#34;, &#34;s3&#34;,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># &#34;swift&#34; or &#34;oss&#34;. Set it in the &#34;imageChartStorage&#34; section</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">persistence</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># Setting it to &#34;keep&#34; to avoid removing PVCs during a helm delete</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c"># operation. Leaving it empty will delete PVCs after the chart deleted</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">resourcePolicy</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;keep&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">registry</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># Use the existing PVC which must be created manually before bound,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># and specify the &#34;subPath&#34; if the PVC is shared with other components</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">existingClaim</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;harbor-nas&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># Specify the &#34;storageClass&#34; used to provision the volume. Or the default</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># StorageClass will be used(the default).</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="c"># Set it to &#34;-&#34; to disable dynamic provisioning</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;registry&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">accessMode</span><span class="p">:</span><span class="w"> </span><span class="l">ReadWriteOnce</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">5Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">chartmuseum</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">existingClaim</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;harbor-nas&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;chartmuseum&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">accessMode</span><span class="p">:</span><span class="w"> </span><span class="l">ReadWriteOnce</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">5Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">jobservice</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">existingClaim</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;harbor-nas&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;jobservice&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">accessMode</span><span class="p">:</span><span class="w"> </span><span class="l">ReadWriteOnce</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">1Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># If external database is used, the following settings for database will</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># be ignored</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">existingClaim</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;harbor-nas&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;database&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">accessMode</span><span class="p">:</span><span class="w"> </span><span class="l">ReadWriteOnce</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">10Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># If external Redis is used, the following settings for Redis will</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># be ignored</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">redis</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">existingClaim</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;harbor-nas&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;redis&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">accessMode</span><span class="p">:</span><span class="w"> </span><span class="l">ReadWriteOnce</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l">1Gi</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>NAS PVC, 前提是在阿里云中开通了 NAS 并且集群中要创建 alicloud-nas-controller(具体可参照阿里云 NAS 文档)</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">storage.k8s.io/v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">StorageClass</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">alicloud-nas</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">mountOptions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="l">nolock,tcp,noresvport</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="l">vers=3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">parameters</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">volumeAs</span><span class="p">:</span><span class="w"> </span><span class="l">subpath</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;xxxxx&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">provisioner</span><span class="p">:</span><span class="w"> </span><span class="l">alicloud/nas</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">reclaimPolicy</span><span class="p">:</span><span class="w"> </span><span class="l">Delete</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l">PersistentVolumeClaim</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l">v1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">metadata</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">harbor-nas</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">spec</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nt">accessModes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">ReadWriteMany</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nt">resources</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">   </span><span class="nt">requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">     </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l">50Gi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"> </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l">alicloud-nas</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>
+<p>部署<br>
+在解压后的目录里执行 <br>
+<code>helm install --name harbor -f edited_values.yaml . --namespace harbor</code></p>
+</li>
+<li>
+<p>检查部署<br>
+部署完成后我们可以看到部署了以下服务</p>
+</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
+</span></span><span class="line"><span class="cl">harbor-chartmuseum     1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-clair           1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-core            1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-jobservice      1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-notary-server   1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-notary-signer   1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-portal          1/1     1            1           2d1h
+</span></span><span class="line"><span class="cl">harbor-registry        1/1     1            1           2d1h
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-11-15</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/k8s-harbor/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/k8s-harbor/" data-title="k8s 中部署 Harbor" data-hashtags="harbor,registry,k8s"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/k8s-harbor/" data-hashtag="harbor"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/k8s-harbor/" data-title="k8s 中部署 Harbor" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/k8s-harbor/" data-title="k8s 中部署 Harbor"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/k8s-harbor/" data-title="k8s 中部署 Harbor"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/harbor/">Harbor</a>,&nbsp;<a href="/tags/registry/">Registry</a>,&nbsp;<a href="/tags/k8s/">K8s</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/k8s-kafka/" class="prev" rel="prev" title="外部访问 k8s 中的 kafka 集群"><i class="fas fa-angle-left fa-fw"></i>外部访问 k8s 中的 kafka 集群</a>
+            <a href="/nginx-ingress/" class="next" rel="next" title="Nginx Ingress 进阶——灰度发布">Nginx Ingress 进阶——灰度发布<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

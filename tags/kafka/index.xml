@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Kafka - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/kafka/</link>
+        <description>Kafka - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 20 Nov 2021 11:23:33 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/kafka/" rel="self" type="application/rss+xml" /><item>
+    <title>从一个消费慢的例子深入理解 kafka rebalance</title>
+    <link>https://lxkaka.wang/kafka-rebalance/</link>
+    <pubDate>Sat, 20 Nov 2021 11:23:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kafka-rebalance/</guid>
+    <description><![CDATA[消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka]]></description>
+</item><item>
+    <title>Kafka 和 Pulsar 存储结构对比</title>
+    <link>https://lxkaka.wang/kakfa-pulsar-storage/</link>
+    <pubDate>Sat, 26 Dec 2020 14:00:11 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kakfa-pulsar-storage/</guid>
+    <description><![CDATA[在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇文章 中我们提到过这两种消息队列，而在我们了解]]></description>
+</item><item>
+    <title>外部访问 k8s 中的 kafka 集群</title>
+    <link>https://lxkaka.wang/k8s-kafka/</link>
+    <pubDate>Fri, 25 Oct 2019 10:39:03 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-kafka/</guid>
+    <description><![CDATA[如果直接在云厂商提供的实例上搭建 kafka 集群可以说很简单，一般不会有什么困难。当我们选择把 kafka 部署到 k8s 里，希望利用 k8s 提供的编排能力来帮助我们更方便的]]></description>
+</item><item>
+    <title>外部访问 k8s 中的 kafka 集群</title>
+    <link>https://lxkaka.wang/k8s-kafka/</link>
+    <pubDate>Fri, 25 Oct 2019 10:39:03 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-kafka/</guid>
+    <description><![CDATA[如果直接在云厂商提供的实例上搭建 kafka 集群可以说很简单，一般不会有什么困难。当我们选择把 kafka 部署到 k8s 里，希望利用 k8s 提供的编排能力来帮助我们更方便的]]></description>
+</item></channel>
+</rss>

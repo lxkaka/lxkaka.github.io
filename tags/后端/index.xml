@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>后端 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E5%90%8E%E7%AB%AF/</link>
+        <description>后端 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 13 Apr 2018 18:07:02 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E5%90%8E%E7%AB%AF/" rel="self" type="application/rss+xml" /><item>
+    <title>Django中sentry怎么抓取异常</title>
+    <link>https://lxkaka.wang/analyse-sentry-capture-md/</link>
+    <pubDate>Fri, 13 Apr 2018 18:07:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/analyse-sentry-capture-md/</guid>
+    <description><![CDATA[Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，]]></description>
+</item><item>
+    <title>Django中sentry怎么抓取异常</title>
+    <link>https://lxkaka.wang/analyse-sentry-capture-md/</link>
+    <pubDate>Fri, 13 Apr 2018 18:07:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/analyse-sentry-capture-md/</guid>
+    <description><![CDATA[Sentry是我们查看线上bug最适用和好用的工具。因为sentry能帮我们完整记录bug或异常的上下文，能有效帮助我们定位和分析问题，]]></description>
+</item></channel>
+</rss>

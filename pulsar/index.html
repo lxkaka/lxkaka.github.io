@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Pulsar(新一代高性能消息系统)核心总结 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/pulsar/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Pulsar(新一代高性能消息系统)核心总结">
+  <meta property="og:description" content="消息中间件是后端服务系统中一个非常重要的组件，它可以在分布式环境下提供应用解耦、流量削峰、异步通信、数据同步等关键功能。在我们的应用中首先 rabbimq">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:published_time" content="2019-03-25T15:43:54+08:00">
+    <meta property="article:modified_time" content="2019-03-25T15:43:54+08:00">
+    <meta property="article:tag" content="消息队列">
+    <meta property="article:tag" content="消息队列">
+    <meta property="article:tag" content="Backend">
+    <meta property="article:tag" content="Backend">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Pulsar(新一代高性能消息系统)核心总结">
+  <meta name="twitter:description" content="消息中间件是后端服务系统中一个非常重要的组件，它可以在分布式环境下提供应用解耦、流量削峰、异步通信、数据同步等关键功能。在我们的应用中首先 rabbimq">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/pulsar/" /><link rel="prev" href="https://lxkaka.wang/kubeconfig/" /><link rel="next" href="https://lxkaka.wang/cas/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Pulsar(新一代高性能消息系统)核心总结",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/pulsar\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "page","keywords": "消息队列, backend","wordcount":  2223 ,
+        "url": "https:\/\/lxkaka.wang\/pulsar\/","datePublished": "2019-03-25T15:43:54+08:00","dateModified": "2019-03-25T15:43:54+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="page single special"><h1 class="single-title animated pulse faster">Pulsar(新一代高性能消息系统)核心总结</h1><div class="content" id="content"><p>消息中间件是后端服务系统中一个非常重要的组件，它可以在分布式环境下提供应用解耦、流量削峰、异步通信、数据同步等关键功能。在我们的应用中首先 rabbimq 和 kafka 这两个消息队列产品。
+这二者虽然我们都叫消息队列，但他们的实现和应用场景都是不一样的。我们根据不同的应用场景会选择不同的产品。
+一般情况下</p>
+<ul>
+<li>实时性要求极高，单条消息不大的，routing 复杂可选 RabbitMQ;</li>
+<li>吞吐量要求高，实时性要求可稍微降低，流式数据可选 Kafka</li>
+</ul>
+<p>现在我们可以有更好的选择 <a href="http://pulsar.apache.org/docs/en/concepts-overview/" target="_blank" rel="noopener noreffer">Pulsar</a>，一个分布式高性能消息系统。<br>
+Pulsar 的优势在哪里？我们为什么要选它?</p>
+<h2 id="系统架构">系统架构</h2>
+<p>Pulsar 和其他消息系统最根本的不同是采用分层架构。 Apache Pulsar 集群由两层组成：无状态服务层，由一组接收和传递消息的 Broker 组成；以及一个有状态持久层，由一组名为 bookies 的 Apache BookKeeper 存储节点组成，可持久化地存储消息。下图显示了 Pulsar 的主体架构。<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/puslar-arch.png"
+        data-srcset="https://pics.lxkaka.wang/puslar-arch.png, https://pics.lxkaka.wang/puslar-arch.png 1.5x, https://pics.lxkaka.wang/puslar-arch.png 2x"
+        data-sizes="auto"
+        alt="puslar-arch"
+        title="puslar-arch" /></p>
+<p>Pulsar 非常核心的设计逻辑就是消息服务和消息存储的分离, 即Broker 消息服务层和 BookKeeper 消息存储层。</p>
+<h3 id="broker">Broker</h3>
+<p>Broker 不存储消息本身，每个 topic 的消息都存储到了分布式日志存储系统 BookKeeper 中。 每个 partitioned topic 会被分配给某个 broker, 而生产者和消费者都连接到这个 broker 分别发送和消息消息。<br>
+如果一个 Broker 失败，Pulsar 会自动将其拥有的主题分区移动到群集中剩余的某一个可用 Broker 中。由于 Broker 是无状态的，当发生 Topic 的迁移时，Pulsar 只是将所有权从一个 Broker 转移到另一个 Broker，在这个过程中，不会有任何数据复制发生。Broker 层的示意图如下所示<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/broker.png"
+        data-srcset="https://pics.lxkaka.wang/broker.png, https://pics.lxkaka.wang/broker.png 1.5x, https://pics.lxkaka.wang/broker.png 2x"
+        data-sizes="auto"
+        alt="broker"
+        title="broker" /></p>
+<h3 id="bookkeeper">BookKeeper</h3>
+<p>BookKeeper 作为 puslar 的持久化层，负责存储每个 topic 的 partitions，本质上是分布式日志。每个分布式日志又被分为 Segment 分段。 每个 Segment 分段作为 BookKeeper 中的一个 Ledger，均匀分布并存储在 BookKeeper 群集中的多个 Bookie（BookKeeper 的存储节点）中。
+Segment 创建的条件是基于配置的 serment 大小；基于配置的滚动时间, 或者 segment 的所有者发生了变化。通过 Segment 分段的方式，topic partition 中的消息可以均匀和平衡地分布在群集中的所有 Bookie 中。 因此一个 topic partition 的容量不受一个节点容量的限制；相反，它可以扩展到整个 BookKeeper 集群的总容量。
+下图展示了一个 topic partition 存储示意 <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bookkeeper.png"
+        data-srcset="https://pics.lxkaka.wang/bookkeeper.png, https://pics.lxkaka.wang/bookkeeper.png 1.5x, https://pics.lxkaka.wang/bookkeeper.png 2x"
+        data-sizes="auto"
+        alt="bookkeeper"
+        title="bookkeeper" /></p>
+<p>正是因为分层架构和以 segment 为中心存储的设计思想让 Pular 相比其他消息队列产品有了以下优势</p>
+<ul>
+<li>无限制的 topic partition 存储； <br>
+topic patition 可以扩展到整个 BookKeeper 集群的总容量，只需添加 Bookie 节点即可扩展集群容量。</li>
+<li>即时扩展，无需数据迁移；
+<ul>
+<li>无缝 Broker 故障恢复</li>
+<li>无缝集群容量扩展</li>
+<li>无缝 Bookie 故障恢复</li>
+</ul>
+</li>
+<li>独立的扩展性</li>
+</ul>
+<h2 id="消息模型">消息模型</h2>
+<p>消息系统的模型可以分为两类 队列式(queuing)和流式(streaming)。<br>
+<strong>queuing</strong> 模型主要是采用无序或者共享的方式来消费消息，当一条消息从队列发送出来后，多个消费者中的只有一个（任何一个都有可能）接收和消费这条消息。queuing 模型通常与无状态应用程序一起结合使用, 无状态应用程序不关心排序，但需要能够确认（ack）或删除单条消息，以及尽可能地扩展消费并行的能力。RabbitMQ 就是典型的 queuing 模型。
+<strong>streaming</strong> 模型要求消息的消费严格排序或独占消息消费，对于一个 message channel 只会有一个消费者消费消息。流模型通常与有状态应用程序相关联。有状态的应用程序更加关注消息的顺序及其状态。消息的消费顺序决定了有状态应用程序的状态。消息的顺序将影响应用程序处理逻辑的正确性。kafka 就是 streaming 模型。
+Pulsar 的消息模型既支持 queuing，也支持 streaming。<br>
+在 Pulsar 的消息消费模型中，Topic 是用于发送消息的通道, 消费者被组合在一起消费消息，每个消费组是一个订阅。每组消费者可以拥有自己不同的消费方式： 独占（Exclusive），故障切换（Failover）或共享（Share）。Pulsar 通过这种模型，将队列模型和流模型这两种模型结合在了一起，提供了统一的 API 接口。 这种模型，既不会影响消息系统的性能，也不会带来额外的开销，同时还为用户提供了更多灵活性，方便用户程序以最匹配模式来使用消息系统。<br>
+Exclusive 和 Failover 订阅，仅允许一个消费者来使用和消费每个对主题的订阅。这两种模式都按主题分区顺序使用消息。它们最适用于需要严格消息顺序的流（Stream）用例。
+Share 订阅允许每个主题分区有多个消费者。同一订阅中的每个消费者仅接收主题分区的一部分消息。共享订阅最适用于不需要保证消息顺序的队列（Queue）的使用模式，并且可以按照需要任意扩展消费者的数量。
+下图展示了3个不同类型的订阅和消息的流向<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/message-model.png"
+        data-srcset="https://pics.lxkaka.wang/message-model.png, https://pics.lxkaka.wang/message-model.png 1.5x, https://pics.lxkaka.wang/message-model.png 2x"
+        data-sizes="auto"
+        alt="message-model"
+        title="message-model" /></p>
+<h2 id="对比-kafka">对比 Kafka</h2>
+<ul>
+<li>消息模型
+<ul>
+<li>Pulsar 提供了统一的消息模型和 API。streaming 模式——独占和故障切换订阅方式; queuing 模式——共享订阅的方式。</li>
+<li>Kafka 主要集中在 streaming 模式，对单个 partition 是独占消费，没有共享（Queue）的消费模式；</li>
+</ul>
+</li>
+<li>架构
+<ul>
+<li>Pulsar Broker是无状态的，与存储相互分离
+可以轻松添加和删除节点，而无需重新平衡整个集群</li>
+<li>Kafka的数据直接存储在Broker上(有状态的)
+任何容量扩展都需要重新平衡分区，同时还需要将被平衡的分区重新拷贝到新添加的Broker上</li>
+</ul>
+</li>
+<li>Ack
+<ul>
+<li>Pulsar使用专门的 Cursor 管理。累积确认(cumulative acknowledgment)和 Kafka 效果一样；提供单条确认(individual ack)。</li>
+<li>Kafka使用偏移 Offset</li>
+</ul>
+</li>
+<li>Retention
+<ul>
+<li>Pulsar 消息只有被所有订阅消费后才会删除，不会丢失数据。也允许设置保留期，保留被消费的数据。支持 TTL</li>
+<li>Kafka根据设置的保留期来删除消息。有可能消息没被消费，过期后被删除。 不支持 TTL。</li>
+</ul>
+</li>
+</ul>
+<p>总结一下，文章开始问题的答案就是 <br>
+Pulsar 将高性能的 streaming（Kafka）和灵活的 queuing（RabbitMQ）结合到一个统一的消息模型和 API 中。 Pulsar 使用统一的 API 为用户提供一个支持 streaming 和 queuing 的系统，且具有同样的高性能。</p>
+</div><div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></div></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

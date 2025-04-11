@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Dapr 初探-Pub/Sub 实践 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/dapr-pubsub/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Dapr 初探-Pub/Sub 实践">
+  <meta property="og:description" content="Dapr 介绍 Dapr 是一个开源项目，由微软发起，下面是来自 Dapr 官方网站的介绍 Dapr 是一个可移植的、事件驱动的运行时，它使任何开发人员能够轻松构建出弹性的、无状">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2022-09-30T09:48:55+08:00">
+    <meta property="article:modified_time" content="2022-09-30T09:48:55+08:00">
+    <meta property="article:tag" content="Dapr">
+    <meta property="article:tag" content="消费订阅">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Dapr 初探-Pub/Sub 实践">
+  <meta name="twitter:description" content="Dapr 介绍 Dapr 是一个开源项目，由微软发起，下面是来自 Dapr 官方网站的介绍 Dapr 是一个可移植的、事件驱动的运行时，它使任何开发人员能够轻松构建出弹性的、无状">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/dapr-pubsub/" /><link rel="prev" href="https://lxkaka.wang/image-process/" /><link rel="next" href="https://lxkaka.wang/redis-io-threads/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Dapr 初探-Pub/Sub 实践",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/dapr-pubsub\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "dapr, 消费订阅","wordcount":  1469 ,
+        "url": "https:\/\/lxkaka.wang\/dapr-pubsub\/","datePublished": "2022-09-30T09:48:55+08:00","dateModified": "2022-09-30T09:48:55+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Dapr 初探-Pub/Sub 实践</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/cloud-native/"><i class="far fa-folder fa-fw"></i>Cloud Native</a>&nbsp;<a href="/categories/service/"><i class="far fa-folder fa-fw"></i>Service</a>&nbsp;<a href="/categories/%E5%AE%9E%E8%B7%B5/"><i class="far fa-folder fa-fw"></i>实践</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-09-30">2022-09-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1469 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#dapr-介绍">Dapr 介绍</a>
+          <ul>
+            <li><a href="#服务构建块building-block">服务构建块（building block)</a></li>
+            <li><a href="#组件-component">组件 （component）</a></li>
+          </ul>
+        </li>
+        <li><a href="#发布订阅实践">发布订阅实践</a>
+          <ul>
+            <li><a href="#运行过程">运行过程</a></li>
+            <li><a href="#示例">示例</a>
+              <ul>
+                <li><a href="#启动消费者服务">启动消费者服务</a></li>
+                <li><a href="#发送消息">发送消息</a></li>
+                <li><a href="#消费组">消费组</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h3 id="dapr-介绍">Dapr 介绍</h3>
+<p>Dapr 是一个开源项目，由微软发起，下面是来自 Dapr 官方网站的介绍</p>
+<blockquote>
+<p>Dapr 是一个可移植的、事件驱动的运行时，它使任何开发人员能够轻松构建出弹性的、无状态和有状态的应用程序，并可运行在云平台或边缘计算中，它同时也支持多种编程语言和开发框架。</p>
+</blockquote>
+<p>通过阅读官方文档和实践，我理解的 dapr 的定位包含这些：</p>
+<ul>
+<li>不依赖于特定的库，包和框架，可以使用任意的编程语言开发业务功能</li>
+<li>不依赖于特定的中间件，存储等，并且可以按需替换</li>
+<li>不依赖于特定平台，可以在本地、Kubernetes 集群或者其它集成 Dapr 的托管环境中运行应用程序</li>
+<li>业务通过标准的 API 提供服务，无需关心底层具体实</li>
+</ul>
+<p>如下图所示，概括了 Dapr 的能力和层次架构</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://docs.dapr.io/images/overview.png"
+        data-srcset="https://docs.dapr.io/images/overview.png, https://docs.dapr.io/images/overview.png 1.5x, https://docs.dapr.io/images/overview.png 2x"
+        data-sizes="auto"
+        alt="dapr-poi"
+        title="dapr-poi" /></p>
+<h4 id="服务构建块building-block">服务构建块（building block)</h4>
+<p>构建块是 dapr 提供的可以通过标准 Http 或者 gRPC API访问的模块化最佳实践。构建块可以使用任何组件组合，例如 actors 构建块和 状态管理 构建块都使用 状态组件。 另一个示例是 Pub/Sub 构建块使用 Pub/Sub 组件。</p>
+<p>以下是 Dapr 提供的构建块类型:<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://docs.dapr.io/images/building_blocks.png"
+        data-srcset="https://docs.dapr.io/images/building_blocks.png, https://docs.dapr.io/images/building_blocks.png 1.5x, https://docs.dapr.io/images/building_blocks.png 2x"
+        data-sizes="auto"
+        alt="building-block"
+        title="building-block" /></p>
+<h4 id="组件-component">组件 （component）</h4>
+<p>组件是 dapr 中最佳实践的功能实现，每个组件都有接口定义，所有组件都是可插拔的，因此可以将组件换为另一个具有相同接口的组件。<br>
+目前 dapr 提供的组件例子如下图，具体可以查看<a href="https://docs.dapr.io/reference/components-reference/" target="_blank" rel="noopener noreffer">官方文档</a></p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://docs.dapr.io/images/concepts-components.png"
+        data-srcset="https://docs.dapr.io/images/concepts-components.png, https://docs.dapr.io/images/concepts-components.png 1.5x, https://docs.dapr.io/images/concepts-components.png 2x"
+        data-sizes="auto"
+        alt="components"
+        title="components" /></p>
+<h3 id="发布订阅实践">发布订阅实践</h3>
+<h4 id="运行过程">运行过程</h4>
+<p>发布和订阅 (pub/sub) 使微服务能够使用事件驱动架构的消息相互通信。这种服务模式的好处在这里就不赘述了。我们主要是介绍一下 dapr 如何帮助我们来实现这张服务模式。
+Dapr 中的发布/订阅 API 功能</p>
+<ul>
+<li>提供与平台无关的 API 来发送和接收消息</li>
+<li>提供至少一次消息传递保证</li>
+<li>与各种消息代理集成例如 redis,kafka, rabbitmq 等等
+服务所使用的消息代理是可插拔的，并被配置为运行时的 Dapr Pub/Sub 组件。 这种方法消除了服务的依赖性，从而使服务可以更加可移植和更灵活变更。
+Dapr 中使用 pub/sub 的过程：</li>
+</ul>
+<ol>
+<li>服务对 Dapr 发布/订阅构建块 API 进行调用</li>
+<li>pub/sub 构建块调用封装特定消息代理的 Dapr pub/sub 组件</li>
+<li>为了接收消息，Dapr 订阅 pub/sub 组件，并在消息到达时将消息传递到服务提供的接口</li>
+</ol>
+<p>下图是一个 dapr 中 pub/sub 的例子  <br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://docs.dapr.io/images/pubsub-overview-publish-API.png"
+        data-srcset="https://docs.dapr.io/images/pubsub-overview-publish-API.png, https://docs.dapr.io/images/pubsub-overview-publish-API.png 1.5x, https://docs.dapr.io/images/pubsub-overview-publish-API.png 2x"
+        data-sizes="auto"
+        alt="pub-sub"
+        title="pub-sub" /></p>
+<h4 id="示例">示例</h4>
+<p>作为消息接收者的服务实现</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;encoding/json&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;fmt&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;io/ioutil&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;net/http&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;os&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="s">&#34;github.com/gorilla/mux&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">JSONObj</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">PubsubName</span> <span class="kt">string</span> <span class="s">`json:&#34;pubsubName&#34;`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Topic</span>      <span class="kt">string</span> <span class="s">`json:&#34;topic&#34;`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Route</span>      <span class="kt">string</span> <span class="s">`json:&#34;route&#34;`</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Result</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Data</span> <span class="o">*</span><span class="nx">Data</span> <span class="s">`json:&#34;data&#34;`</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">Data</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Name</span> <span class="kt">string</span> <span class="s">`json:&#34;name&#34;`</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Id</span>   <span class="kt">int</span>    <span class="s">`json:&#34;id&#34;`</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Register Dapr pub/sub subscriptions
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">getSub</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">jsonData</span> <span class="o">:=</span> <span class="p">[]</span><span class="nx">JSONObj</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">PubsubName</span><span class="p">:</span> <span class="s">&#34;pubsub&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Topic</span><span class="p">:</span>      <span class="s">&#34;test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Route</span><span class="p">:</span>      <span class="s">&#34;test&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">jsonBytes</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">jsonData</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error in reading the result obj&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">w</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">jsonBytes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error in writing the result obj&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Dapr subscription in /dapr/subscribe sets up this route
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">postMessage</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">data</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">result</span> <span class="nx">Result</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;raw data: &#34;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">err</span> <span class="p">=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">result</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Subscriber received: &#34;</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">Data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">obj</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error in reading the result obj&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">w</span><span class="p">.</span><span class="nf">Write</span><span class="p">(</span><span class="nx">obj</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="s">&#34;Error in writing the result obj&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">appPort</span> <span class="o">:=</span> <span class="s">&#34;6001&#34;</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">LookupEnv</span><span class="p">(</span><span class="s">&#34;APP_PORT&#34;</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">appPort</span> <span class="p">=</span> <span class="nx">value</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">r</span> <span class="o">:=</span> <span class="nx">mux</span><span class="p">.</span><span class="nf">NewRouter</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">r</span><span class="p">.</span><span class="nf">HandleFunc</span><span class="p">(</span><span class="s">&#34;/dapr/subscribe&#34;</span><span class="p">,</span> <span class="nx">getSub</span><span class="p">).</span><span class="nf">Methods</span><span class="p">(</span><span class="s">&#34;GET&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Dapr subscription routes orders topic to this route
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nf">HandleFunc</span><span class="p">(</span><span class="s">&#34;/test&#34;</span><span class="p">,</span> <span class="nx">postMessage</span><span class="p">).</span><span class="nf">Methods</span><span class="p">(</span><span class="s">&#34;POST&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">http</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">(</span><span class="s">&#34;:&#34;</span><span class="o">+</span><span class="nx">appPort</span><span class="p">,</span> <span class="nx">r</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h5 id="启动消费者服务">启动消费者服务</h5>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">dapr run --app-port <span class="m">6001</span> --app-id message-processor --app-protocol http --dapr-http-port <span class="m">3501</span> --components-path ~/.dapr/components -- go run .
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h5 id="发送消息">发送消息</h5>
+<p>首先启动一个 dapr sidecar 用于接收消息</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">dapr run --app-id myapp --dapr-http-port <span class="m">3500</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>POST http://localhost:&lt;daprPort&gt;/v1.0/publish/&lt;pubsubname&gt;/&lt;topic&gt;[?&lt;metadata&gt;]</code>
+可以用来把消息发给指定的 topic  <br>
+示例中的消息如下所示</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">curl --location --request POST <span class="s1">&#39;http://localhost:3500/v1.0/publish/pubsub/test&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>--header <span class="s1">&#39;Content-Type: application/json&#39;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>--data-raw <span class="s1">&#39;{
+</span></span></span><span class="line"><span class="cl"><span class="s1">    &#34;name&#34;: &#34;lxkaka&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="s1">    &#34;id&#34;: 123
+</span></span></span><span class="line"><span class="cl"><span class="s1">}&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>当然我们可以在服务中去调用 API 作为生产者。</p>
+<p>消费者输出如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">== APP == raw data:  {&#34;data&#34;:{&#34;id&#34;:123,&#34;name&#34;:&#34;lxkaka&#34;},&#34;datacontenttype&#34;:&#34;application/json&#34;,&#34;id&#34;:&#34;5b895456-2d57-42bd-855f-d8a6882e406b&#34;,&#34;pubsubname&#34;:&#34;pubsub&#34;,&#34;source&#34;:&#34;mydapr&#34;,&#34;specversion&#34;:&#34;1.0&#34;,&#34;topic&#34;:&#34;test&#34;,&#34;traceid&#34;:&#34;00-c731a591f41c36b09f966b213fa6b7be-4e6eb22474fc2c21-01&#34;,&#34;traceparent&#34;:&#34;00-c731a591f41c36b09f966b213fa6b7be-4e6eb22474fc2c21-01&#34;,&#34;tracestate&#34;:&#34;&#34;,&#34;type&#34;:&#34;com.dapr.event.sent&#34;}
+</span></span><span class="line"><span class="cl">== APP == Subscriber received:  &amp;{lxkaka 123}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h5 id="消费组">消费组</h5>
+<p>Dapr 会根据 <em>app_id</em> 把 app_id 相同的服务实例作为消费组，同一个消费组里只有一个实例能消费到消息。
+示例如下，我们再启动一个消费实例</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">dapr run --app-port <span class="m">6002</span> --app-id message-processor --app-protocol http --dapr-http-port <span class="m">3502</span> --components-path ~/.dapr/components -- go run .
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>发了 5 条消息，其中一个实例收到 2 条，另外一个实例收到 3条输出如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="o">==</span> <span class="nv">APP</span> <span class="o">==</span> Subscriber received:  <span class="p">&amp;</span><span class="o">{</span>lxkaka 1<span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span> <span class="nv">APP</span> <span class="o">==</span> raw data:  <span class="o">{</span><span class="s2">&#34;data&#34;</span>:<span class="o">{</span><span class="s2">&#34;id&#34;</span>:3,<span class="s2">&#34;name&#34;</span>:<span class="s2">&#34;lxkaka&#34;</span><span class="o">}</span>,<span class="s2">&#34;datacontenttype&#34;</span>:<span class="s2">&#34;application/json&#34;</span>,<span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;9e929d03-6c7e-4440-a4a9-f58dc93e2192&#34;</span>,<span class="s2">&#34;pubsubname&#34;</span>:<span class="s2">&#34;pubsub&#34;</span>,<span class="s2">&#34;source&#34;</span>:<span class="s2">&#34;mydapr&#34;</span>,<span class="s2">&#34;specversion&#34;</span>:<span class="s2">&#34;1.0&#34;</span>,<span class="s2">&#34;topic&#34;</span>:<span class="s2">&#34;test&#34;</span>,<span class="s2">&#34;traceid&#34;</span>:<span class="s2">&#34;00-f03697dcc9fe5e0b0e543402bbdad8ef-db83433662f25934-01&#34;</span>,<span class="s2">&#34;traceparent&#34;</span>:<span class="s2">&#34;00-f03697dcc9fe5e0b0e543402bbdad8ef-db83433662f25934-01&#34;</span>,<span class="s2">&#34;tracestate&#34;</span>:<span class="s2">&#34;&#34;</span>,<span class="s2">&#34;type&#34;</span>:<span class="s2">&#34;com.dapr.event.sent&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span> <span class="nv">APP</span> <span class="o">==</span> Subscriber received:  <span class="p">&amp;</span><span class="o">{</span>lxkaka 3<span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span> <span class="nv">APP</span> <span class="o">==</span> raw data:  <span class="o">{</span><span class="s2">&#34;data&#34;</span>:<span class="o">{</span><span class="s2">&#34;id&#34;</span>:5,<span class="s2">&#34;name&#34;</span>:<span class="s2">&#34;lxkaka&#34;</span><span class="o">}</span>,<span class="s2">&#34;datacontenttype&#34;</span>:<span class="s2">&#34;application/json&#34;</span>,<span class="s2">&#34;id&#34;</span>:<span class="s2">&#34;93922ff8-7ef4-4721-ab55-97fcd5f425d5&#34;</span>,<span class="s2">&#34;pubsubname&#34;</span>:<span class="s2">&#34;pubsub&#34;</span>,<span class="s2">&#34;source&#34;</span>:<span class="s2">&#34;mydapr&#34;</span>,<span class="s2">&#34;specversion&#34;</span>:<span class="s2">&#34;1.0&#34;</span>,<span class="s2">&#34;topic&#34;</span>:<span class="s2">&#34;test&#34;</span>,<span class="s2">&#34;traceid&#34;</span>:<span class="s2">&#34;00-2a5716b4f43826481b9e841dccaece8a-6e74bc49ca407097-01&#34;</span>,<span class="s2">&#34;traceparent&#34;</span>:<span class="s2">&#34;00-2a5716b4f43826481b9e841dccaece8a-6e74bc49ca407097-01&#34;</span>,<span class="s2">&#34;tracestate&#34;</span>:<span class="s2">&#34;&#34;</span>,<span class="s2">&#34;type&#34;</span>:<span class="s2">&#34;com.dapr.event.sent&#34;</span><span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">==</span> <span class="nv">APP</span> <span class="o">==</span> Subscriber received:  <span class="p">&amp;</span><span class="o">{</span>lxkaka 5<span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>关于 Pub/Sub 中 Dapr 还支持其他功能比如</p>
+<ul>
+<li>消息有效</li>
+<li>topic 绑定应用</li>
+<li>根据内容路由</li>
+<li>dead letter topics</li>
+</ul>
+<p>希望这篇文章对大家认识和理解 Dapr 有帮助。至于 Dapr 更多的应用场景和实践还需要更多的探索。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-09-30</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/dapr-pubsub/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/dapr-pubsub/" data-title="Dapr 初探-Pub/Sub 实践" data-hashtags="dapr,消费订阅"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/dapr-pubsub/" data-hashtag="dapr"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/dapr-pubsub/" data-title="Dapr 初探-Pub/Sub 实践" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/dapr-pubsub/" data-title="Dapr 初探-Pub/Sub 实践"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/dapr-pubsub/" data-title="Dapr 初探-Pub/Sub 实践"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/dapr/">Dapr</a>,&nbsp;<a href="/tags/%E6%B6%88%E8%B4%B9%E8%AE%A2%E9%98%85/">消费订阅</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/image-process/" class="prev" rel="prev" title="Golang 中实用的图片处理方法"><i class="fas fa-angle-left fa-fw"></i>Golang 中实用的图片处理方法</a>
+            <a href="/redis-io-threads/" class="next" rel="next" title="Redis 多线程的学习和理解">Redis 多线程的学习和理解<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

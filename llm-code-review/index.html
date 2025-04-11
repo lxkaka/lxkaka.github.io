@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>AI 助力 Code Review 的高效方案 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/llm-code-review/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="AI 助力 Code Review 的高效方案">
+  <meta property="og:description" content="背景 随着 LLM 的日益强大，我们可以借助 LLM 来提高多方面的生产效率。很多的应用场景我们就不在这里展开，其中一方面就是用来给程序员提效，比如大名鼎鼎的">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2023-08-20T11:22:28+08:00">
+    <meta property="article:modified_time" content="2023-08-20T11:22:28+08:00">
+    <meta property="article:tag" content="Code Reiviw">
+    <meta property="article:tag" content="Llm">
+    <meta property="article:tag" content="Claude">
+    <meta property="article:tag" content="实践">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="AI 助力 Code Review 的高效方案">
+  <meta name="twitter:description" content="背景 随着 LLM 的日益强大，我们可以借助 LLM 来提高多方面的生产效率。很多的应用场景我们就不在这里展开，其中一方面就是用来给程序员提效，比如大名鼎鼎的">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/llm-code-review/" /><link rel="prev" href="https://lxkaka.wang/cdc-stream/" /><link rel="next" href="https://lxkaka.wang/learn-transformer/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "AI 助力 Code Review 的高效方案",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/llm-code-review\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "code reiviw, llm, claude, 实践","wordcount":  1995 ,
+        "url": "https:\/\/lxkaka.wang\/llm-code-review\/","datePublished": "2023-08-20T11:22:28+08:00","dateModified": "2023-08-20T11:22:28+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">AI 助力 Code Review 的高效方案</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>Infra</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2023-08-20">2023-08-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1995 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#方案">方案</a>
+      <ul>
+        <li><a href="#slack-claude">Slack Claude</a></li>
+        <li><a href="#步骤">步骤</a>
+          <ul>
+            <li><a href="#mr-处理">MR 处理</a></li>
+            <li><a href="#获取-review-结果">获取 Review 结果</a></li>
+            <li><a href="#结果-comment">结果 comment</a></li>
+          </ul>
+        </li>
+        <li><a href="#效果呈现">效果呈现</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="背景">背景</h2>
+<p>随着 LLM 的日益强大，我们可以借助 LLM 来提高多方面的生产效率。很多的应用场景我们就不在这里展开，其中一方面就是用来给程序员提效，比如大名鼎鼎的 github Copilot。在这篇文章里我们就介绍一下借助 LLM 提效开发的一个点：Code Review.  LLM 能 revview 代码这个大家肯定都知道，但是选取哪个模型来实现呢？
+可以说选择比较多如开源模型 StarCoder，CodeLLama, WizardCoder 等是代码方面评测结果比较优秀的存在，再比如闭源方案 GPT4, Claude 等综合能力超强的大模型。
+在经过了多种实际 case 的实验我们最终选了 Claude 作为 Code Reveiw 的底座。
+首先从 Codew Reveiw 效果方面来看<br>
+GPT4 &gt; Claude &gt; Wizardoder &gt; CodeLLama，其中 Claude 相比 GPT4 代码理解能力并不逊色多少；
+从成本方面来看  <br>
+GPT4 API 价格明显高于 Claude，而开源模型的显卡成本也不低 (至少需要一张 V100 才能把模型跑起来)。
+再者 Claude 除了它超强的综合能力，超长的 context window(可以达到 100k) 也是非常强力的点，对于 Code Review 来说大的 context window 十分重要。
+下面就介绍一下我们如何高效率低成本地实现 Code Review。</p>
+<h2 id="方案">方案</h2>
+<h3 id="slack-claude">Slack Claude</h3>
+<p>企业使用 Claude 首先可以通过 Claude API，但是需要申请，这个申请审核时间可能持续比较久。在我们做该方案时 API 暂时还没申请下来。所以我们把解决方案转向了 Slack 中的 Claude bot。
+在 Slack 中我们首先在 App 中把 Claude 添加进来，然后创建 channel, 并把 Claude 加入到 channel。此后，就可以像普通同事一样 @Claude 进行对话。
+我们可以借助 slack sdk 来实现于  Claude 的交互，从而使用 Claude 辅助 Code Review 就有了明确的实现方案。
+总体来说实现方案如下：</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/review-arch.jpeg"
+        data-srcset="https://pics.lxkaka.wang/review-arch.jpeg, https://pics.lxkaka.wang/review-arch.jpeg 1.5x, https://pics.lxkaka.wang/review-arch.jpeg 2x"
+        data-sizes="auto"
+        alt="review-arch"
+        title="review-arch" /></p>
+<h3 id="步骤">步骤</h3>
+<h4 id="mr-处理">MR 处理</h4>
+<ol>
+<li>开发在 gitlab 提交 Merge Request, 通过项目配置好的 webhook 触发请求把 MR 信息发给 bot service（bot service 用来处理各种 webhook）；</li>
+<li>bot service 拿到 MR 后通过 API 获取 MR 的 diffs 和 commit message</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="c1"># 获取 mr diffs</span>
+</span></span><span class="line"><span class="cl">    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">GITLAB_API_URL</span><span class="si">}</span><span class="s2">/projects/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">project_id</span><span class="si">}</span><span class="s2">/merge_requests/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">iid</span><span class="si">}</span><span class="s2">/diffs&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;PRIVATE-TOKEN&#34;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">GITLAB_TOKEN</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">cls</span><span class="o">.</span><span class="n">make_new_thread</span><span class="p">(</span><span class="n">pr</span><span class="p">,</span> <span class="s2">&#34;获取 mr diffs 失败&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1"># 获取 mr commits messages</span>
+</span></span><span class="line"><span class="cl">    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">GITLAB_API_URL</span><span class="si">}</span><span class="s2">/projects/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">project_id</span><span class="si">}</span><span class="s2">/merge_requests/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">iid</span><span class="si">}</span><span class="s2">/commits&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="3">
+<li>
+<p>处理 diffs 中可能包含的敏感信息
+这里可以有很多的实现方案，这里我们推荐一个库 <code>detect-secrets</code>再搭配一些正则表达式，可以来过滤敏感信息。</p>
+</li>
+<li>
+<p>组装 Prompt
+不同的项目差别可能比较大，我们可能需要根据项目不同提供给模型不同的上下文来达到更好的 review 效果。在这里我们支持了项目模版自定义，每个 gitlab repository 通过 wiki 可以配置自己项目的 Prompt 模版。
+bot service 在组装 Prompt 的时候会优先使用项目的配置模版。我们的默认模版如下</p>
+</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">你将扮演一个资深的软件程序员进行代码审查</span><span class="err">，</span><span class="n">严格按照以下要求审查提供的合并请求</span><span class="err">（</span><span class="n">Merge</span> <span class="n">Request</span><span class="p">,</span> <span class="n">MR</span><span class="err">）</span><span class="n">内容</span><span class="err">。</span><span class="n">给出审查结果</span><span class="err">：</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">1.</span> <span class="n">前提</span><span class="p">:</span> <span class="n">请务必用中文回复</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">2.</span> <span class="n">总结</span><span class="err">：</span><span class="n">请简洁准确地总结MR的改动内容</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">3.</span> <span class="n">问题与优化点识别</span><span class="err">：</span><span class="n">请识别MR中存在的问题和需要优化的地方</span><span class="err">，</span><span class="n">包括但不限于代码逻辑</span><span class="err">、</span><span class="n">代码风格</span><span class="err">、</span><span class="n">命名规范</span><span class="err">、</span><span class="n">拼写错误</span><span class="err">、</span><span class="n">性能和错误处理等</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">4.</span> <span class="n">优化建议</span><span class="err">：</span><span class="n">针对识别的问题和优化点</span><span class="err">，</span><span class="n">给出具体可执行的优化建议</span><span class="p">,</span> <span class="n">并详细说明为什么要这么改</span><span class="p">,</span> <span class="n">如果建议涉及代码改动</span><span class="err">，</span><span class="n">请直接提供优化后的代码</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">5.</span> <span class="n">Commit</span> <span class="n">Message</span> <span class="n">审查</span><span class="err">：</span><span class="n">请检查</span> <span class="n">commit</span> <span class="n">message</span> <span class="n">是否准确反映了MR的改动内容</span><span class="err">，</span><span class="n">如果存在不一致</span><span class="err">，</span><span class="n">必须指出</span><span class="err">；</span>
+</span></span><span class="line"><span class="cl">    <span class="mf">6.</span> <span class="n">MR原子性的审查</span><span class="err">：</span><span class="n">判断一个MR里是否包含了过多不同类型的改动</span><span class="err">，</span><span class="n">或者一个MR里包含了多个commit</span><span class="err">，</span><span class="n">如果有请指出</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">    <span class="n">请确保审查结果的准确性和专业性</span><span class="err">。</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">MR</span> <span class="n">内容如下</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span><span class="n">content</span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="5">
+<li>调用 LLM service</li>
+</ol>
+<h4 id="获取-review-结果">获取 Review 结果</h4>
+<ol>
+<li>对话历史<br>
+slcak thread 可以保存完整的对话历史，所以我们不需要自己保存保存对话，这是一个十分方便的特性。只要我们记住每个 thread id，那么就能进行完整的对话。在 MR review 中我们也就可以持续和模型对话，来更好的 review 代码；
+如果 MR 首次触发 review, 我们会创建并缓存 <code>thread ts</code>, 如果非首次对话那么就获取已有 <code>thread ts</code>继续对话。示例代码如下</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;claude_</span><span class="si">{</span><span class="n">body</span><span class="o">.</span><span class="n">user</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;&lt;@</span><span class="si">{</span><span class="n">CLAUDE_BOT_ID</span><span class="si">}</span><span class="s2">&gt; </span><span class="si">{</span><span class="n">body</span><span class="o">.</span><span class="n">prompt</span><span class="si">}</span><span class="s2"> &#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">thread_ts</span> <span class="o">=</span> <span class="kc">None</span>
+</span></span><span class="line"><span class="cl">    <span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">thread_ts</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34;_&#34;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">    <span class="n">last_ts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">thread_ts</span><span class="o">=</span><span class="n">thread_ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">setex</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">last_ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">thread_ts</span> <span class="o">=</span> <span class="n">last_ts</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="2">
+<li>超长文本
+我们 MR 往往包含的文本非常多，而 slack server 对普通的消息提交有长度限制，所以我们这里把超长的消息体分成了多段组装成 <code>blocks</code> 提交。</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">CHANNEL_ID</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&#34;Channel not found.&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_LEN</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">CHANNEL_ID</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">thread_ts</span><span class="o">=</span><span class="n">thread_ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># slack server 会自动切分超长消息，为了解决此问题使用 blocks 传递消息</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">texts</span> <span class="o">=</span> <span class="n">split_message</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">MAX_LEN</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">blocks</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;section&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="s2">&#34;text&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;mrkdwn&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="s2">&#34;text&#34;</span><span class="p">:</span> <span class="n">t</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">chat_postMessage</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">CHANNEL_ID</span><span class="p">,</span> <span class="n">blocks</span><span class="o">=</span><span class="n">blocks</span><span class="p">,</span> <span class="n">thread_ts</span><span class="o">=</span><span class="n">thread_ts</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ol start="3">
+<li>轮询结果
+Claude 在 slack 中流式回复，我们这里需要等到回复完整了才能返回结果。所以需要轮询回复状态，并且得设置一定的超时策略防止异常 case</li>
+</ol>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">300</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="k">try</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversations_replies</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">CHANNEL_ID</span><span class="p">,</span> <span class="n">ts</span><span class="o">=</span><span class="n">thread_ts</span><span class="p">,</span> <span class="n">oldest</span><span class="o">=</span><span class="n">last_ts</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">msg</span> <span class="o">=</span> <span class="p">[</span><span class="n">msg</span><span class="p">[</span><span class="s2">&#34;text&#34;</span><span class="p">]</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">resp</span><span class="p">[</span><span class="s2">&#34;messages&#34;</span><span class="p">]</span> <span class="k">if</span> <span class="n">msg</span><span class="p">[</span><span class="s2">&#34;user&#34;</span><span class="p">]</span> <span class="o">==</span> <span class="n">CLAUDE_BOT_ID</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="n">msg</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">msg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&#34;Typing…_&#34;</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">unescape_text</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="k">except</span> <span class="p">(</span><span class="n">SlackApiError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&#34;Get reply error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="结果-comment">结果 comment</h4>
+<p>当 bot service 拿到返回的 review 结果后需要以 <code>comment </code> 的形式呈现到 gitlab 的 comment 列表中</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&#34;</span><span class="si">{</span><span class="n">settings</span><span class="o">.</span><span class="n">GITLAB_API_URL</span><span class="si">}</span><span class="s2">projects/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">project_id</span><span class="si">}</span><span class="s2">/merge_requests/</span><span class="si">{</span><span class="n">pr</span><span class="o">.</span><span class="n">iid</span><span class="si">}</span><span class="s2">/discussions&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&#34;PRIVATE-TOKEN&#34;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">GITLAB_TOKEN</span><span class="p">,</span> <span class="s2">&#34;Content-Type&#34;</span><span class="p">:</span> <span class="s2">&#34;application/json&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="s2">&#34;body&#34;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">raise</span> <span class="n">CodeBaseException</span><span class="p">(</span><span class="s2">&#34;make mr thread failed&#34;</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>基于模型 review 结果我们可以继续在 comment 列表和模型对话，把问题讨论清楚。</p>
+<h3 id="效果呈现">效果呈现</h3>
+<p>下面展示了某次 review 的 case</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/reviw-qa.jpeg"
+        data-srcset="https://pics.lxkaka.wang/reviw-qa.jpeg, https://pics.lxkaka.wang/reviw-qa.jpeg 1.5x, https://pics.lxkaka.wang/reviw-qa.jpeg 2x"
+        data-sizes="auto"
+        alt="review-qa"
+        title="review-qa" /></p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/review_result.jpeg"
+        data-srcset="https://pics.lxkaka.wang/review_result.jpeg, https://pics.lxkaka.wang/review_result.jpeg 1.5x, https://pics.lxkaka.wang/review_result.jpeg 2x"
+        data-sizes="auto"
+        alt="review-result"
+        title="review-result" /></p>
+<p>在这篇文章里介绍了我们借助  LLM 辅助 Code Review 的实现过程，重要的细节和代码实现我们都有提到，希望能给需要的同学带来有指导性的参考。
+在未来的工作中 Code Review 随着 LLM 的进步，我们可以随时切换更优秀的底座，并且把 review 结果精确到行。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2023-08-20</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/llm-code-review/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/llm-code-review/" data-title="AI 助力 Code Review 的高效方案" data-hashtags="code reiviw,llm,claude,实践"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/llm-code-review/" data-hashtag="code reiviw"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/llm-code-review/" data-title="AI 助力 Code Review 的高效方案" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/llm-code-review/" data-title="AI 助力 Code Review 的高效方案"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/llm-code-review/" data-title="AI 助力 Code Review 的高效方案"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/code-reiviw/">Code Reiviw</a>,&nbsp;<a href="/tags/llm/">Llm</a>,&nbsp;<a href="/tags/claude/">Claude</a>,&nbsp;<a href="/tags/%E5%AE%9E%E8%B7%B5/">实践</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/cdc-stream/" class="prev" rel="prev" title="实时数据入湖的选型和实践"><i class="fas fa-angle-left fa-fw"></i>实时数据入湖的选型和实践</a>
+            <a href="/learn-transformer/" class="next" rel="next" title="Transformer 结构学习总结">Transformer 结构学习总结<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>系统自适应限流算法-BBR - lxkaka</title><meta name="Description" content="系统自适应限流算法 BBR 的介绍和使用"><meta property="og:url" content="https://lxkaka.wang/limit-bbr/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="系统自适应限流算法-BBR">
+  <meta property="og:description" content="系统自适应限流算法 BBR 的介绍和使用">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2022-11-25T19:49:53+08:00">
+    <meta property="article:modified_time" content="2022-11-25T19:49:53+08:00">
+    <meta property="article:tag" content="限流">
+    <meta property="article:tag" content="Bbr">
+    <meta property="article:tag" content="高可用">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="系统自适应限流算法-BBR">
+  <meta name="twitter:description" content="系统自适应限流算法 BBR 的介绍和使用">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/limit-bbr/" /><link rel="prev" href="https://lxkaka.wang/redis-io-threads/" /><link rel="next" href="https://lxkaka.wang/alluxio-info/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "系统自适应限流算法-BBR",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/limit-bbr\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "限流, bbr, 高可用","wordcount":  2251 ,
+        "url": "https:\/\/lxkaka.wang\/limit-bbr\/","datePublished": "2022-11-25T19:49:53+08:00","dateModified": "2022-11-25T19:49:53+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "系统自适应限流算法 BBR 的介绍和使用"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">系统自适应限流算法-BBR</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/golang/"><i class="far fa-folder fa-fw"></i>Golang</a>&nbsp;<a href="/categories/service/"><i class="far fa-folder fa-fw"></i>Service</a>&nbsp;<a href="/categories/%E5%AE%9E%E7%8E%B0/"><i class="far fa-folder fa-fw"></i>实现</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2022-11-25">2022-11-25</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2251 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#限流指标">限流指标</a></li>
+        <li><a href="#滑动窗口">滑动窗口</a></li>
+        <li><a href="#限流公式">限流公式</a></li>
+        <li><a href="#源码实现">源码实现</a>
+          <ul>
+            <li><a href="#allow">Allow</a></li>
+            <li><a href="#shoulddrop">shouldDrop</a></li>
+            <li><a href="#maxflight">maxFlight</a></li>
+          </ul>
+        </li>
+        <li><a href="#使用方式">使用方式</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在 Golang 服务中我们经常会选择用官方库自带的令牌桶算法来实现服务实例级别的限流。
+使用示例如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">(</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;context&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;log&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;time&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="s">&#34;golang.org/x/time/rate&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">l</span> <span class="o">:=</span> <span class="nx">rate</span><span class="p">.</span><span class="nf">NewLimiter</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 构造方法接受两个参数 limit表示每秒产生 token 数，burst 最多存令牌数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="mi">50</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//这里是阻塞等待的，一直等到取到一个令牌为止
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;... ... Wait&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">c</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">WithTimeout</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//Wait 阻塞等待
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nf">Wait</span><span class="p">(</span><span class="nx">c</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;limiter wait error : &#34;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Wait  ... ... &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Reserve 返回等待时间，再去取令牌
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// 返回需要等待多久才有新的令牌, 这样就可以等待指定时间执行任务
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">r</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nf">Reserve</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;reserve time :&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nf">Delay</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">//判断当前是否可以取到令牌
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">//Allow 判断当前是否可以取到令牌
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">a</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nf">Allow</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;Allow == &#34;</span><span class="p">,</span> <span class="nx">a</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>上述令牌桶限流器确实能够保护系统不被拖垮, 但这样的保护方法都是设定一个 quota, 当超过该 quota 后就阻止或减少流量的继续进入，当系统负载降低到某一水平后则恢复流量的进入。但其通常都是被动的，其实际效果取决于限流阈值设置是否合理，但往往设置合理不是一件容易的事情。<br>
+阿里开源的 <a href="https://github.com/alibaba/Sentinel" target="_blank" rel="noopener noreffer">Sentinel</a>基于 TCP BBR 算法的思想开发了系统自适应限流。</p>
+<blockquote>
+<p>Sentinel 系统自适应限流从整体维度对应用入口流量进行控制，结合应用的 Load、CPU 使用率、总体平均 RT、入口 QPS 和并发线程数等几个维度的监控指标，通过自适应的流控策略，让系统的入口流量和系统的负载达到一个平衡，让系统尽可能跑在最大吞吐量的同时保证系统整体的稳定性。
+在我们的 Golang 服务中同样采用了系统自适应限流算法来提高系统稳定性。这里面用到算法就是 <a href="https://github.com/go-kratos/kratos" target="_blank" rel="noopener noreffer">Kratos</a>中借鉴 Sentinel 设计而实现的 Golang 版本 BBR。在这篇文章我们介绍一下 BBR 的实现原理。</p>
+</blockquote>
+<h3 id="限流指标">限流指标</h3>
+<p>Kratos BBR 通过综合分析服务的 cpu 使用率、请求成功的 qps 和请求成功的 rt 来做自适应限流保护。</p>
+<ul>
+<li>cpu: 最近 1s 的 CPU 使用率均值，使用滑动平均计算，采样周期是 250ms</li>
+<li>inflight: 当前处理中正在处理的请求数量</li>
+<li>pass: 请求处理成功的量</li>
+<li>rt: 请求成功的响应耗时</li>
+</ul>
+<h3 id="滑动窗口">滑动窗口</h3>
+<p>在自适应限流保护中，采集到的指标的时效性非常强，系统只需要采集最近一小段时间内的 qps、rt 即可，对于较老的数据，会自动丢弃。为了实现这个效果，kratos 使用了滑动窗口来保存采样数据。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bbr-window.png"
+        data-srcset="https://pics.lxkaka.wang/bbr-window.png, https://pics.lxkaka.wang/bbr-window.png 1.5x, https://pics.lxkaka.wang/bbr-window.png 2x"
+        data-sizes="auto"
+        alt="bbr-window"
+        title="bbr-window" /></p>
+<p>如上图，展示了一个具有两个桶（bucket）的滑动窗口（rolling window）。整个滑动窗口用来保存最近 1s 的采样数据，每个小的桶用来保存 500ms 的采样数据。 当时间流动之后，过期的桶会自动被新桶的数据覆盖掉，在图中，在 1000-1500ms 时，bucket 1 的数据因为过期而被丢弃，之后 bucket 3 的数据填到了窗口的头部。</p>
+<h3 id="限流公式">限流公式</h3>
+<p><code>(cpu &gt; 800 OR (Now - PrevDrop)) &lt; 1s AND (MaxPass * MinRt * windows / 1000) &lt; InFlight</code></p>
+<ul>
+<li>MaxPass 表示最近 10s 内，单个 bucket 中最大的请求数</li>
+<li>MinRt 表示最近 10s 内，单个 bucket 中最小的响应时间</li>
+<li>windows 表示一秒内 bucket 的数量，默认配置中是 10s 100 个bucket，那么 windows 的值为 10</li>
+</ul>
+<h3 id="源码实现">源码实现</h3>
+<h4 id="allow">Allow</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">BBR</span><span class="p">)</span> <span class="nf">Allow</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">opts</span> <span class="o">...</span><span class="nx">limit</span><span class="p">.</span><span class="nx">AllowOption</span><span class="p">)</span> <span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">info</span> <span class="nx">limit</span><span class="p">.</span><span class="nx">DoneInfo</span><span class="p">),</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">allowOpts</span> <span class="o">:=</span> <span class="nx">limit</span><span class="p">.</span><span class="nf">DefaultAllowOpts</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">opt</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">opts</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">opt</span><span class="p">.</span><span class="nf">Apply</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">allowOpts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">l</span><span class="p">.</span><span class="nf">shouldDrop</span><span class="p">()</span> <span class="p">{</span> <span class="c1">// 判断是否触发限流
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ecode</span><span class="p">.</span><span class="nx">LimitExceed</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">AddInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">inFlight</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="c1">// 增加正在处理请求数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">stime</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">initTime</span><span class="p">)</span> <span class="c1">// 记录请求到来的时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">do</span> <span class="nx">limit</span><span class="p">.</span><span class="nx">DoneInfo</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rt</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">((</span><span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">initTime</span><span class="p">)</span> <span class="o">-</span> <span class="nx">stime</span><span class="p">)</span> <span class="o">/</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span> <span class="c1">// 请求处理成功的响应时长
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">l</span><span class="p">.</span><span class="nx">rtStat</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="nx">rt</span><span class="p">)</span> <span class="c1">// 增加 rtStat 响应耗时的统计
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">atomic</span><span class="p">.</span><span class="nf">AddInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">inFlight</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1">// 请求处理成功后, 减少正在处理的请求数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">switch</span> <span class="nx">do</span><span class="p">.</span><span class="nx">Op</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="nx">limit</span><span class="p">.</span><span class="nx">Success</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">l</span><span class="p">.</span><span class="nx">passStat</span><span class="p">.</span><span class="nf">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1">// 处理成功后增加成功处理请求数的统计
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">},</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="shoulddrop">shouldDrop</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">BBR</span><span class="p">)</span> <span class="nf">shouldDrop</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 判断目前cpu的使用率是否达到设置的CPU的限制, 默认值800
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">l</span><span class="p">.</span><span class="nf">cpu</span><span class="p">()</span> <span class="p">&lt;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">conf</span><span class="p">.</span><span class="nx">CPUThreshold</span> <span class="p">{</span> 
+</span></span><span class="line"><span class="cl">		<span class="c1">// 如果上一次舍弃请求的时间是0, 那么说明没有限流的需求, 直接返回
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">prevDrop</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nx">prevDrop</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">prevDrop</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// 如果上一次请求的时间与当前的请求时间小于1s, 那么说明有限流的需求
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">initTime</span><span class="p">)</span><span class="o">-</span><span class="nx">prevDrop</span> <span class="o">&lt;=</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Second</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt32</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">prevDropHit</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreInt32</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">prevDropHit</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// 增加正在处理的请求的数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">inFlight</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">inFlight</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// 判断正在处理的请求数是否达到系统的最大的请求数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="k">return</span> <span class="nx">inFlight</span> <span class="p">&gt;</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nx">inFlight</span> <span class="p">&gt;</span> <span class="nx">l</span><span class="p">.</span><span class="nf">maxFlight</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// 清空当前的prevDrop
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">l</span><span class="p">.</span><span class="nx">prevDrop</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Duration</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 增加正在处理的请求的数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">inFlight</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">inFlight</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 判断正在处理的请求数是否达到系统的最大的请求数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">drop</span> <span class="o">:=</span> <span class="nx">inFlight</span> <span class="p">&gt;</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nx">inFlight</span> <span class="p">&gt;</span> <span class="nx">l</span><span class="p">.</span><span class="nf">maxFlight</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">drop</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">prevDrop</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nx">prevDrop</span><span class="p">.</span><span class="nf">Load</span><span class="p">().(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Duration</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// 如果判断达到了最大请求数量, 并且当前有限流需求
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">prevDrop</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="nx">drop</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">l</span><span class="p">.</span><span class="nx">prevDrop</span><span class="p">.</span><span class="nf">Store</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">initTime</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">drop</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="maxflight">maxFlight</h4>
+<p>该函数是核心函数. 其计算公式: <code>MaxPass * MinRt * windows / 1000. maxPASS/minRT</code> 都是基于 metric.RollingCounter 来实现的</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="c1">// winBucketPerSec: 每秒内的采样数量,其计算方式:int64(time.Second)/(int64(conf.Window)/int64(conf.WinBucket)), conf.Window 默认值 10s, conf.WinBucket 默认值100. 
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 简化下公式: 1/(10/100) = 10, 所以每秒内的采样数就是10
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">BBR</span><span class="p">)</span> <span class="nf">maxFlight</span><span class="p">()</span> <span class="kt">int64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">math</span><span class="p">.</span><span class="nf">Floor</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">l</span><span class="p">.</span><span class="nf">maxPASS</span><span class="p">()</span><span class="o">*</span><span class="nx">l</span><span class="p">.</span><span class="nf">minRT</span><span class="p">()</span><span class="o">*</span><span class="nx">l</span><span class="p">.</span><span class="nx">winBucketPerSec</span><span class="p">)</span><span class="o">/</span><span class="mf">1000.0</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 单个采样窗口在一个采样周期中的最大的请求数, 默认的采样窗口是10s, 采样bucket数量100
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">BBR</span><span class="p">)</span> <span class="nf">maxPASS</span><span class="p">()</span> <span class="kt">int64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rawMaxPass</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">rawMaxPASS</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">rawMaxPass</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">passStat</span><span class="p">.</span><span class="nf">Timespan</span><span class="p">()</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">rawMaxPass</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 遍历100个采样 bucket, 找到采样 bucket 中最大的请求数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">rawMaxPass</span> <span class="p">=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">l</span><span class="p">.</span><span class="nx">passStat</span><span class="p">.</span><span class="nf">Reduce</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">iterator</span> <span class="nx">metric</span><span class="p">.</span><span class="nx">Iterator</span><span class="p">)</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="kd">var</span> <span class="nx">result</span> <span class="p">=</span> <span class="mf">1.0</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">iterator</span><span class="p">.</span><span class="nf">Next</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">conf</span><span class="p">.</span><span class="nx">WinBucket</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">bucket</span> <span class="o">:=</span> <span class="nx">iterator</span><span class="p">.</span><span class="nf">Bucket</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">count</span> <span class="o">:=</span> <span class="mf">0.0</span>
+</span></span><span class="line"><span class="cl">			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">bucket</span><span class="p">.</span><span class="nx">Points</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">count</span> <span class="o">+=</span> <span class="nx">p</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">result</span> <span class="p">=</span> <span class="nx">math</span><span class="p">.</span><span class="nf">Max</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">rawMaxPass</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rawMaxPass</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">rawMaxPASS</span><span class="p">,</span> <span class="nx">rawMaxPass</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">rawMaxPass</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 单个采样窗口中最小的响应时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">BBR</span><span class="p">)</span> <span class="nf">minRT</span><span class="p">()</span> <span class="kt">int64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rawMinRT</span> <span class="o">:=</span> <span class="nx">atomic</span><span class="p">.</span><span class="nf">LoadInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">rawMinRt</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">rawMinRT</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">rtStat</span><span class="p">.</span><span class="nf">Timespan</span><span class="p">()</span> <span class="p">&lt;</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">rawMinRT</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// 遍历100个采样 bucket, 找到采样 bucket 中最小的响应时间
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">rawMinRT</span> <span class="p">=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">math</span><span class="p">.</span><span class="nf">Ceil</span><span class="p">(</span><span class="nx">l</span><span class="p">.</span><span class="nx">rtStat</span><span class="p">.</span><span class="nf">Reduce</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">iterator</span> <span class="nx">metric</span><span class="p">.</span><span class="nx">Iterator</span><span class="p">)</span> <span class="kt">float64</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="kd">var</span> <span class="nx">result</span> <span class="p">=</span> <span class="nx">math</span><span class="p">.</span><span class="nx">MaxFloat64</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">iterator</span><span class="p">.</span><span class="nf">Next</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">conf</span><span class="p">.</span><span class="nx">WinBucket</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">bucket</span> <span class="o">:=</span> <span class="nx">iterator</span><span class="p">.</span><span class="nf">Bucket</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">Points</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">continue</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">total</span> <span class="o">:=</span> <span class="mf">0.0</span>
+</span></span><span class="line"><span class="cl">			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">bucket</span><span class="p">.</span><span class="nx">Points</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">total</span> <span class="o">+=</span> <span class="nx">p</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">avg</span> <span class="o">:=</span> <span class="nx">total</span> <span class="o">/</span> <span class="nb">float64</span><span class="p">(</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">Count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">result</span> <span class="p">=</span> <span class="nx">math</span><span class="p">.</span><span class="nf">Min</span><span class="p">(</span><span class="nx">result</span><span class="p">,</span> <span class="nx">avg</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">result</span>
+</span></span><span class="line"><span class="cl">	<span class="p">})))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">rawMinRT</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rawMinRT</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">atomic</span><span class="p">.</span><span class="nf">StoreInt64</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">l</span><span class="p">.</span><span class="nx">rawMinRt</span><span class="p">,</span> <span class="nx">rawMinRT</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">rawMinRT</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="使用方式">使用方式</h3>
+<p>BBR 限流器可以作为 grpc server 的 <code>UnaryServerInterceptor</code> 实现</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="c1">// Limit is a server interceptor that detects and rejects overloaded traffic.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">RateLimiter</span><span class="p">)</span> <span class="nf">Limit</span><span class="p">()</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryServerInterceptor</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">req</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">args</span> <span class="o">*</span><span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryServerInfo</span><span class="p">,</span> <span class="nx">handler</span> <span class="nx">grpc</span><span class="p">.</span><span class="nx">UnaryHandler</span><span class="p">)</span> <span class="p">(</span><span class="nx">resp</span> <span class="kd">interface</span><span class="p">{},</span> <span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">uri</span> <span class="o">:=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">FullMethod</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">limiter</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">group</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">done</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">limiter</span><span class="p">.</span><span class="nf">Allow</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">b</span><span class="p">.</span><span class="nf">printStats</span><span class="p">(</span><span class="nx">uri</span><span class="p">,</span> <span class="nx">limiter</span><span class="p">,</span> <span class="nx">err</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">_metricServerBBR</span><span class="p">.</span><span class="nf">Inc</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nf">done</span><span class="p">(</span><span class="nx">limit</span><span class="p">.</span><span class="nx">DoneInfo</span><span class="p">{</span><span class="nx">Op</span><span class="p">:</span> <span class="nx">limit</span><span class="p">.</span><span class="nx">Success</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}()</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">resp</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nf">handler</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">req</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>启动 grpc server 的时候可以把这个 <code>UnaryServerInterceptor</code> 添加到 server 的 Interceptor 链中来保护 grpc server。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-golang" data-lang="golang"><span class="line"><span class="cl"><span class="nx">s</span><span class="p">.</span><span class="nx">server</span> <span class="p">=</span> <span class="nx">grpc</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">(</span><span class="nx">opt</span><span class="o">...</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">s</span><span class="p">.</span><span class="nx">health</span> <span class="p">=</span> <span class="nx">health</span><span class="p">.</span><span class="nf">NewServer</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nx">s</span><span class="p">.</span><span class="nf">Use</span><span class="p">(</span><span class="nx">bbr</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="kc">nil</span><span class="p">).</span><span class="nf">Limit</span><span class="p">())</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2022-11-25</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/limit-bbr/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/limit-bbr/" data-title="系统自适应限流算法-BBR" data-hashtags="限流,bbr,高可用"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/limit-bbr/" data-hashtag="限流"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/limit-bbr/" data-title="系统自适应限流算法-BBR" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/limit-bbr/" data-title="系统自适应限流算法-BBR"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/limit-bbr/" data-title="系统自适应限流算法-BBR"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/%E9%99%90%E6%B5%81/">限流</a>,&nbsp;<a href="/tags/bbr/">Bbr</a>,&nbsp;<a href="/tags/%E9%AB%98%E5%8F%AF%E7%94%A8/">高可用</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/redis-io-threads/" class="prev" rel="prev" title="Redis 多线程的学习和理解"><i class="fas fa-angle-left fa-fw"></i>Redis 多线程的学习和理解</a>
+            <a href="/alluxio-info/" class="next" rel="next" title="数据编排技术-Alluxio 的原理介绍">数据编排技术-Alluxio 的原理介绍<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

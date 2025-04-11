@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>方案设计 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1/</link>
+        <description>方案设计 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 23 Oct 2024 12:05:13 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1/" rel="self" type="application/rss+xml" /><item>
+    <title>自定义 Wordpress URL 的方案</title>
+    <link>https://lxkaka.wang/wordpress-url/</link>
+    <pubDate>Wed, 23 Oct 2024 12:05:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/wordpress-url/</guid>
+    <description><![CDATA[WordPress 是全球最流行的内容管理系统(CMS),截至2024年,已有超过43%的网站使用WordPress构建。作为一个开源项目,WordPress]]></description>
+</item><item>
+    <title>AB Test 框架方案设计</title>
+    <link>https://lxkaka.wang/ab-test-design/</link>
+    <pubDate>Fri, 06 Sep 2024 16:04:09 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/ab-test-design/</guid>
+    <description><![CDATA[作者注：文章的结构是我让 LLM 参考我的设计简稿生成的 引言 AB Test 是现代软件开发和产品管理中的一项关键技术。它允许团队通过比较网页或应用功能的两个或多]]></description>
+</item><item>
+    <title>服务在线更新配置或文件的方案设计</title>
+    <link>https://lxkaka.wang/tts-online-update/</link>
+    <pubDate>Fri, 20 May 2022 11:05:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tts-online-update/</guid>
+    <description><![CDATA[在 TTS 算法服务中我们的词典可能会经常更新，但如果是离线更新，那么势必要重新构建和服务发布。这样的带来的问题一是更新成本高，二是降低了服务稳定性]]></description>
+</item><item>
+    <title>消息系统方案设计之站内消息和事件提醒</title>
+    <link>https://lxkaka.wang/msg-system/</link>
+    <pubDate>Fri, 22 Apr 2022 14:28:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/msg-system/</guid>
+    <description><![CDATA[消息系统可以说是每个应用不可缺少的系统。从功能上来说一个消息系统至少有两大部分组成 消息的存储 消息的通知 消息系统的复杂程度和用户规模和业务规模]]></description>
+</item></channel>
+</rss>

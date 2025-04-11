@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>容器 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E5%AE%B9%E5%99%A8/</link>
+        <description>容器 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 05 Dec 2018 18:51:56 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E5%AE%B9%E5%99%A8/" rel="self" type="application/rss+xml" /><item>
+    <title>生产环境搭建 kubernetes(11.3)</title>
+    <link>https://lxkaka.wang/k8s-init/</link>
+    <pubDate>Wed, 05 Dec 2018 18:51:56 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-init/</guid>
+    <description><![CDATA[直接进入正题，这篇文章讲述生产环境如何搭建 kubernets cluster。 我们使用 kubespray 使用搭建 k8s cluster。 至于其他搭建工具 kops, kubeadm 感兴趣的大家可以自己研究]]></description>
+</item><item>
+    <title>生产环境搭建 kubernetes(11.3)</title>
+    <link>https://lxkaka.wang/k8s-init/</link>
+    <pubDate>Wed, 05 Dec 2018 18:51:56 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-init/</guid>
+    <description><![CDATA[直接进入正题，这篇文章讲述生产环境如何搭建 kubernets cluster。 我们使用 kubespray 使用搭建 k8s cluster。 至于其他搭建工具 kops, kubeadm 感兴趣的大家可以自己研究]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>使用 Promethues 实现应用监控的一些实践 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/metrics-best-practice/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="使用 Promethues 实现应用监控的一些实践">
+  <meta property="og:description" content="在这篇文章中我们介绍了如何利用 Prometheus 监控应用。在后续的工作中随着监控的深入，我们结合自己的经验和官方文档总结了一些 Metrics 的实践。希望这些实践能给大家">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2021-09-25T09:34:39+08:00">
+    <meta property="article:modified_time" content="2021-09-25T09:34:39+08:00">
+    <meta property="article:tag" content="Promethues">
+    <meta property="article:tag" content="Grafana">
+    <meta property="article:tag" content="监控">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="使用 Promethues 实现应用监控的一些实践">
+  <meta name="twitter:description" content="在这篇文章中我们介绍了如何利用 Prometheus 监控应用。在后续的工作中随着监控的深入，我们结合自己的经验和官方文档总结了一些 Metrics 的实践。希望这些实践能给大家">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/metrics-best-practice/" /><link rel="prev" href="https://lxkaka.wang/audio-process/" /><link rel="next" href="https://lxkaka.wang/redis-lock/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "使用 Promethues 实现应用监控的一些实践",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/metrics-best-practice\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "promethues, grafana, 监控","wordcount":  2262 ,
+        "url": "https:\/\/lxkaka.wang\/metrics-best-practice\/","datePublished": "2021-09-25T09:34:39+08:00","dateModified": "2021-09-25T09:34:39+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">使用 Promethues 实现应用监控的一些实践</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E5%AE%9E%E8%B7%B5/"><i class="far fa-folder fa-fw"></i>实践</a>&nbsp;<a href="/categories/monitor/"><i class="far fa-folder fa-fw"></i>Monitor</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-09-25">2021-09-25</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2262 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#确定监控对象">确定监控对象</a>
+          <ul>
+            <li><a href="#从需求出发">从需求出发</a></li>
+            <li><a href="#从需要监控的系统出发">从需要监控的系统出发</a></li>
+          </ul>
+        </li>
+        <li><a href="#选择-vector">选择 Vector</a></li>
+        <li><a href="#确定-label">确定 Label</a></li>
+        <li><a href="#命名-metrics-和-label">命名 Metrics 和 Label</a>
+          <ul>
+            <li><a href="#metric-的命名">Metric 的命名：</a></li>
+            <li><a href="#label-的命名">Label 的命名：</a></li>
+          </ul>
+        </li>
+        <li><a href="#buckets-选择">Buckets 选择</a></li>
+        <li><a href="#grafana-使用技巧">Grafana 使用技巧</a>
+          <ul>
+            <li><a href="#查看所有维度">查看所有维度</a></li>
+            <li><a href="#标尺联动">标尺联动</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在这篇<a href="https://www.lxkaka.wang/app-metrics/" target="_blank" rel="noopener noreffer">文章</a>中我们介绍了如何利用 Prometheus 监控应用。在后续的工作中随着监控的深入，我们结合自己的经验和官方文档总结了一些 Metrics 的实践。希望这些实践能给大家提供参考。</p>
+<h3 id="确定监控对象">确定监控对象</h3>
+<p>在具体设计 Metrics 之前，首先需要明确需要测量的对象。需要测量的对象应该依据具体的问题背景、需求和需监控的系统本身来确定。</p>
+<h4 id="从需求出发">从需求出发</h4>
+<p>Google 针对大量分布式监控的经验总结出四个监控的黄金指标，这四个指标对于一般性的监控测量对象都具有较好的参考意义。这四个指标分别为：</p>
+<ul>
+<li>
+<p>延迟：服务请求的时间。</p>
+</li>
+<li>
+<p>通讯量：监控当前系统的流量，用于衡量服务的容量需求。</p>
+</li>
+<li>
+<p>错误：监控当前系统所有发生的错误请求，衡量当前系统错误发生的速率。</p>
+</li>
+<li>
+<p>饱和度：衡量当前服务的饱和度。主要强调最能影响服务状态的受限制的资源。例如，如果系统主要受内存影响，那就主要关注系统的内存状态。<br>
+以上四种指标，其实是为了满足四个监控需求：</p>
+</li>
+<li>
+<p>反映用户体验，衡量系统核心å性能。如：在线系统的时延，作业计算系统的作业完成时间等。</p>
+</li>
+<li>
+<p>反映系统的吞吐量。如：请求数，发出和接收的网络包大小等。</p>
+</li>
+<li>
+<p>帮助发现和定位故障和问题。如：错误计数、调用失败率等。</p>
+</li>
+<li>
+<p>反映系统的饱和度和负载。如：系统占用的内存、作业队列的长度等。 <br>
+除了以上常规需求，还可根据具体的问题场景，为了排除和发现以前出现过或可能出现的问题，确定相应的测量对象。比如，系统需要经常调用的一个库的接口可能耗时较长，或偶有失败，可制定 Metrics 以测量这个接口的时延和失败数。</p>
+</li>
+</ul>
+<h4 id="从需要监控的系统出发">从需要监控的系统出发</h4>
+<p>为了满足相应的需求，不同系统需要观测的测量对象也是不同的。在 官方文档 的最佳实践中，将需要监控的应用分为了三类：</p>
+<ul>
+<li>
+<p>线上服务系统（Online-serving systems）：需对请求做即时的响应，请求发起者会等待响应。如 web 服务器。</p>
+</li>
+<li>
+<p>线下计算系统（Offline processing）：请求发起者不会等待响应，请求的作业通常会耗时较长。如批处理计算框架 Spark 等。</p>
+</li>
+<li>
+<p>批处理作业（Batch jobs）：这类应用通常为一次性的，不会一直运行，运行完成后便会结束运行。如数据分析的 MapReduce 作业。 <br>
+对于每一类应用其通常情况下测量的对象是不太一样的。其总结如下：</p>
+</li>
+<li>
+<p>线上服务系统：主要有请求、出错的数量，请求的时延等。</p>
+</li>
+<li>
+<p>线下计算系统：最后开始处理作业的时间，目前正在处理作业的数量，发出了多少 items， 作业队列的长度等。</p>
+</li>
+<li>
+<p>批处理作业：最后成功执行的时刻，每个主要 stage 的执行时间，总的耗时，处理的记录数量等。</p>
+</li>
+</ul>
+<p>除了系统本身，有时还需监控子系统：</p>
+<ul>
+<li>使用的库（Libraries）: 调用次数，成功数，出错数，调用的时延。</li>
+<li>日志（Logging）：计数每一条写入的日志，从而可找到每条日志发生的频率和时间。</li>
+<li>Failures: 错误计数。</li>
+<li>线程池：排队的请求数，正在使用的线程数，总线程数，耗时，正在处理的任务数等。</li>
+<li>缓存：请求数，命中数，总时延等。</li>
+</ul>
+<h3 id="选择-vector">选择 Vector</h3>
+<p>选用 Vec 的原则：</p>
+<ul>
+<li>数据类型类似但资源类型、收集地点等不同</li>
+<li>Vec 内数据单位统一 <br>
+例子：</li>
+<li>不同资源对象的请求延迟</li>
+<li>不同地域服务器的请求延迟</li>
+<li>不同 http 请求错误的计数<br>
+&hellip;<br>
+此外，官方文档 中建议，对于一个资源对象的不同操作，如 Read/Write、Send/Receive， 应采用不同的 Metric 去记录，而不要放在一个 Metric 里。原因是监控时一般不会对这两者做聚合，而是分别去观测。  <br>
+不过对于 request 的测量，通常是以 Label 做区分不同的 action。</li>
+</ul>
+<h3 id="确定-label">确定 Label</h3>
+<p>常见 Label 的选择有：</p>
+<ul>
+<li>resource</li>
+<li>region</li>
+<li>type
+&hellip;<br>
+确定 Label 的一个重要原则是：同一维度 Label 的数据是可平均和可加和的，也即单位要统一。如风扇的风速和电压就不能放在一个 Label 里。<br>
+此外，不建议下列做法： <br>
+my_metric{label=a} 1 my_metric{label=b} 6 my_metric{label=total} 7<br>
+即在 Label 中同时统计了分和总的数据，建议采用 PromQL 在服务器端聚合得到总和的结果。或者用另外的 Metric 去测量总的数据。</li>
+</ul>
+<h3 id="命名-metrics-和-label">命名 Metrics 和 Label</h3>
+<p>好的命名能够见名知义，因此命名也是良好设计的一环。</p>
+<h4 id="metric-的命名">Metric 的命名：</h4>
+<ul>
+<li>需要符合 pattern: a-zA-Z*:*</li>
+<li>应该包含一个单词作为前缀，表明这个 Metric 所属的域。如：
+<ul>
+<li>prometheus_notifications_total</li>
+<li>process_cpu_seconds_total</li>
+<li>ipamd_request_latency</li>
+</ul>
+</li>
+<li>应该包含一个单位的单位作为后缀，表明这个 Metric 的单位。如：
+<ul>
+<li>http_request_duration_seconds</li>
+<li>node_memory_usage_bytes</li>
+<li>http_requests_total (for a unit-less accumulating count)</li>
+</ul>
+</li>
+<li>逻辑上与被测量的变量含义相同。</li>
+<li>尽量使用基本单位，如 seconds，bytes。而不是 Milliseconds, megabytes。</li>
+</ul>
+<h4 id="label-的命名">Label 的命名：</h4>
+<p>依据选择的维度命名，如：</p>
+<ul>
+<li>region: shenzhen/guangzhou/beijing</li>
+<li>owner: user1/user2/user3</li>
+<li>stage: extract/transform/load</li>
+</ul>
+<h3 id="buckets-选择">Buckets 选择</h3>
+<p>适宜的 buckets 能使 histogram 的百分位数计算更加准确。</p>
+<p>理想情况下，桶会使得数据分布呈阶梯状，即各桶区间内数据个数大致相同。
+buckets 的设计可遵从如下经验：</p>
+<ul>
+<li>需要知道数据的大致分布，若事先不知道可先用默认桶 （{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}）或 2 倍数桶（{1,2,4,8&hellip;}）观察数据分布再调整 buckets。</li>
+<li>数据分布较密处桶间隔制定的较窄一些，分布稀疏处可制定的较宽一些。</li>
+<li>对于多数时延数据，一般具有长尾的特性，较适宜用指数形式的桶（ExponentialBuckets）。</li>
+<li>初始桶上界一般覆盖10%左右的数据，若不关注头部数据也可以让初始上界更大一些。</li>
+<li>若为了更准确计算特定百分位数，如90%，可在90%的数据处加密分布桶，即减少桶的间隔。</li>
+</ul>
+<p>比如我在监控我们某些任务耗时的时候，就是选根据实际情况估算出大致的 bucket 取值，上线后观察数据和监控再去调整 bucket， 这样经过几次调整应该就能调整到比较合适的 bucket。</p>
+<h3 id="grafana-使用技巧">Grafana 使用技巧</h3>
+<h4 id="查看所有维度">查看所有维度</h4>
+<p>如果你想知道是否还能按其它维度分组，并快速查看还有哪些维度，可采用以下技巧：在 query 的表达式上只保留指标名称，不做任何计算，Legend format 也留空。这样就能显示出原始的 metric 数据。如下图所示</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A71.png"
+        data-srcset="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A71.png, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A71.png 1.5x, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A71.png 2x"
+        data-sizes="auto"
+        alt="granfana-技巧1"
+        title="granfana-技巧1" /></p>
+<h4 id="标尺联动">标尺联动</h4>
+<p>在 Settings 面板中，有一个 Graph Tooltip 设置项，默认使用 Default。</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A72.png"
+        data-srcset="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A72.png, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A72.png 1.5x, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A72.png 2x"
+        data-sizes="auto"
+        alt="grafana-技巧2"
+        title="grafana-技巧2" /></p>
+<p>下面将图形展示工具分别调整为 Shared crosshair 和 Shared Tooltip 看看效果。可以看到标尺能联动展示了，方便排查问题时确认 2 个指标的关联性。    <br>
+将图形展示工具调整为 Shared Tooltip：</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A721.png"
+        data-srcset="https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A721.png, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A721.png 1.5x, https://pics.lxkaka.wang/grafana-%E6%8A%80%E5%B7%A721.png 2x"
+        data-sizes="auto"
+        alt="grafana-技巧21"
+        title="grafana-技巧21" /></p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-09-25</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/metrics-best-practice/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/metrics-best-practice/" data-title="使用 Promethues 实现应用监控的一些实践" data-hashtags="promethues,grafana,监控"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/metrics-best-practice/" data-hashtag="promethues"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/metrics-best-practice/" data-title="使用 Promethues 实现应用监控的一些实践" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/metrics-best-practice/" data-title="使用 Promethues 实现应用监控的一些实践"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/metrics-best-practice/" data-title="使用 Promethues 实现应用监控的一些实践"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/promethues/">Promethues</a>,&nbsp;<a href="/tags/grafana/">Grafana</a>,&nbsp;<a href="/tags/%E7%9B%91%E6%8E%A7/">监控</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/audio-process/" class="prev" rel="prev" title="深度学习中的常用音频处理方法"><i class="fas fa-angle-left fa-fw"></i>深度学习中的常用音频处理方法</a>
+            <a href="/redis-lock/" class="next" rel="next" title="Golang 实现的 Redis 分布式锁">Golang 实现的 Redis 分布式锁<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

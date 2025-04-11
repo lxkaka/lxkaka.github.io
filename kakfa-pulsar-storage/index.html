@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>Kafka 和 Pulsar 存储结构对比 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/kakfa-pulsar-storage/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="Kafka 和 Pulsar 存储结构对比">
+  <meta property="og:description" content="在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇文章 中我们提到过这两种消息队列，而在我们了解">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2020-12-26T14:00:11+08:00">
+    <meta property="article:modified_time" content="2020-12-26T14:00:11+08:00">
+    <meta property="article:tag" content="Kafka">
+    <meta property="article:tag" content="Message">
+    <meta property="article:tag" content="Middleware">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="Kafka 和 Pulsar 存储结构对比">
+  <meta name="twitter:description" content="在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇文章 中我们提到过这两种消息队列，而在我们了解">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/kakfa-pulsar-storage/" /><link rel="prev" href="https://lxkaka.wang/golang-context/" /><link rel="next" href="https://lxkaka.wang/docker-principle/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Kafka 和 Pulsar 存储结构对比",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/kakfa-pulsar-storage\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "kafka, message, middleware","wordcount":  2940 ,
+        "url": "https:\/\/lxkaka.wang\/kakfa-pulsar-storage\/","datePublished": "2020-12-26T14:00:11+08:00","dateModified": "2020-12-26T14:00:11+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">Kafka 和 Pulsar 存储结构对比</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/backend/"><i class="far fa-folder fa-fw"></i>Backend</a>&nbsp;<a href="/categories/infra/"><i class="far fa-folder fa-fw"></i>Infra</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-26">2020-12-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2940 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#kafka">Kafka</a>
+      <ul>
+        <li><a href="#kafka-的-partition">Kafka 的 Partition</a></li>
+        <li><a href="#partition-的组成">Partition 的组成</a></li>
+        <li><a href="#segment-存储结构">Segment 存储结构</a></li>
+        <li><a href="#消息查找">消息查找</a></li>
+      </ul>
+    </li>
+    <li><a href="#pulsar">Pulsar</a>
+      <ul>
+        <li><a href="#bookkeeper-存储实现">Bookkeeper 存储实现</a>
+          <ul>
+            <li><a href="#新建-ledger">新建 ledger</a></li>
+            <li><a href="#bookkeeper-读写分离">Bookkeeper 读写分离</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>在我们当前业务场景下使用消息中间件是必不可少的，其中 kafka 和 pulsar 是我们消息中间件的首选项。在之前的一篇<a href="https://www.lxkaka.wang/pulsar/" target="_blank" rel="noopener noreffer">文章</a> 中我们提到过这两种消息队列，而在我们了解和评价和他们的性能和可用性时我认为底层的存储结构是非常重要的或者说是最重要的的一个因素。所以，在这篇文章里我们对二者的存储结构做一个对比和汇总。</p>
+<h2 id="kafka">Kafka</h2>
+<p>关于 <a href="https://kafka.apache.org/" target="_blank" rel="noopener noreffer">Kafka</a> 的介绍和使用有很多资料可以供大家参考，这里我们不做介绍。</p>
+<h3 id="kafka-的-partition">Kafka 的 Partition</h3>
+<p>Kakfa 的一个 topic 在物理上被分成多个 partition 用以存储消息，各 partition 以目录形式在 leader broker 及其多副本 brokers 上持久化存储。partiton命名规则为topic名称+有序序号，第一个partiton序号从0开始，序号最大值为partitions数量减1。
+下面是两个实例 topic ，在 kafka 数据目录下的分区存储情况：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">|--test_topic-0 
+</span></span><span class="line"><span class="cl">|--test_topic-1 
+</span></span><span class="line"><span class="cl">|--test_topic-2 
+</span></span><span class="line"><span class="cl">|--test_log-0 
+</span></span><span class="line"><span class="cl">|--tesst_log-1 
+</span></span><span class="line"><span class="cl">|--test_log-2 
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="partition-的组成">Partition 的组成</h3>
+<ul>
+<li>
+<p>每个 partion(目录)相当于一个巨型文件被平均分配到多个大小相等 segment(段)数据文件中。但每个段 segment file 消息数量不一定相等，这种特性方便 old segment file 快速被删除。</p>
+</li>
+<li>
+<p>每个 partiton 只需要支持顺序读写就行了，segment 文件生命周期由服务端配置参数决定。
+下面这张图展示了 partition 的文件存储</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kafka-partition.png"
+        data-srcset="https://pics.lxkaka.wang/kafka-partition.png, https://pics.lxkaka.wang/kafka-partition.png 1.5x, https://pics.lxkaka.wang/kafka-partition.png 2x"
+        data-sizes="auto"
+        alt="kafka-partition"
+        title="kafka-partition" /></p>
+</li>
+</ul>
+<h3 id="segment-存储结构">Segment 存储结构</h3>
+<p>Partition 中的 segment file 存储结构</p>
+<ul>
+<li>
+<p>segment file组成：由2大部分组成，分别为 index 文件和 data 文件，这两个文件一一对应，成对出现，后缀 &ldquo;.index&rdquo; 和 &ldquo;.log&rdquo; 分别表示为 segment 索引文件、数据文件.</p>
+</li>
+<li>
+<p>segment 文件命名规则：partion 全局的第一个 segment 从0开始，后续每个s egment 文件名为上一个 segment 文件最后一条消息的 offset 值。数值最大为64位 long 大小，19位数字字符长度，没有数字用0填充。
+创建一个 topic 只包含一个 partition，设置每个 segment 大小为 500MB,并启动 producer 向 Kafka broker 写入大量数据,如下图所示 partiton test_topic-0 文件内容</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kafka-segment.png"
+        data-srcset="https://pics.lxkaka.wang/kafka-segment.png, https://pics.lxkaka.wang/kafka-segment.png 1.5x, https://pics.lxkaka.wang/kafka-segment.png 2x"
+        data-sizes="auto"
+        alt="kafka-segment"
+        title="kafka-segment" /></p>
+</li>
+</ul>
+<p>index file 存储元数据，log file 存储消息，index file 中元数据指向对应 log file 中 message 的物理偏移地址。其中以 index file 中元数据3,497为例，依次在 log file 中表示第3个message(在全局partiton表示第368772个message)、以及该消息的物理偏移地址为497。
+以下图展示说明 segmen t中 index file&lt;—-&gt;log file对应关系物理结构如下</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kafka-index.png"
+        data-srcset="https://pics.lxkaka.wang/kafka-index.png, https://pics.lxkaka.wang/kafka-index.png 1.5x, https://pics.lxkaka.wang/kafka-index.png 2x"
+        data-sizes="auto"
+        alt="kafka-index"
+        title="kafka-index" /><br>
+其中 message 的物理结构如下</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kafka-message.png"
+        data-srcset="https://pics.lxkaka.wang/kafka-message.png, https://pics.lxkaka.wang/kafka-message.png 1.5x, https://pics.lxkaka.wang/kafka-message.png 2x"
+        data-sizes="auto"
+        alt="kafka-message"
+        title="kafka-message" /></p>
+<h3 id="消息查找">消息查找</h3>
+<p>例如读取offset=368776的message，需要通过下面2个步骤查找。</p>
+<ol>
+<li>
+<p>查找segment file 上述图2为例，其中 00000000000000000000.index 表示最开始的文件，起始偏移量(offset)为0.第二个文件 00000000000000368769.index 的消息量起始偏移量为368770 = 368769 + 1.同样，第三个文件 00000000000000737337.index 的起始偏移量为737338=737337 + 1，其他后续文件依次类推，以起始偏移量命名并排序这些文件，只要根据offset <strong>二分查找</strong>文件列表，就可以快速定位到具体文件。 当offset=368776时定位到 00000000000000368769.index|log</p>
+</li>
+<li>
+<p>通过segment file查找message 通过第一步定位到segment file，当offset=368776时，依次定位到 00000000000000368769.index 的元数据物理位置和00000000000000368769.log 的物理偏移地址，然后再通过 00000000000000368769.log 顺序查找直到offset=368776为止。</p>
+</li>
+</ol>
+<p>index file 采取稀疏索引存储方式，它减少索引文件大小，通过 mmap 可以直接内存操作，稀疏索引为数据文件的每个对应 message 设置一个元数据指针,它比稠密索引节省了更多的存储空间，但查找起来需要消耗更多的时间。</p>
+<h2 id="pulsar">Pulsar</h2>
+<p>Pulsar 的底层存储使用的是 <a href="https://bookkeeper.apache.org/docs/latest/getting-started/concepts/" target="_blank" rel="noopener noreffer">Apache Bookkeeper</a>, 所以要了解 pulsar 的存储结构就是理解 bookkeeper 的存储原理。
+BookKeeper集群由两大部分组成：</p>
+<ul>
+<li>一组独立的存储服务器，成为bookies</li>
+<li>一个元数据存储系统，提供服务发现以及元数据管理服务
+BookKeeper 架构属于典型的 slave-slave 架构，zk 存储其集群的 meta 信息，这种模式的好处显而易见，server 端变得非常简单，所有节点都是一样的角色和处理逻辑，能够这样设计的主要原因是其副本没有 leader 和 follower 之分。
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bk-cluster.jpeg"
+        data-srcset="https://pics.lxkaka.wang/bk-cluster.jpeg, https://pics.lxkaka.wang/bk-cluster.jpeg 1.5x, https://pics.lxkaka.wang/bk-cluster.jpeg 2x"
+        data-sizes="auto"
+        alt="bk-cluster"
+        title="bk-cluster" /></li>
+</ul>
+<h3 id="bookkeeper-存储实现">Bookkeeper 存储实现</h3>
+<p>在 bookkeeper 中一个 Log/Stream/Topic 可以由下面的部分组成<br>
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bk-store.png"
+        data-srcset="https://pics.lxkaka.wang/bk-store.png, https://pics.lxkaka.wang/bk-store.png 1.5x, https://pics.lxkaka.wang/bk-store.png 2x"
+        data-sizes="auto"
+        alt="bk-st"
+        title="bk-st" /></p>
+<ul>
+<li>Ledger：它是 BK 的一个基本存储单元（本质上还是一种抽象），BK Client 的读写操作也都是以 Ledger 为粒度的；</li>
+<li>Fragment：BK 的最小分布单元（实际上也是物理上的最小存储单元），也是 Ledger 的组成单位，默认情况下一个 Ledger 会对应的一个 Fragment（一个 Ledger 也可能由多个 Fragment 组成）；</li>
+<li>Entry：每条日志都是一个 Entry，它代表一个 record，每条 record 都会有一个对应的 entry id；
+关于 Fragment，它是 Ledger 的物理组成单元，也是最小的物理存储单元，在以下两种情况下会创建新的 Fragment：
+当创建新的 Ledger 时；
+当前 Fragment 使用的 Bookies 发生写入错误或超时，系统会在剩下的 Bookie 中新建 Fragment，但这时并不会新建 Ledger，因为 Ledger 的创建和关闭是由 Client 控制的，这里只是新建了 Fragment（需要注意的是：这两个 Fragment 对应的 Ensemble Bookie 已经不一样了，但它们都属于一个 Ledger，这里并不一定是一个 Ensemble Change 操作）。</li>
+</ul>
+<h4 id="新建-ledger">新建 ledger</h4>
+<p>Ledger 是一组追加有序的记录，它是由 Client 创建的，然后由其进行追加写操作。每个 Ledger 在创建时会被赋予全局唯一的 ID，其他的 Client 可以根据 Ledger ID，对其进行读取操作。创建 Ledger 及 Entry 写入的相关过程如下：</p>
+<ol>
+<li>Client 在创建 Ledger 的时候，从 Bookie Pool 里面按照指定的数据放置策略挑选出一定数量的 Bookie，构成一个 Ensemble；</li>
+<li>每条 Entry 会被并行地发送给 Ensemble 里面的部分 Bookies（每条 Entry 发送多少个 Bookie 是由 Write Quorum size 设置、具体发送哪些 Bookie 是由 Round Robin 算法来计算），并且所有 Entry 的发送以流水线的方式进行，也就是意味着发送第 N + 1 条记录的写请求不需要等待发送第 N 条记录的写请求返回；</li>
+<li>对于每条 Entry 的写操作而言，当它收到 Ensemble 里面大多数 Bookie 的确认后（这个由 Ack Quorum size 来设置），Client 认为这条记录已经持久化到这个 Ensemble 中，并且有大多数副本。</li>
+</ol>
+<p>这里引入了三个重要的概念，它们也是 BookKeeper 一致性的基础：</p>
+<ul>
+<li>Ensemble size(E)：Set of Bookies across which a ledger is striped；</li>
+<li>Write Quorum Size（Qw）：Number of replica；</li>
+<li>Ack Quorum Size（Qa）：Number of responses needed before client’s write is satisfied。<br>
+示意图如下</li>
+</ul>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bk-ledger.png"
+        data-srcset="https://pics.lxkaka.wang/bk-ledger.png, https://pics.lxkaka.wang/bk-ledger.png 1.5x, https://pics.lxkaka.wang/bk-ledger.png 2x"
+        data-sizes="auto"
+        alt="bk-ledger"
+        title="bk-ledger" /></p>
+<h4 id="bookkeeper-读写分离">Bookkeeper 读写分离</h4>
+<p>bookeeper 采取了读写分离的设计<br>
+下图描述了读写分离是如何实现的</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/bk-rw.png"
+        data-srcset="https://pics.lxkaka.wang/bk-rw.png, https://pics.lxkaka.wang/bk-rw.png 1.5x, https://pics.lxkaka.wang/bk-rw.png 2x"
+        data-sizes="auto"
+        alt="bk-rw"
+        title="bk-rw" /><br>
+写入（writes）、末尾读（trailing reads）和中间读（catch-up reads）这三种常见的 I/O 操作都被隔离到了三种物理上不同的 I/O 子系统中。</p>
+<ul>
+<li>所有写入都被顺序地追加到磁盘上的日志文件，再批量提交到硬盘上。</li>
+<li>在写操作持久化到磁盘上之后，它们就会放到一个 Memtable 中，再向客户端发回响应。Memtable 中的数据会被异步刷新到交叉存取的索引数据结构中：记录被追加到日志文件中，偏移量则在 ledger 的索引文件中根据记录 ID 索引起来。</li>
+<li>最新的数据肯定在 Memtable 中，供末尾读操作使用。中间读会从记录日志文件中获取数据。由于物理隔离的存在，Bookie 节点可以充分利用网络流入带宽和磁盘的顺序写入特性来满足写请求，以及利用网络流出代宽和多个磁盘共同提供的IOPS处理能力来满足读请求，彼此之间不会相互干扰。</li>
+</ul>
+<p>我们用来自于 streaml.io 的一张图来总结 Kafka 和 Pulsar 在存储结构的上的区别</p>
+<p><img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/kakfa-pulsar-partition.jpg"
+        data-srcset="https://pics.lxkaka.wang/kakfa-pulsar-partition.jpg, https://pics.lxkaka.wang/kakfa-pulsar-partition.jpg 1.5x, https://pics.lxkaka.wang/kakfa-pulsar-partition.jpg 2x"
+        data-sizes="auto"
+        alt="kafka-pulsar-partiton"
+        title="kafka-pulsar-partiton" /></p>
+<h2 id="总结">总结</h2>
+<p>在 pulsar准确说是 bookkeeper 以相较于 kafka 更复杂的存储设计换来了更强的扩展性<br>
+从集群扩展性来说</p>
+<ul>
+<li>kafka 增加 broker需要重新分配分区，以使得整个集群负载均衡。需要严密观察每个分区的状态，保证迁移操作不会打满网络带宽和磁盘 IO;</li>
+<li>pulsar 增加 broker 或 bookie 不需要做数据重新分布，新的分区会自动分配到新扩容的 bookie 上
+从读写扩展性来说</li>
+<li>kafka 没有物理 I/O 隔离，依靠文件系统缓冲；</li>
+<li>pulsar 可以通过 bookie 挂载不同磁盘实现物理 I/O 隔离，读写分离</li>
+</ul>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-12-26</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/kakfa-pulsar-storage/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/kakfa-pulsar-storage/" data-title="Kafka 和 Pulsar 存储结构对比" data-hashtags="kafka,message,middleware"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/kakfa-pulsar-storage/" data-hashtag="kafka"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/kakfa-pulsar-storage/" data-title="Kafka 和 Pulsar 存储结构对比" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/kakfa-pulsar-storage/" data-title="Kafka 和 Pulsar 存储结构对比"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/kakfa-pulsar-storage/" data-title="Kafka 和 Pulsar 存储结构对比"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/kafka/">Kafka</a>,&nbsp;<a href="/tags/message/">Message</a>,&nbsp;<a href="/tags/middleware/">Middleware</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/golang-context/" class="prev" rel="prev" title="Golang Context 探究"><i class="fas fa-angle-left fa-fw"></i>Golang Context 探究</a>
+            <a href="/docker-principle/" class="next" rel="next" title="Docker 核心原理">Docker 核心原理<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

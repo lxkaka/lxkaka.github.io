@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Attention - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/attention/</link>
+        <description>Attention - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/attention/" rel="self" type="application/rss+xml" /><item>
+    <title>Transformer 结构学习总结</title>
+    <link>https://lxkaka.wang/learn-transformer/</link>
+    <pubDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/learn-transformer/</guid>
+    <description><![CDATA[transformer 已经成了当前深度学习领域最著名的网络架构，它是各大语言模型的基石。在这篇文章里我把自己在了解 transformer 的学习资料做了一个总结，一是加深体会二是希望]]></description>
+</item></channel>
+</rss>

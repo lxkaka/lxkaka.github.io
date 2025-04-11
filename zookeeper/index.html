@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>ZooKeeper初识整理(老酒装新瓶) - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/zookeeper/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="ZooKeeper初识整理(老酒装新瓶)">
+  <meta property="og:description" content="整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:published_time" content="2017-12-21T19:36:37+08:00">
+    <meta property="article:modified_time" content="2017-12-21T19:36:37+08:00">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="Tech Notes">
+    <meta property="article:tag" content="ZooKeeper">
+    <meta property="article:tag" content="ZooKeeper">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="ZooKeeper初识整理(老酒装新瓶)">
+  <meta name="twitter:description" content="整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/zookeeper/" /><link rel="prev" href="https://lxkaka.wang/mongo-optimize-md/" /><link rel="next" href="https://lxkaka.wang/io-models/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "ZooKeeper初识整理(老酒装新瓶)",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/zookeeper\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "page","keywords": "Tech Notes, ZooKeeper","wordcount":  2920 ,
+        "url": "https:\/\/lxkaka.wang\/zookeeper\/","datePublished": "2017-12-21T19:36:37+08:00","dateModified": "2017-12-21T19:36:37+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="page single special"><h1 class="single-title animated pulse faster">ZooKeeper初识整理(老酒装新瓶)</h1><div class="content" id="content"><h3 id="整体把握">整体把握</h3>
+<p>(文中ZK与ZooKeeper混用请忽略这些细节)</p>
+<ul>
+<li>ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能。</li>
+<li>遵循 C/S 模型。(这里C就是我们使用zk服务的机器，S自然就是提供ZK服务)。ZK可以提供单机服务，也可组成集群提供服务，还支持伪集群方式(一台物理机运行多个zookeeper实例）。客户端连接到一个单独的服务。客户端保持了一个TCP连接，通过这个TCP连接发送请求、获取响应、获取watch事件、和发送心跳。如果这个连接断了，会自动连接到其他不同的服务器。<br>
+下图我简单画了一下zk的工作模型
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_cs_model.png"
+        data-srcset="https://pics.lxkaka.wang/zk_cs_model.png, https://pics.lxkaka.wang/zk_cs_model.png 1.5x, https://pics.lxkaka.wang/zk_cs_model.png 2x"
+        data-sizes="auto"
+        alt="zk工作模型"
+        title="zk工作模型" /></li>
+<li>ZK的数据模型类似文件系统，由 znode 组成目录树的形式，每个节点下可以有子节点。
+节点可以是以下四种类型：
+<ul>
+<li><code>PERSISTENT</code>：持久化目录节点，这个目录节点存储的数据不会丢失；</li>
+<li><code>PERSISTENT_SEQUENTIAL</code>：顺序自动编号的目录节点，这种目录节点会根据当前已近存在的节点数自动加 1，然后返回给客户端已经成功创建的目录节点名；</li>
+<li><code>EPHEMERAL</code>：临时目录节点，一旦创建这个节点的客户端与服务器端口也就是 session 超时，这种节点会被自动删除；</li>
+<li><code>EPHEMERAL_SEQUENTIAL</code>：临时自动编号节点。
+监控节点变化时，可以监控一个节点的变化，也可以监控一个节点所有子节点的变化。ZK一些很重要的应用都是依赖这些节点的特性。<br>
+下图我简单画了一下zk的node结构
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_node.png"
+        data-srcset="https://pics.lxkaka.wang/zk_node.png, https://pics.lxkaka.wang/zk_node.png 1.5x, https://pics.lxkaka.wang/zk_node.png 2x"
+        data-sizes="auto"
+        alt="zk node结构"
+        title="zk node结构" /></li>
+</ul>
+</li>
+</ul>
+<h3 id="zk的主要应用场景">ZK的主要应用场景</h3>
+<ul>
+<li>
+<p>配置管理（Configuration Management）<br>
+配置的管理在分布式应用环境中很常见，例如同一个应用系统需要多台 Server 运行，但是它们运行的应用系统的某些配置项是相同的，如果要修改这些相同的配置项，那么就必须同时修改每台运行这个应用系统的  Server，这样非常麻烦而且容易出错。<br>
+像这样的配置信息完全可以交给 Zookeeper 来管理，将配置信息保存在 Zookeeper 的某个目录节点中，然后将所有需要修改的应用机器监控配置信息的状态，一旦配置信息发生变化，每台应用机器就会收到 Zookeeper 的通知，然后从 Zookeeper 获取新的配置信息应用到系统中。<br>
+下图是配置管理的结构图（引用）
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_config.png"
+        data-srcset="https://pics.lxkaka.wang/zk_config.png, https://pics.lxkaka.wang/zk_config.png 1.5x, https://pics.lxkaka.wang/zk_config.png 2x"
+        data-sizes="auto"
+        alt="zk配置管理"
+        title="zk配置管理" /></p>
+</li>
+<li>
+<p>集群管理（Group Membership)  <br>
+Zookeeper 能够很容易的实现集群管理的功能，如有多台 Server 组成一个服务集群，那么必须要一个“总管”知道当前集群中每台机器的服务状态，一旦有机器不能提供服务，集群中其它集群必须知道，从而做出调整重新分配服务策略。同样当增加集群的服务能力时，就会增加一台或多台 Server，同样也必须让“总管”知道。<br>
+Zookeeper 不仅能够帮你维护当前的集群中机器的服务状态，而且能够帮你选出一个“总管”，让这个总管来管理集群，这就是 Zookeeper 的另一个功能 Leader Election。<br>
+它们的实现方式都是在 Zookeeper 上创建一个 EPHEMERAL 类型的目录节点，然后每个 Server 在它们创建目录节点的父目录节点上调用<code>getChildren(String path, boolean watch)</code> 方法并设置 watch 为 true，由于是 <code>EPHEMERAL</code> 目录节点，当创建它的 Server 死去，这个目录节点也随之被删除，所以 Children 将会变化，这时 <code>getChildren</code>上的 Watch 将会被调用，所以其它 Server 就知道已经有某台 Server 死去了。新增 Server 也是同样的原理。<br>
+Zookeeper 如何实现 Leader Election，也就是选出一个 Master Server。和前面的一样每台 Server 创建一个 <code>EPHEMERAL</code> 目录节点，不同的是它还是一个 <code>SEQUENTIAL</code> 目录节点，所以它是个 <code>EPHEMERAL_SEQUENTIAL</code> 目录节点。之所以它是 <code>EPHEMERAL_SEQUENTIAL</code> 目录节点，是因为我们可以给每台 Server 编号，我们可以选择当前是最小编号的 Server 为 Master，假如这个最小编号的 Server 死去，由于是 <code>EPHEMERA</code>L 节点，死去的 Server 对应的节点也被删除，所以当前的节点列表中又出现一个最小编号的节点，我们就选择这个节点为当前 Master。这样就实现了动态选择 Master，避免了传统意义上单 Master 容易出现单点故障的问题。<br>
+下图是集群管理的原理示意
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_group.png"
+        data-srcset="https://pics.lxkaka.wang/zk_group.png, https://pics.lxkaka.wang/zk_group.png 1.5x, https://pics.lxkaka.wang/zk_group.png 2x"
+        data-sizes="auto"
+        alt="zk集群管理"
+        title="zk集群管理" /></p>
+</li>
+<li>
+<p>共享锁（Locks）<br>
+共享锁在同一个进程中很容易实现，但是在跨进程或者在不同 Server 之间就不好实现了。Zookeeper 却很容易实现这个功能，实现方式也是需要获得锁的 Server 创建一个 <code>EPHEMERAL_SEQUENTIAL</code> 目录节点，然后调用 <code>getChildren</code>方法获取当前的目录节点列表中最小的目录节点是不是就是自己创建的目录节点，如果正是自己创建的，那么它就获得了这个锁，如果不是那么它就调用 <code>exists(String path, boolean watch)</code> 方法并监控 Zookeeper 上目录节点列表的变化，一直到自己创建的节点是列表中最小编号的目录节点，从而获得锁，释放锁很简单，只要删除前面它自己所创建的目录节点就行了。</p>
+</li>
+<li>
+<p>队列管理<br>
+Zookeeper 可以处理两种类型的队列：<br>
+1. 当一个队列的成员都聚齐时，这个队列才可用，否则一直等待所有成员到达，这种是同步队列。<br>
+2. 队列按照 FIFO 方式进行入队和出队操作，例如实现生产者和消费者模型。<br>
+创建一个父目录 <code>/synchronizing</code>，每个成员都监控标志（Set Watch）位目录 /<code>synchronizing/start</code> 是否存在，然后每个成员都加入这个队列，加入队列的方式就是创建 /<code>synchronizing/member_i</code> 的临时目录节点，然后每个成员获取 <code>/synchronizing</code> 目录的所有目录节点，也就是 member_i。判断 i 的值是否已经是成员的个数，如果小于成员个数等待 <code>/synchronizing/start</code> 的出现，如果已经相等就创建 <code>/synchronizing/start</code>。<br>
+FIFO 队列用 Zookeeper 实现思路如下：<br>
+在特定的目录下创建 SEQUENTIAL 类型的子目录 /queue_i，这样就能保证所有成员加入队列时都是有编号的，出队列时通过 getChildren( ) 方法可以返回当前所有的队列中的元素，然后消费其中最小的一个，这样就能保证 FIFO。</p>
+</li>
+</ul>
+<h3 id="zk简单实践">ZK简单实践</h3>
+<ul>
+<li>
+<p>mac下 <code>brew install zookeeper</code><br>
+ZK服务可以包含一个节点，但它不是一个高可用和可靠的系统。如果ZK服务中有两个节点，那么这两个节点都必须已经启动并让服务正常运行，因为两个节点中的一个并不是严格意义上的多数。如果有三个节点(这可以称之为cluster了)，即使其中一个停机了，仍然可以获得正常运行的服务（三个中的两个是严格意义上的多数）。出于这个原因，ZooKeeper 的cluster中通常包含奇数数量的节点，因为就容错而言，与三个节点相比，四个节点并不占优势，因为只要有两个节点停机，ZooKeeper 服务就会停止。在有五个节点的集群上，需要三个节点停机才会导致 ZooKeeper 服务停止运作。</p>
+</li>
+<li>
+<p>搭建3个ZK实例（伪集群配置）</p>
+<ul>
+<li>
+<p>在 usr/l/ocal/var/run/zookeeper/ 下新建文件夹 zk1, zk2, zk3</p>
+</li>
+<li>
+<p>在 /usr/local/etc/zookeeper 下 新建 zk1.cfg,  zk2.cfg,  zk3.cfg</p>
+</li>
+<li>
+<p>修改项</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">dataDir</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="n">run</span><span class="o">/</span><span class="n">zookeeper</span><span class="o">/</span><span class="n">zk1</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># the port at which the clients will connect</span>
+</span></span><span class="line"><span class="cl"><span class="n">clientPort</span><span class="o">=</span><span class="mi">2181</span>
+</span></span><span class="line"><span class="cl"><span class="n">server</span><span class="o">.</span><span class="mi">1</span><span class="o">=</span><span class="n">localhost</span><span class="p">:</span><span class="mi">2888</span><span class="p">:</span><span class="mi">3888</span>
+</span></span><span class="line"><span class="cl"><span class="n">server</span><span class="o">.</span><span class="mi">2</span><span class="o">=</span><span class="n">localhost</span><span class="p">:</span><span class="mi">2889</span><span class="p">:</span><span class="mi">3889</span>
+</span></span><span class="line"><span class="cl"><span class="n">server</span><span class="o">.</span><span class="mi">3</span><span class="o">=</span><span class="n">localhost</span><span class="p">:</span><span class="mi">2890</span><span class="p">:</span><span class="mi">3890</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>在文件夹 /usr/local/var/run/zookeeper/zk1 下 <code>echo &quot;1&quot; &gt; /usr/local/var/run/zookeeper/zk1/myid</code><br>
+zk2 下 <code>echo &quot;2&quot; &gt; myid</code>    <code>zk3 下 echo &quot;3&quot; &gt; myid</code>; <font color='red'>myid</font>里面的值与 配置 文件里的 server. <font color='red'>编号</font>一致</p>
+</li>
+<li>
+<p>依次启动：<br>
+<code>zkServer start /usr/local/etc/zk1.cfg</code>	 	<code>zkServer start /usr/local/etc/zk2.cfg</code>
+<code>zkServer start /usr/local/etc/zk3.cfg</code></p>
+</li>
+<li>
+<p>检查状态：
+<code>zkServer status /usr/local/etc/zk1.cfg</code><br>
+输出 ：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ZooKeeper JMX enabled by default
+</span></span><span class="line"><span class="cl">Using config: /usr/local/etc/zookeeper/zk1.cfg
+</span></span><span class="line"><span class="cl">Mode: follower
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>创建一个znode<br>
+创建一个新znode和相关联的数据:  <code>create /test_data  test1234</code>
+用 get 获取数据： <code>get /test_data</code>；<br>
+用 set 修改： <code>set/test_data  abcd1234</code><br>
+连接到其他 ZK 服务器，可获取到同样的数据 :  <code>get /test_data 1</code>
+这里在最后提供了一个可选参数 <strong>1</strong>。此参数为 /tes_data 上的数据设置了一个一次性的触发		器（名称为 watch）。如果另一个客户端在 /test_data 上修改数据，该客户端将会获得一		个异步通知。请注意，该通知只发送一次，除非 watch 被重新设置，否则不会因数据发生改变		而再次发送通知。<br>
+如图所示：
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_watch.png"
+        data-srcset="https://pics.lxkaka.wang/zk_watch.png, https://pics.lxkaka.wang/zk_watch.png 1.5x, https://pics.lxkaka.wang/zk_watch.png 2x"
+        data-sizes="auto"
+        alt="command line"
+        title="command line" /></p>
+</li>
+</ul>
+</li>
+<li>
+<p>利用 python 实现的 zookeeper 客户端 kazoo 与 zk server 交互</p>
+<ul>
+<li>
+<p>创建临时自动编号节点</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">kazoo.client</span> <span class="kn">import</span> <span class="n">KazooClient</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">hosts</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;127.0.0.1:12181&#39;</span><span class="p">,</span> <span class="s1">&#39;127.0.0.1:12182&#39;</span><span class="p">,</span> <span class="s1">&#39;127.0.0.1:12183&#39;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span> <span class="o">=</span> <span class="n">KazooClient</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="n">hosts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">zk</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 创建一个目录节点</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;/seq_test&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 创建一个临时自动编号子目录节点</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;/seq_test/test_i&#39;</span><span class="p">,</span> <span class="n">ephemeral</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sequence</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nb">print</span><span class="p">(</span><span class="n">zk</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/seq_test&#39;</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 获取子节点信息</span>
+</span></span><span class="line"><span class="cl"><span class="n">child</span> <span class="o">=</span> <span class="n">zk</span><span class="o">.</span><span class="n">get_children</span><span class="p">(</span><span class="s1">&#39;/seq_test&#39;</span><span class="p">)</span><span class="n">s</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p>定义一个 watch event,  watch 一个节点的变化</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="k">def</span> <span class="nf">watch_event</span><span class="err">（</span><span class="n">child</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;action triggered：&#39;</span><span class="p">,</span> <span class="n">child</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;/election&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">child</span> <span class="o">=</span> <span class="n">zk</span><span class="o">.</span><span class="n">get_children</span><span class="p">(</span><span class="s1">&#39;/election&#39;</span><span class="p">,</span> <span class="n">watch</span><span class="o">=</span><span class="n">watch_event</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;/election/child&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">zk</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;/election/child&#39;</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+</ul>
+<p>结果示意图
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/zk_result.png"
+        data-srcset="https://pics.lxkaka.wang/zk_result.png, https://pics.lxkaka.wang/zk_result.png 1.5x, https://pics.lxkaka.wang/zk_result.png 2x"
+        data-sizes="auto"
+        alt="结果示意"
+        title="结果示意" /></p>
+</li>
+</ul>
+</div><div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></div></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

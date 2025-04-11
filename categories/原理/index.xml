@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>原理 - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/%E5%8E%9F%E7%90%86/</link>
+        <description>原理 - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 08 Jul 2024 18:30:47 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/%E5%8E%9F%E7%90%86/" rel="self" type="application/rss+xml" /><item>
+    <title>Mongodb 默认存储引擎 WiredTiger 的数据结构探究</title>
+    <link>https://lxkaka.wang/wiredtiger/</link>
+    <pubDate>Mon, 08 Jul 2024 18:30:47 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/wiredtiger/</guid>
+    <description><![CDATA[我们知道 Mongodb 默认使用的存储引擎是 WiredTiger。了解存储引擎的数据结构是十分重要的尤其是对于服务端的同学，只有你了解了它才能更好的使用 M]]></description>
+</item><item>
+    <title>crewAI 搭建 AI agent 的原理及应用</title>
+    <link>https://lxkaka.wang/crewai-practice/</link>
+    <pubDate>Fri, 12 Jan 2024 17:13:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/crewai-practice/</guid>
+    <description><![CDATA[单独使用语言模型（LLM）对于简单的任务比如让模型写一段文案来说是可以的，但更复杂的任务往往只依靠 LLM 很难取得良好的效果甚至不可用。 所以 AI agent 的]]></description>
+</item><item>
+    <title>Transformer 结构学习总结</title>
+    <link>https://lxkaka.wang/learn-transformer/</link>
+    <pubDate>Tue, 24 Oct 2023 13:34:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/learn-transformer/</guid>
+    <description><![CDATA[transformer 已经成了当前深度学习领域最著名的网络架构，它是各大语言模型的基石。在这篇文章里我把自己在了解 transformer 的学习资料做了一个总结，一是加深体会二是希望]]></description>
+</item><item>
+    <title>数据编排技术-Alluxio 的原理介绍</title>
+    <link>https://lxkaka.wang/alluxio-info/</link>
+    <pubDate>Thu, 22 Dec 2022 17:18:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/alluxio-info/</guid>
+    <description><![CDATA[在当前的业务系统中我们会遇到多种多样的数据存储和读取场景。在对于大量数据(G以上级别)的存储和读取我们就基本会采用分布式文件系统比如 Amazon S3、]]></description>
+</item><item>
+    <title>Redis 多线程的学习和理解</title>
+    <link>https://lxkaka.wang/redis-io-threads/</link>
+    <pubDate>Sun, 30 Oct 2022 21:40:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/redis-io-threads/</guid>
+    <description><![CDATA[在后端开发中面临分布式缓存选型时 Redis 已然成为了头号选手甚至可以说是事实上的标准。Redis 从本质上来讲是一个网络服务器，而对于一个网络服务器来]]></description>
+</item><item>
+    <title>从一个消费慢的例子深入理解 kafka rebalance</title>
+    <link>https://lxkaka.wang/kafka-rebalance/</link>
+    <pubDate>Sat, 20 Nov 2021 11:23:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kafka-rebalance/</guid>
+    <description><![CDATA[消息队列是服务端必不可少的组件，其中 Kafka 可以说是数一数二的选择，对于大部分服务端的同学来说 Kafka 也是最熟悉的消息中间件之一。而当我们在生产上遇到 kafka]]></description>
+</item><item>
+    <title>深度学习中的常用音频处理方法</title>
+    <link>https://lxkaka.wang/audio-process/</link>
+    <pubDate>Sat, 21 Aug 2021 11:14:26 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/audio-process/</guid>
+    <description><![CDATA[在利用深度学习给音乐打标签的实践过程中，我们不会把音频的原始信号直接作为模型的直接输入。常见的做法是我们会对音频信号做一系列的处理生成频谱图]]></description>
+</item><item>
+    <title>为什么 GPU 能加速深度学习</title>
+    <link>https://lxkaka.wang/gpu-dl/</link>
+    <pubDate>Sat, 31 Jul 2021 12:52:18 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gpu-dl/</guid>
+    <description><![CDATA[接触过深度学习的同学都知道在训练和推理中使用 GPU 能加速，但是相对于 CPU 来说为什么 GPU 能在深度学习中提供更快的处理速度？我把自己学习和总结的成果分享]]></description>
+</item><item>
+    <title>以 RocksDB 为代表的 LSM tree 的学习和总结</title>
+    <link>https://lxkaka.wang/rocksdb-lsm/</link>
+    <pubDate>Sat, 26 Jun 2021 10:33:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/rocksdb-lsm/</guid>
+    <description><![CDATA[在公司最近组织的一次 OceanBase 的分享中我再次听到了 LSM-tree。为什么说是再呢？那不得不先介绍一下 RocksDB RocksDB 是由 Facebook 基于 LevelDB 开发的一款提供键值存储与读写功]]></description>
+</item><item>
+    <title>容器重启原理-Kubelet hash计算</title>
+    <link>https://lxkaka.wang/kubelet-hash/</link>
+    <pubDate>Sat, 29 May 2021 10:58:12 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kubelet-hash/</guid>
+    <description><![CDATA[在日常的开发工作中相信使用 Kubernetes 的同学们一定会偶尔收到容器重启的事件告警。由于应用层面的问题导致的容器重启相对容易排查，比如看容器的内存监控我们]]></description>
+</item></channel>
+</rss>

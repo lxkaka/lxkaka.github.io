@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>如何把 AWS Console 登录集成到自己的 SSO - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/aws-cas/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="如何把 AWS Console 登录集成到自己的 SSO">
+  <meta property="og:description" content="背景 任何一个公司都会有各种各样的内部系统，这些内部系统有可能是自建的也有可能是第三方的。这些系统很可能都带有一定的认证和鉴权，如果各个系统都">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2018-12-27T19:58:46+08:00">
+    <meta property="article:modified_time" content="2018-12-27T19:58:46+08:00">
+    <meta property="article:tag" content="Aws">
+    <meta property="article:tag" content="Sso">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="如何把 AWS Console 登录集成到自己的 SSO">
+  <meta name="twitter:description" content="背景 任何一个公司都会有各种各样的内部系统，这些内部系统有可能是自建的也有可能是第三方的。这些系统很可能都带有一定的认证和鉴权，如果各个系统都">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/aws-cas/" /><link rel="prev" href="https://lxkaka.wang/k8s-init/" /><link rel="next" href="https://lxkaka.wang/istio-init/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "如何把 AWS Console 登录集成到自己的 SSO",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/aws-cas\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "aws, sso","wordcount":  1538 ,
+        "url": "https:\/\/lxkaka.wang\/aws-cas\/","datePublished": "2018-12-27T19:58:46+08:00","dateModified": "2018-12-27T19:58:46+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">如何把 AWS Console 登录集成到自己的 SSO</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2018-12-27">2018-12-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1538 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景">背景</a></li>
+    <li><a href="#aws-sts">AWS STS</a></li>
+    <li><a href="#集成步骤">集成步骤</a>
+      <ul>
+        <li><a href="#1创建-iam-role-for-sts-access">1.创建 IAM Role for STS access</a></li>
+        <li><a href="#2-创建-iam-role-for-user">2. 创建 IAM role for user</a></li>
+        <li><a href="#3-绑定-stsaccessrole-到-ec2-实例">3. 绑定 STSAccessRole 到 ec2 实例</a></li>
+        <li><a href="#4-与-aws-sts-交互">4. 与 AWS STS 交互</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="背景">背景</h2>
+<p>任何一个公司都会有各种各样的内部系统，这些内部系统有可能是自建的也有可能是第三方的。这些系统很可能都带有一定的认证和鉴权，如果各个系统都需要一套用户名和密码，不仅给员工带来巨大的记忆负担，更重要的是会有很棘手的管理问题。在这中背景下我们就需要个 单点登录系统(SSO), 这样我们登录了单点系统后就能访问其他任意的系统。这篇文章的主题不是 SSO 的搭建， 所以这里不讲怎么建立一套单点登录系统。
+我们建立自己的 SSO 系统使用的是 CAS(Central Authentication Service)协议。要把各种各样的系统与单点系统集成，会随着各系统不同的认证方式，集成的方案也不一样。这篇文章我们就讲一下怎么跟我们的基础设施提供者 AWS 的 web 管理后台集成。</p>
+<p>AWS 支持用户使用外部身份登录，方案之一是利用身份提供商 (IdP)，可以管理 AWS 外部的用户身份，并向这些外部用户身份授予 AWS 资源的权限。
+我们有自己的 CAS 但是不能作为 IdP 使用。
+我们使用的方案总结下来就是 自建 SSO + AWS STS</p>
+<h2 id="aws-sts">AWS STS</h2>
+<p>先简单介绍一下 STS (很好很强大)
+AWS Security Token Service (AWS STS) 可以用来创建 AWS 资源的访问的临时安全凭证，并将这些凭证提供给可信用户。临时安全凭证的工作方式与 IAM 用户可使用的长期访问密钥凭证的工作方式几乎相同，仅存在以下差异：</p>
+<ul>
+<li>
+<p>顾名思义，临时安全凭证是短期凭证。可将这些凭证的有效时间配置几分钟到几小时。一旦这些凭证到期，AWS 将不再识别这些凭证或不再允许来自使用这些凭证发出的 API 请求的任何类型的访问。</p>
+</li>
+<li>
+<p>临时安全凭证不随用户一起存储，而是动态生成并在用户提出请求时提供给用户。临时安全凭证到期时 (甚至之前)，用户可以请求新的凭证。</p>
+</li>
+</ul>
+<p>这些差异使得可利用临时凭证获得以下优势：</p>
+<ul>
+<li>
+<p>不必随应用程序分配或嵌入长期 AWS 安全凭证。</p>
+</li>
+<li>
+<p>可允许用户访问 AWS 资源，而不必为这些用户定义 AWS 身份。临时凭证是角色和联合身份验证的基础。</p>
+</li>
+<li>
+<p>临时安全凭证的使用期限有限，因此，在不需要这些证书时不必轮换或显式撤消这些证书。临时安全凭证到期后无法重复使用。可指定证书的有效期，但有最长限期。</p>
+</li>
+</ul>
+<h2 id="集成步骤">集成步骤</h2>
+<p>下面这张图展示了 CAS 与 AWS 集成后，登录 console 的流程
+<img
+        class="lazyload"
+        src="/svg/loading/small.min.svg"
+        data-src="https://pics.lxkaka.wang/aws-cas.png"
+        data-srcset="https://pics.lxkaka.wang/aws-cas.png, https://pics.lxkaka.wang/aws-cas.png 1.5x, https://pics.lxkaka.wang/aws-cas.png 2x"
+        data-sizes="auto"
+        alt="cas-aws"
+        title="cas-aws" /></p>
+<ol>
+<li>用户通过 CAS 认证和鉴权;</li>
+<li>当通过 CAS 的验证后，CAS 会根据用户的权限向 AWS STS 发起请求申请临时的安全凭证;</li>
+<li>获得STS 授予的安全凭证后，用安全凭证继续向 AWS STS 换取登录 token;</li>
+<li>获得登录 token 后， CAS 会拼接完整的登录 url 并且把用户 redirect 到 AWS Console.
+这样一个通过我们自己单点登录系统验证的用户就可以登录 AWS Consol</li>
+</ol>
+<h3 id="1创建-iam-role-for-sts-access">1.创建 IAM Role for STS access</h3>
+<p>使用 <strong>aws access key</strong> 和 <strong>aws access secret</strong> 本身就存在安全隐患，所以为了最大程度的安全，我们没有直接使用 <code>access key</code> +  <code>access secret</code>与 AWS STS交互。
+更加安全的方式是给 ec2 实例绑定 IAM role， 这样 ec2 会被授予相应 role 的权限，而我们不用考虑 access key 和 secret 的安全问题。
+所以第一步创建一个 具有 STS assume role 权限的 IAM role</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">    &#34;Version&#34;: &#34;2012-10-17&#34;,
+</span></span><span class="line"><span class="cl">    &#34;Statement&#34;: [
+</span></span><span class="line"><span class="cl">        {
+</span></span><span class="line"><span class="cl">            &#34;Sid&#34;: &#34;VisualEditor0&#34;,
+</span></span><span class="line"><span class="cl">            &#34;Effect&#34;: &#34;Allow&#34;,
+</span></span><span class="line"><span class="cl">            &#34;Action&#34;: &#34;sts:AssumeRole&#34;,
+</span></span><span class="line"><span class="cl">            &#34;Resource&#34;: &#34;*&#34;
+</span></span><span class="line"><span class="cl">        }
+</span></span><span class="line"><span class="cl">    ]
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2-创建-iam-role-for-user">2. 创建 IAM role for user</h3>
+<p>这一步我们需要给用户创建具有一定权限的 IAM Role, 因为 STS 是根据这个 role 来生成对应的安全临时凭证。这一步创建 role 没有什么特别的，但是一定给要这个 role 的 trust relationship 添加我们 aws 的根账户, 这样我们在应用里才能跟 AWS STS 交互并且 assume role</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  &#34;Version&#34;: &#34;2012-10-17&#34;,
+</span></span><span class="line"><span class="cl">  &#34;Statement&#34;: [
+</span></span><span class="line"><span class="cl">    {
+</span></span><span class="line"><span class="cl">      &#34;Sid&#34;: &#34;&#34;,
+</span></span><span class="line"><span class="cl">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span></span><span class="line"><span class="cl">      &#34;Principal&#34;: {
+</span></span><span class="line"><span class="cl">        &#34;Service&#34;: &#34;monitoring.rds.amazonaws.com&#34;
+</span></span><span class="line"><span class="cl">      },
+</span></span><span class="line"><span class="cl">      &#34;Action&#34;: &#34;sts:AssumeRole&#34;
+</span></span><span class="line"><span class="cl">    },
+</span></span><span class="line"><span class="cl">    # 下面的 trust entity 一定要添加
+</span></span><span class="line"><span class="cl">    {
+</span></span><span class="line"><span class="cl">      &#34;Effect&#34;: &#34;Allow&#34;,
+</span></span><span class="line"><span class="cl">      &#34;Principal&#34;: {
+</span></span><span class="line"><span class="cl">        &#34;AWS&#34;: &#34;arn:aws-cn:iam::xxxxxx(根账号):root&#34;
+</span></span><span class="line"><span class="cl">      },
+</span></span><span class="line"><span class="cl">      &#34;Action&#34;: &#34;sts:AssumeRole&#34;
+</span></span><span class="line"><span class="cl">    }
+</span></span><span class="line"><span class="cl">  ]
+</span></span><span class="line"><span class="cl">}
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3-绑定-stsaccessrole-到-ec2-实例">3. 绑定 STSAccessRole 到 ec2 实例</h3>
+<p>这一步比较简单，就是把我们在第一步中创建的 IAM Role 绑定到我们 CAS 的实例上。这样我们运行 CAS 的实例就被授权能与 AWS STS 交互</p>
+<h3 id="4-与-aws-sts-交互">4. 与 AWS STS 交互</h3>
+<p>下面的 Python 代码片段展示了我们怎样去跟 STS 交互</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">client = boto3.client(&#39;sts&#39;, region_name=&#39;cn-north-1&#39;)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">assumed_role = client.assume_role(
+</span></span><span class="line"><span class="cl">    RoleArn=role_arn,
+</span></span><span class="line"><span class="cl">    RoleSessionName=session_name,
+</span></span><span class="line"><span class="cl">    DurationSeconds=3600
+</span></span><span class="line"><span class="cl">)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">temp_credentials = {
+</span></span><span class="line"><span class="cl">    &#39;sessionId&#39;: assumed_role[&#39;Credentials&#39;][&#39;AccessKeyId&#39;],
+</span></span><span class="line"><span class="cl">    &#39;sessionKey&#39;: assumed_role[&#39;Credentials&#39;][&#39;SecretAccessKey&#39;],
+</span></span><span class="line"><span class="cl">    &#39;sessionToken&#39;: assumed_role[&#39;Credentials&#39;][&#39;SessionToken&#39;]
+</span></span><span class="line"><span class="cl">}
+</span></span><span class="line"><span class="cl">temp_credentials = json.dumps(temp_credentials)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">signin_token_parameters = &#39;?Action=getSigninToken&amp;SessionDuration=43200&amp;Session={}&#39;.format(
+</span></span><span class="line"><span class="cl">    urllib.parse.quote_plus(temp_credentials))
+</span></span><span class="line"><span class="cl">signin_url = &#39;https://signin.amazonaws.cn/federation&#39;
+</span></span><span class="line"><span class="cl">get_token_url = signin_url + signin_token_parameters
+</span></span><span class="line"><span class="cl">res = requests.get(get_token_url)
+</span></span><span class="line"><span class="cl">if res.status_code == 200:
+</span></span><span class="line"><span class="cl">    signin_token = res.json()
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    login_parameters = &#39;?Action=login&amp;Issuer=zaihui&amp;Destination={}&amp;SigninToken={}&#39;.format(
+</span></span><span class="line"><span class="cl">        urllib.parse.quote_plus(&#39;https://console.amazonaws.cn/&#39;),
+</span></span><span class="line"><span class="cl">        signin_token[&#39;SigninToken&#39;]
+</span></span><span class="line"><span class="cl">    )
+</span></span><span class="line"><span class="cl">    login_url = signin_url + login_parameters
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>完成以上步骤后，如果我们顺利拿到 <code>login_url</code> 就可以拿着这个 url 愉快的登录 AWS Console 了 :)</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2018-12-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/aws-cas/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/aws-cas/" data-title="如何把 AWS Console 登录集成到自己的 SSO" data-hashtags="aws,sso"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/aws-cas/" data-hashtag="aws"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/aws-cas/" data-title="如何把 AWS Console 登录集成到自己的 SSO" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/aws-cas/" data-title="如何把 AWS Console 登录集成到自己的 SSO"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/aws-cas/" data-title="如何把 AWS Console 登录集成到自己的 SSO"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/aws/">Aws</a>,&nbsp;<a href="/tags/sso/">Sso</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/k8s-init/" class="prev" rel="prev" title="生产环境搭建 kubernetes(11.3)"><i class="fas fa-angle-left fa-fw"></i>生产环境搭建 kubernetes(11.3)</a>
+            <a href="/istio-init/" class="next" rel="next" title="Istio 实践">Istio 实践<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

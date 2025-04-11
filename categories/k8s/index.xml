@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>K8s - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/k8s/</link>
+        <description>K8s - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 29 May 2021 10:58:12 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/k8s/" rel="self" type="application/rss+xml" /><item>
+    <title>容器重启原理-Kubelet hash计算</title>
+    <link>https://lxkaka.wang/kubelet-hash/</link>
+    <pubDate>Sat, 29 May 2021 10:58:12 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/kubelet-hash/</guid>
+    <description><![CDATA[在日常的开发工作中相信使用 Kubernetes 的同学们一定会偶尔收到容器重启的事件告警。由于应用层面的问题导致的容器重启相对容易排查，比如看容器的内存监控我们]]></description>
+</item></channel>
+</rss>

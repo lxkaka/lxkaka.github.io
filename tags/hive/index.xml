@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Hive - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/hive/</link>
+        <description>Hive - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 22 May 2020 13:58:15 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/hive/" rel="self" type="application/rss+xml" /><item>
+    <title>Hive To AnalyticDB 数据同步方案设计</title>
+    <link>https://lxkaka.wang/airflow-sync/</link>
+    <pubDate>Fri, 22 May 2020 13:58:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/airflow-sync/</guid>
+    <description><![CDATA[最近在做同步数仓数据的工作，从设计到实现整个过程其实是挺有意思的。这里记录和分享一下我们的实施方案，也能给有类似需求的同学提供一些参考价值。]]></description>
+</item><item>
+    <title>Hive To AnalyticDB 数据同步方案设计</title>
+    <link>https://lxkaka.wang/airflow-sync/</link>
+    <pubDate>Fri, 22 May 2020 13:58:15 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/airflow-sync/</guid>
+    <description><![CDATA[最近在做同步数仓数据的工作，从设计到实现整个过程其实是挺有意思的。这里记录和分享一下我们的实施方案，也能给有类似需求的同学提供一些参考价值。]]></description>
+</item></channel>
+</rss>

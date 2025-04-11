@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Js - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/js/</link>
+        <description>Js - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 30 Nov 2015 19:04:33 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/js/" rel="self" type="application/rss+xml" /><item>
+    <title>页面外观样式笔记</title>
+    <link>https://lxkaka.wang/pageformatnotes/</link>
+    <pubDate>Mon, 30 Nov 2015 19:04:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/pageformatnotes/</guid>
+    <description><![CDATA[1. 行内元素和块级元素的学习 块级元素：总是以一个块的形式表现出来，并且跟同级的兄弟一次竖直排列，左右撑满。 行内元素：行内元素不占据单独的空间，]]></description>
+</item><item>
+    <title>页面外观样式笔记</title>
+    <link>https://lxkaka.wang/pageformatnotes/</link>
+    <pubDate>Mon, 30 Nov 2015 19:04:33 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/pageformatnotes/</guid>
+    <description><![CDATA[1. 行内元素和块级元素的学习 块级元素：总是以一个块的形式表现出来，并且跟同级的兄弟一次竖直排列，左右撑满。 行内元素：行内元素不占据单独的空间，]]></description>
+</item><item>
+    <title>建立动态演示的记录</title>
+    <link>https://lxkaka.wang/buidingdynamicdemo/</link>
+    <pubDate>Sun, 29 Nov 2015 12:10:24 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/buidingdynamicdemo/</guid>
+    <description><![CDATA[用Raphaeljs画图，细节记录 1. paper.path的用法 举例：用Q command The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example,]]></description>
+</item><item>
+    <title>建立动态演示的记录</title>
+    <link>https://lxkaka.wang/buidingdynamicdemo/</link>
+    <pubDate>Sun, 29 Nov 2015 12:10:24 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/buidingdynamicdemo/</guid>
+    <description><![CDATA[用Raphaeljs画图，细节记录 1. paper.path的用法 举例：用Q command The Q command (or q for relative points) describes a curve drawn from the current point on a path to the point (x, y) using (x1, y1) as a control point. For example,]]></description>
+</item></channel>
+</rss>
