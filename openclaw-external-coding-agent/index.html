@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>OpenClaw 使用外部 Coding Agent 的原理与调用链路 - lxkaka</title><meta name="Description" content="深入分析 OpenClaw 如何通过 Bash 和 ACP 两种方式调用外部 coding agent（Codex、Claude Code 等）的完整执行链路"><meta property="og:url" content="https://lxkaka.wang/openclaw-external-coding-agent/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="OpenClaw 使用外部 Coding Agent 的原理与调用链路">
+  <meta property="og:description" content="深入分析 OpenClaw 如何通过 Bash 和 ACP 两种方式调用外部 coding agent（Codex、Claude Code 等）的完整执行链路">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-03-05T10:00:00+08:00">
+    <meta property="article:modified_time" content="2026-03-05T10:00:00+08:00">
+    <meta property="article:tag" content="OpenClaw">
+    <meta property="article:tag" content="ACP">
+    <meta property="article:tag" content="Coding Agent">
+    <meta property="article:tag" content="Claude Code">
+    <meta property="article:tag" content="Codex">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="OpenClaw 使用外部 Coding Agent 的原理与调用链路">
+  <meta name="twitter:description" content="深入分析 OpenClaw 如何通过 Bash 和 ACP 两种方式调用外部 coding agent（Codex、Claude Code 等）的完整执行链路">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/openclaw-external-coding-agent/" /><link rel="prev" href="https://lxkaka.wang/mcp-label-studio/" /><link rel="next" href="https://lxkaka.wang/openclaw-agent-execution/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "OpenClaw 使用外部 Coding Agent 的原理与调用链路",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/openclaw-external-coding-agent\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "OpenClaw, ACP, coding agent, Claude Code, Codex","wordcount":  5532 ,
+        "url": "https:\/\/lxkaka.wang\/openclaw-external-coding-agent\/","datePublished": "2026-03-05T10:00:00+08:00","dateModified": "2026-03-05T10:00:00+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "深入分析 OpenClaw 如何通过 Bash 和 ACP 两种方式调用外部 coding agent（Codex、Claude Code 等）的完整执行链路"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">OpenClaw 使用外部 Coding Agent 的原理与调用链路</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E6%9E%B6%E6%9E%84/"><i class="far fa-folder fa-fw"></i>架构</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2026-03-05">2026-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5532 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#概述">概述</a></li>
+    <li><a href="#方式一bashexec-tool直接调用">方式一：Bash（exec tool）直接调用</a>
+      <ul>
+        <li><a href="#11-入口coding-agent-skill">1.1 入口：coding-agent Skill</a></li>
+        <li><a href="#12-exec-tool-执行链路">1.2 exec tool 执行链路</a></li>
+        <li><a href="#13-关键代码路径">1.3 关键代码路径</a></li>
+        <li><a href="#14-bash-方式的数据流">1.4 Bash 方式的数据流</a></li>
+      </ul>
+    </li>
+    <li><a href="#方式二acpagent-client-protocol调用">方式二：ACP（Agent Client Protocol）调用</a>
+      <ul>
+        <li><a href="#21-架构总览">2.1 架构总览</a></li>
+        <li><a href="#22-sessions_spawn-tool-入口">2.2 sessions_spawn tool 入口</a></li>
+        <li><a href="#23-spawnacpdirect-策略与初始化">2.3 spawnAcpDirect() 策略与初始化</a></li>
+        <li><a href="#24-acpxruntimeopenclaw-与-acpx-的桥梁">2.4 AcpxRuntime：OpenClaw 与 acpx 的桥梁</a>
+          <ul>
+            <li><a href="#acpruntime-接口">AcpRuntime 接口</a></li>
+            <li><a href="#全局-backend-注册">全局 Backend 注册</a></li>
+            <li><a href="#核心方法实现">核心方法实现</a></li>
+          </ul>
+        </li>
+        <li><a href="#25-acpx-cli统一的-agent-协调器">2.5 acpx CLI：统一的 Agent 协调器</a>
+          <ul>
+            <li><a href="#agent-注册表">Agent 注册表</a></li>
+            <li><a href="#acpx-启动-agent-的过程">acpx 启动 Agent 的过程</a></li>
+            <li><a href="#acp-协议通信方向">ACP 协议通信方向</a></li>
+            <li><a href="#acpx-的权限控制">acpx 的权限控制</a></li>
+          </ul>
+        </li>
+        <li><a href="#26-acp-事件流解析">2.6 ACP 事件流解析</a></li>
+        <li><a href="#27-acp-方式的完整数据流">2.7 ACP 方式的完整数据流</a></li>
+      </ul>
+    </li>
+    <li><a href="#两种方式的对比">两种方式的对比</a></li>
+    <li><a href="#核心组件关系图">核心组件关系图</a></li>
+    <li><a href="#关键源码文件索引">关键源码文件索引</a>
+      <ul>
+        <li><a href="#bash-路径">Bash 路径</a></li>
+        <li><a href="#acp-路径">ACP 路径</a></li>
+        <li><a href="#共享基础设施">共享基础设施</a></li>
+      </ul>
+    </li>
+    <li><a href="#设计亮点">设计亮点</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="概述">概述</h2>
+<p>OpenClaw 支持通过两种方式调用外部 coding agent（Codex、Claude Code、OpenCode、Pi 等）：</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>入口工具</th>
+<th>执行环境</th>
+<th>通信协议</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bash（exec）</strong></td>
+<td><code>exec</code> tool</td>
+<td>OS 子进程（PTY/child）</td>
+<td>stdin/stdout 原始流</td>
+<td>一次性任务、直接 CLI 调用</td>
+</tr>
+<tr>
+<td><strong>ACP</strong></td>
+<td><code>sessions_spawn</code> tool</td>
+<td>acpx CLI → ACP adapter</td>
+<td>JSON-RPC 2.0 over stdio</td>
+<td>持久化会话、线程绑定、结构化交互</td>
+</tr>
+</tbody>
+</table>
+<p>两条路径最终都由 OpenClaw 的内嵌 Pi Agent 触发——Pi Agent 是 OpenClaw 唯一的官方 agent runtime，外部 coding agent 作为 Pi 的&quot;工具&quot;被调用。</p>
+<hr>
+<h2 id="方式一bashexec-tool直接调用">方式一：Bash（exec tool）直接调用</h2>
+<h3 id="11-入口coding-agent-skill">1.1 入口：coding-agent Skill</h3>
+<p>OpenClaw 通过 Skill 系统（<code>skills/coding-agent/SKILL.md</code>）教会 Pi Agent 何时以及如何调用外部 coding agent。Skill 定义了：</p>
+<ul>
+<li><strong>触发条件</strong>：构建新功能、PR Review、大规模重构等场景</li>
+<li><strong>前置条件</strong>：<code>anyBins: [&quot;claude&quot;, &quot;codex&quot;, &quot;opencode&quot;, &quot;pi&quot;]</code>——系统中至少有一个 CLI 可用</li>
+<li><strong>每种 agent 的调用差异</strong>：
+<ul>
+<li>Codex/Pi/OpenCode：需要 <code>pty:true</code>（交互式终端应用）</li>
+<li>Claude Code：使用 <code>--print --permission-mode bypassPermissions</code>（非交互模式，不需要 PTY）</li>
+</ul>
+</li>
+</ul>
+<h3 id="12-exec-tool-执行链路">1.2 exec tool 执行链路</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="err">根据</span> <span class="n">Skill</span> <span class="err">决定调用某个</span> <span class="n">coding</span> <span class="n">agent</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">exec</span> <span class="k">tool</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">bash</span><span class="o">-</span><span class="n">tools</span><span class="o">.</span><span class="n">exec</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">参数</span><span class="p">:</span> <span class="n">command</span><span class="p">,</span> <span class="n">pty</span><span class="p">,</span> <span class="n">workdir</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="n">elevated</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">安全检查</span><span class="p">:</span> <span class="n">host</span><span class="o">/</span><span class="n">security</span><span class="o">/</span><span class="n">ask</span> <span class="err">模式</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">runExecProcess</span><span class="p">()</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">bash</span><span class="o">-</span><span class="n">tools</span><span class="o">.</span><span class="n">exec</span><span class="o">-</span><span class="n">runtime</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">构造</span> <span class="n">SpawnInput</span><span class="err">，选择</span> <span class="n">PTY</span> <span class="err">或</span> <span class="n">child</span> <span class="err">模式</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">ProcessSupervisor</span><span class="o">.</span><span class="n">spawn</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">├─</span> <span class="n">pty</span><span class="p">:</span> <span class="bp">true</span> <span class="err">────────────────────────────────────┐</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="n">supervisor</span><span class="o">.</span><span class="n">spawn</span><span class="p">({</span> <span class="n">mode</span><span class="p">:</span> <span class="s2">&#34;pty&#34;</span><span class="p">,</span> <span class="n">ptyCommand</span> <span class="p">})</span>  <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">→</span> <span class="n">createPtyAdapter</span><span class="p">()</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">process</span><span class="o">/</span><span class="n">supervisor</span><span class="o">/</span><span class="n">adapters</span><span class="o">/</span><span class="n">pty</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">→</span> <span class="err">@</span><span class="n">lydell</span><span class="o">/</span><span class="n">node</span><span class="o">-</span><span class="n">pty</span> <span class="n">spawn</span>                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">→</span> <span class="err">分配伪终端</span> <span class="p">(</span><span class="n">cols</span><span class="p">:</span><span class="mi">120</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span><span class="mi">30</span><span class="p">)</span>               <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>                                                  <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">├─</span> <span class="n">pty</span><span class="p">:</span> <span class="bp">false</span> <span class="err">───────────────────────────────────┐</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="n">supervisor</span><span class="o">.</span><span class="n">spawn</span><span class="p">({</span> <span class="n">mode</span><span class="p">:</span> <span class="s2">&#34;child&#34;</span><span class="p">,</span> <span class="n">argv</span> <span class="p">})</span>      <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">→</span> <span class="ne">Node</span><span class="o">.</span><span class="n">js</span> <span class="n">child_process</span><span class="o">.</span><span class="n">spawn</span>                  <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">→</span> <span class="n">stdio</span><span class="p">:</span> <span class="n">pipe</span>                                  <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>                                                  <span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="err">外部</span> <span class="n">coding</span> <span class="n">agent</span> <span class="n">CLI</span> <span class="err">进程</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">例</span><span class="p">:</span> <span class="n">codex</span> <span class="n">exec</span> <span class="s2">&#34;Build a REST API&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">例</span><span class="p">:</span> <span class="n">claude</span> <span class="o">--</span><span class="nb">print</span> <span class="o">--</span><span class="n">permission</span><span class="o">-</span><span class="n">mode</span> <span class="n">bypassPermissions</span> <span class="s2">&#34;Fix the bug&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">bash</span><span class="o">-</span><span class="n">process</span><span class="o">-</span><span class="n">registry</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">bash</span><span class="o">-</span><span class="n">process</span><span class="o">-</span><span class="n">registry</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">注册为</span> <span class="n">ProcessSession</span> <span class="p">(</span><span class="n">runningSessions</span> <span class="n">Map</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">缓冲</span> <span class="n">stdout</span><span class="o">/</span><span class="n">stderr</span> <span class="err">输出</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="n">TTL</span> <span class="err">管理</span> <span class="p">(</span><span class="mi">30</span><span class="nb">min</span> <span class="err">默认</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">process</span> <span class="k">tool</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">bash</span><span class="o">-</span><span class="n">tools</span><span class="o">.</span><span class="n">process</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>  <span class="err">后台任务管理</span><span class="p">:</span> <span class="n">list</span><span class="o">/</span><span class="n">poll</span><span class="o">/</span><span class="nb">log</span><span class="o">/</span><span class="n">write</span><span class="o">/</span><span class="n">submit</span><span class="o">/</span><span class="n">send</span><span class="o">-</span><span class="n">keys</span><span class="o">/</span><span class="n">kill</span>
+</span></span><span class="line"><span class="cl"><span class="err">│</span>
+</span></span><span class="line"><span class="cl"><span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="err">读取输出，汇总结果返回用户</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="13-关键代码路径">1.3 关键代码路径</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>核心函数/类</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/agents/bash-tools.exec.ts</code></td>
+<td><code>createExecTool()</code></td>
+<td>定义 exec tool 的 schema、安全检查、参数解析</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.exec-runtime.ts</code></td>
+<td><code>runExecProcess()</code></td>
+<td>实际 spawn 逻辑，根据 <code>usePty</code> 分流</td>
+</tr>
+<tr>
+<td><code>src/process/supervisor/adapters/pty.ts</code></td>
+<td><code>createPtyAdapter()</code></td>
+<td>PTY 适配器，使用 <code>@lydell/node-pty</code></td>
+</tr>
+<tr>
+<td><code>src/process/supervisor/types.ts</code></td>
+<td><code>ProcessSupervisor</code> interface</td>
+<td>spawn/cancel/reconcile 接口</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-process-registry.ts</code></td>
+<td><code>runningSessions</code> / <code>finishedSessions</code></td>
+<td>进程会话生命周期管理</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.process.ts</code></td>
+<td><code>createProcessTool()</code></td>
+<td>后台进程交互工具</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14-bash-方式的数据流">1.4 Bash 方式的数据流</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">用户</span><span class="p">:</span> <span class="s2">&#34;帮我用 Codex 重构 auth 模块&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">OpenClaw</span> <span class="n">Gateway</span> <span class="p">(</span><span class="n">WebSocket</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="p">(</span><span class="n">embedded</span><span class="p">,</span> <span class="n">createAgentSession</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">Pi</span> <span class="err">识别到</span> <span class="n">coding</span><span class="o">-</span><span class="n">agent</span> <span class="n">Skill</span><span class="err">，决定使用</span> <span class="n">exec</span> <span class="k">tool</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">exec</span> <span class="k">tool</span> <span class="err">调用</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">command</span><span class="p">:</span> <span class="s2">&#34;codex exec --full-auto &#39;Refactor the auth module&#39;&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pty</span><span class="p">:</span> <span class="bp">true</span>
+</span></span><span class="line"><span class="cl">  <span class="n">workdir</span><span class="p">:</span> <span class="o">~/</span><span class="n">project</span>
+</span></span><span class="line"><span class="cl">  <span class="n">background</span><span class="p">:</span> <span class="bp">true</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">ProcessSupervisor</span><span class="o">.</span><span class="n">spawn</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">  <span class="n">mode</span><span class="p">:</span> <span class="s2">&#34;pty&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ptyCommand</span><span class="p">:</span> <span class="s2">&#34;codex exec --full-auto &#39;Refactor the auth module&#39;&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="err">@</span><span class="n">lydell</span><span class="o">/</span><span class="n">node</span><span class="o">-</span><span class="n">pty</span> <span class="err">分配伪终端</span>
+</span></span><span class="line"><span class="cl">  <span class="err">└─</span> <span class="n">codex</span> <span class="n">CLI</span> <span class="err">进程启动（</span><span class="n">pid</span><span class="p">:</span> <span class="mi">12345</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">bash</span><span class="o">-</span><span class="n">process</span><span class="o">-</span><span class="n">registry</span> <span class="err">注册</span> <span class="n">ProcessSession</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>  <span class="n">sessionId</span><span class="p">:</span> <span class="s2">&#34;ps_abc123&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>  <span class="err">缓冲</span> <span class="n">stdout</span> <span class="err">输出</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="err">使用</span> <span class="n">process</span> <span class="k">tool</span> <span class="err">监控</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">process</span> <span class="n">action</span><span class="p">:</span><span class="n">poll</span> <span class="n">sessionId</span><span class="p">:</span><span class="s2">&#34;ps_abc123&#34;</span>    <span class="err">→</span> <span class="err">检查是否完成</span>
+</span></span><span class="line"><span class="cl">  <span class="n">process</span> <span class="n">action</span><span class="p">:</span><span class="nb">log</span>  <span class="n">sessionId</span><span class="p">:</span><span class="s2">&#34;ps_abc123&#34;</span>    <span class="err">→</span> <span class="err">获取输出日志</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Codex</span> <span class="err">完成后</span> <span class="err">→</span> <span class="n">Pi</span> <span class="n">Agent</span> <span class="err">汇总结果</span> <span class="err">→</span> <span class="err">返回用户</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="方式二acpagent-client-protocol调用">方式二：ACP（Agent Client Protocol）调用</h2>
+<h3 id="21-架构总览">2.1 架构总览</h3>
+<p>ACP 方式相比 Bash 方式多了两层抽象，提供了结构化的会话管理和事件流：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">OpenClaw</span> <span class="n">Gateway</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="p">(</span><span class="n">embedded</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">sessions_spawn</span> <span class="k">tool</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="s2">&#34;acp&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">spawnAcpDirect</span><span class="p">()</span> <span class="err">───</span> <span class="err">策略检查、会话创建、线程绑定</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">AcpSessionManager</span><span class="o">.</span><span class="n">initializeSession</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">AcpxRuntime</span> <span class="p">(</span><span class="n">extensions</span><span class="o">/</span><span class="n">acpx</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">runtime</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>     <span class="err">←</span> <span class="n">OpenClaw</span> <span class="n">acpx</span> <span class="err">插件</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">spawn</span> <span class="n">child_process</span><span class="p">:</span> <span class="n">acpx</span> <span class="n">CLI</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">acpx</span> <span class="n">CLI</span> <span class="n">binary</span> <span class="p">(</span><span class="n">npm</span><span class="p">:</span> <span class="n">acpx</span><span class="err">@</span><span class="mf">0.1</span><span class="o">.</span><span class="mi">15</span><span class="p">)</span>               <span class="err">←</span> <span class="err">外部</span> <span class="n">npm</span> <span class="err">包</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">spawn</span> <span class="n">child_process</span><span class="p">:</span> <span class="n">Agent</span> <span class="n">ACP</span> <span class="n">Adapter</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">ACP</span> <span class="err">协议通信</span> <span class="p">(</span><span class="n">JSON</span><span class="o">-</span><span class="n">RPC</span> <span class="mf">2.0</span> <span class="n">over</span> <span class="n">stdio</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Agent</span> <span class="n">ACP</span> <span class="n">Adapter</span>                                  <span class="err">←</span> <span class="err">第三方适配器</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">g</span><span class="o">.</span> <span class="err">@</span><span class="n">zed</span><span class="o">-</span><span class="n">industries</span><span class="o">/</span><span class="n">codex</span><span class="o">-</span><span class="n">acp</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">调用底层</span> <span class="n">Codex</span><span class="o">/</span><span class="n">Claude</span> <span class="n">API</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="err">实际</span> <span class="n">Coding</span> <span class="n">Agent</span> <span class="p">(</span><span class="n">Codex</span> <span class="o">/</span> <span class="n">Claude</span> <span class="n">Code</span> <span class="o">/</span> <span class="n">etc</span><span class="o">.</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="22-sessions_spawn-tool-入口">2.2 sessions_spawn tool 入口</h3>
+<p><code>sessions_spawn</code>（<code>src/agents/tools/sessions-spawn-tool.ts</code>）是 ACP 路径的入口工具：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">SESSIONS_SPAWN_RUNTIMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&#34;subagent&#34;</span><span class="p">,</span> <span class="s2">&#34;acp&#34;</span><span class="p">]</span> <span class="kr">as</span> <span class="kr">const</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 当 runtime=&#34;acp&#34; 时:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">if</span> <span class="p">(</span><span class="nx">runtime</span> <span class="o">===</span> <span class="s2">&#34;acp&#34;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">spawnAcpDirect</span><span class="p">({</span> <span class="nx">task</span><span class="p">,</span> <span class="nx">agentId</span><span class="p">,</span> <span class="nx">cwd</span><span class="p">,</span> <span class="nx">mode</span><span class="p">,</span> <span class="p">...</span> <span class="p">},</span> <span class="nx">ctx</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 当 runtime=&#34;subagent&#34; 时:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">await</span> <span class="nx">spawnSubagentDirect</span><span class="p">({</span> <span class="p">...</span> <span class="p">},</span> <span class="nx">ctx</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>参数说明：</p>
+<ul>
+<li><code>runtime</code>: <code>&quot;subagent&quot;</code>（默认，内部 Pi 子会话）或 <code>&quot;acp&quot;</code>（外部 coding agent）</li>
+<li><code>mode</code>: <code>&quot;run&quot;</code>（一次性）或 <code>&quot;session&quot;</code>（持久化/线程绑定）</li>
+<li><code>thread</code>: 是否绑定到当前消息线程</li>
+<li><code>streamTo</code>: <code>&quot;parent&quot;</code> 可将 ACP 事件流式传回父会话</li>
+<li><code>agentId</code>: 目标 agent 标识（如 <code>&quot;codex&quot;</code>、<code>&quot;claude&quot;</code>）</li>
+</ul>
+<h3 id="23-spawnacpdirect-策略与初始化">2.3 spawnAcpDirect() 策略与初始化</h3>
+<p><code>spawnAcpDirect()</code>（<code>src/agents/acp-spawn.ts</code>）负责策略检查和会话初始化：</p>
+<ol>
+<li>
+<p><strong>策略检查</strong>：</p>
+<ul>
+<li>ACP 是否被策略启用（<code>acp.enabled</code>）</li>
+<li>沙箱限制（ACP 必须在宿主机运行，沙箱会话不能 spawn ACP）</li>
+<li>Agent 策略校验（<code>resolveAcpAgentPolicyError</code>）</li>
+</ul>
+</li>
+<li>
+<p><strong>创建会话 key</strong>：<code>agent:&lt;agentId&gt;:acp:&lt;uuid&gt;</code></p>
+</li>
+<li>
+<p><strong>Gateway 注册</strong>：通过 <code>callGateway(&quot;sessions.patch&quot;, { key: sessionKey })</code> 在 gateway 注册新会话</p>
+</li>
+<li>
+<p><strong>初始化 ACP Runtime</strong>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">acpManager</span> <span class="o">=</span> <span class="nx">getAcpSessionManager</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">await</span> <span class="nx">acpManager</span><span class="p">.</span><span class="nx">initializeSession</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">cfg</span><span class="p">,</span> <span class="nx">sessionKey</span><span class="p">,</span> <span class="nx">agent</span>: <span class="kt">targetAgentId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">mode</span>: <span class="kt">runtimeMode</span><span class="p">,</span> <span class="nx">cwd</span><span class="p">,</span> <span class="nx">backendId</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></li>
+<li>
+<p><strong>线程绑定</strong>（可选）：通过 <code>bindingService.bind()</code> 将 ACP 会话绑定到 Discord/Telegram 线程</p>
+</li>
+<li>
+<p><strong>分发任务</strong>：通过 <code>callGateway(&quot;agent&quot;, { key: sessionKey, text: task })</code> 触发 agent 事件循环</p>
+</li>
+</ol>
+<h3 id="24-acpxruntimeopenclaw-与-acpx-的桥梁">2.4 AcpxRuntime：OpenClaw 与 acpx 的桥梁</h3>
+<p><code>AcpxRuntime</code>（<code>extensions/acpx/src/runtime.ts</code>）实现了 <code>AcpRuntime</code> 接口，是 OpenClaw 插件层与 acpx CLI 之间的桥梁。</p>
+<h4 id="acpruntime-接口">AcpRuntime 接口</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="kr">interface</span> <span class="nx">AcpRuntime</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">ensureSession</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">AcpRuntimeHandle</span><span class="p">&gt;;</span>    <span class="c1">// 创建/复用会话
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">runTurn</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">AsyncIterable</span><span class="p">&lt;</span><span class="nt">AcpRuntimeEvent</span><span class="p">&gt;;</span>     <span class="c1">// 执行一轮对话
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">cancel</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">&gt;;</span>                        <span class="c1">// 取消当前对话
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">close</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">&gt;;</span>                         <span class="c1">// 关闭会话
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">getCapabilities</span><span class="p">()</span><span class="o">:</span> <span class="nx">AcpRuntimeCapabilities</span><span class="p">;</span>           <span class="c1">// 查询能力
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">getStatus</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">AcpRuntimeStatus</span><span class="p">&gt;;</span>         <span class="c1">// 查询状态
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">setMode</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">&gt;;</span>                       <span class="c1">// 设置模式
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">setConfigOption</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">void</span><span class="p">&gt;;</span>               <span class="c1">// 设置配置
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">doctor</span><span class="p">()</span><span class="o">:</span> <span class="nx">Promise</span><span class="p">&lt;</span><span class="nt">AcpRuntimeDoctorReport</span><span class="p">&gt;;</span>           <span class="c1">// 健康检查
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="全局-backend-注册">全局 Backend 注册</h4>
+<p><code>AcpxRuntime</code> 通过 <code>registerAcpRuntimeBackend()</code> 注册到全局注册表（<code>src/acp/runtime/registry.ts</code>），使其对整个系统可用：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-typescript" data-lang="typescript"><span class="line"><span class="cl"><span class="c1">// extensions/acpx/src/service.ts
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="nx">registerAcpRuntimeBackend</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">id</span><span class="o">:</span> <span class="s2">&#34;acpx&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">runtime</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">healthy</span><span class="o">:</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">runtime</span><span class="o">?</span><span class="p">.</span><span class="nx">isHealthy</span><span class="p">()</span> <span class="o">??</span> <span class="kc">false</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="核心方法实现">核心方法实现</h4>
+<p><strong>ensureSession</strong> — 创建或复用 agent 会话：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">acpx --format json --json-strict --cwd /path &lt;agent&gt; sessions ensure --name &lt;key&gt;
+</span></span><span class="line"><span class="cl">  ↓ 如果失败 fallback ↓
+</span></span><span class="line"><span class="cl">acpx --format json --json-strict --cwd /path &lt;agent&gt; sessions new --name &lt;key&gt;
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>runTurn</strong> — 执行一轮 prompt：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">acpx --format json --json-strict --cwd /path \
+</span></span><span class="line"><span class="cl">  --approve-reads --non-interactive-permissions fail \
+</span></span><span class="line"><span class="cl">  --timeout 300 --ttl 0.1 \
+</span></span><span class="line"><span class="cl">  &lt;agent&gt; prompt --session &lt;name&gt; --file -
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
+<li>通过 stdin 写入 prompt 文本</li>
+<li>通过 stdout 逐行读取 JSON 事件（<code>parsePromptEventLine</code>）</li>
+<li>返回 <code>AsyncIterable&lt;AcpRuntimeEvent&gt;</code></li>
+</ul>
+<p><strong>cancel</strong> / <strong>close</strong>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">acpx --format json --json-strict --cwd /path &lt;agent&gt; cancel --session &lt;name&gt;
+</span></span><span class="line"><span class="cl">acpx --format json --json-strict --cwd /path &lt;agent&gt; sessions close &lt;name&gt;
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="25-acpx-cli统一的-agent-协调器">2.5 acpx CLI：统一的 Agent 协调器</h3>
+<p>acpx（npm 包 <code>acpx@0.1.15</code>，源码仓库 <code>github.com/openclaw/acpx</code>）是一个独立的命令行工具，职责是通过 ACP 协议与各种 coding agent 通信。</p>
+<h4 id="agent-注册表">Agent 注册表</h4>
+<p>acpx 内部维护了一个 agent 名称到启动命令的映射：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="line"><span class="cl"><span class="nx">AGENT_REGISTRY</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">codex</span><span class="o">:</span>    <span class="s2">&#34;npx @zed-industries/codex-acp&#34;</span><span class="p">,</span>       <span class="c1">// Codex 的 ACP 适配器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">claude</span><span class="o">:</span>   <span class="s2">&#34;npx -y @zed-industries/claude-agent-acp&#34;</span><span class="p">,</span>  <span class="c1">// Claude Code 的 ACP 适配器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">gemini</span><span class="o">:</span>   <span class="s2">&#34;gemini&#34;</span><span class="p">,</span>                               <span class="c1">// Gemini 原生支持
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">opencode</span><span class="o">:</span> <span class="s2">&#34;npx -y opencode-ai acp&#34;</span><span class="p">,</span>               <span class="c1">// OpenCode 的 ACP 适配器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">pi</span><span class="o">:</span>       <span class="s2">&#34;npx pi-acp&#34;</span>                            <span class="c1">// Pi 的 ACP 适配器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>关键设计</strong>：acpx 不直接调用 <code>codex</code> 或 <code>claude</code> CLI，而是调用各 agent 的 <strong>ACP 协议适配器</strong>（<code>*-acp</code> 包）。这些适配器由 Zed Industries 等第三方维护，负责将 ACP 协议翻译为各 agent 的内部 API。</p>
+<h4 id="acpx-启动-agent-的过程">acpx 启动 Agent 的过程</h4>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="line"><span class="cl"><span class="c1">// 1. 解析命令
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="p">{</span> <span class="nx">command</span><span class="p">,</span> <span class="nx">args</span> <span class="p">}</span> <span class="o">=</span> <span class="nx">splitCommandLine</span><span class="p">(</span><span class="s2">&#34;npx @zed-industries/codex-acp&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 2. Spawn 子进程
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">child</span> <span class="o">=</span> <span class="nx">spawn</span><span class="p">(</span><span class="nx">command</span><span class="p">,</span> <span class="nx">args</span><span class="p">,</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">cwd</span><span class="o">:</span> <span class="nx">options</span><span class="p">.</span><span class="nx">cwd</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">env</span><span class="o">:</span> <span class="nx">buildAgentEnvironment</span><span class="p">(</span><span class="nx">authCredentials</span><span class="p">),</span>  <span class="c1">// 注入认证环境变量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nx">stdio</span><span class="o">:</span> <span class="p">[</span><span class="s2">&#34;pipe&#34;</span><span class="p">,</span> <span class="s2">&#34;pipe&#34;</span><span class="p">,</span> <span class="s2">&#34;pipe&#34;</span><span class="p">]</span>               <span class="c1">// stdin/stdout 用于 ACP 通信
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">});</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 3. 建立 ACP 连接 (NDJSON 双向流)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">input</span>  <span class="o">=</span> <span class="nx">Writable</span><span class="p">.</span><span class="nx">toWeb</span><span class="p">(</span><span class="nx">child</span><span class="p">.</span><span class="nx">stdin</span><span class="p">);</span>     <span class="c1">// acpx → agent
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">output</span> <span class="o">=</span> <span class="nx">Readable</span><span class="p">.</span><span class="nx">toWeb</span><span class="p">(</span><span class="nx">child</span><span class="p">.</span><span class="nx">stdout</span><span class="p">);</span>    <span class="c1">// agent → acpx
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">ndJsonStream</span><span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">output</span><span class="p">);</span>     <span class="c1">// NDJSON 编解码
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">ClientSideConnection</span><span class="p">(</span><span class="nx">handlers</span><span class="p">,</span> <span class="nx">stream</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 4. 协议初始化握手
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">const</span> <span class="nx">initResult</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">connection</span><span class="p">.</span><span class="nx">initialize</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">protocolVersion</span><span class="o">:</span> <span class="nx">PROTOCOL_VERSION</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">clientCapabilities</span><span class="o">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fs</span><span class="o">:</span> <span class="p">{</span> <span class="nx">readTextFile</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">writeTextFile</span><span class="o">:</span> <span class="kc">true</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">terminal</span><span class="o">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">  <span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">clientInfo</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s2">&#34;acpx&#34;</span><span class="p">,</span> <span class="nx">version</span><span class="o">:</span> <span class="s2">&#34;0.1.0&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">});</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 5. 认证（如果 agent 要求）
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kr">await</span> <span class="nx">authenticateIfRequired</span><span class="p">(</span><span class="nx">connection</span><span class="p">,</span> <span class="nx">initResult</span><span class="p">.</span><span class="nx">authMethods</span><span class="p">);</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="acp-协议通信方向">ACP 协议通信方向</h4>
+<table>
+<thead>
+<tr>
+<th>方向</th>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>acpx → agent</td>
+<td><code>initialize</code></td>
+<td>协议握手，声明能力</td>
+</tr>
+<tr>
+<td>acpx → agent</td>
+<td><code>prompt</code></td>
+<td>发送用户任务/指令</td>
+</tr>
+<tr>
+<td>acpx → agent</td>
+<td><code>cancel</code></td>
+<td>取消当前任务</td>
+</tr>
+<tr>
+<td>acpx → agent</td>
+<td><code>loadSession</code></td>
+<td>恢复已有会话</td>
+</tr>
+<tr>
+<td>acpx → agent</td>
+<td><code>setSessionMode</code></td>
+<td>切换 agent 模式</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>session/update</code></td>
+<td>流式输出（文本、思考、工具调用）</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>requestPermission</code></td>
+<td>请求操作权限</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>readTextFile</code></td>
+<td>读取文件</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>writeTextFile</code></td>
+<td>写入文件</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>createTerminal</code></td>
+<td>创建终端执行命令</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>terminalOutput</code></td>
+<td>终端输出数据</td>
+</tr>
+<tr>
+<td>agent → acpx</td>
+<td><code>killTerminal</code></td>
+<td>终止终端</td>
+</tr>
+</tbody>
+</table>
+<p>acpx 在此扮演 ACP 协议中 <strong>Client（编辑器）</strong> 的角色，为 agent 提供文件系统访问和终端能力。</p>
+<h4 id="acpx-的权限控制">acpx 的权限控制</h4>
+<p>acpx 内部实现了 <code>FileSystemHandlers</code> 类，根据 <code>permissionMode</code> 控制 agent 的文件操作：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>读文件</th>
+<th>写文件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>approve-all</code></td>
+<td>允许</td>
+<td>允许</td>
+</tr>
+<tr>
+<td><code>approve-reads</code></td>
+<td>允许</td>
+<td>需确认（非交互模式拒绝/失败）</td>
+</tr>
+<tr>
+<td><code>deny-all</code></td>
+<td>拒绝</td>
+<td>拒绝</td>
+</tr>
+</tbody>
+</table>
+<p>OpenClaw 默认使用 <code>approve-reads</code>，即 agent 可以自由读文件，但写操作受限。</p>
+<h3 id="26-acp-事件流解析">2.6 ACP 事件流解析</h3>
+<p><code>AcpxRuntime.runTurn()</code> 逐行读取 acpx stdout 的 JSON 事件，通过 <code>parsePromptEventLine()</code> 解析为统一的 <code>AcpRuntimeEvent</code>：</p>
+<table>
+<thead>
+<tr>
+<th>acpx 输出的事件 type</th>
+<th>解析后的 AcpRuntimeEvent type</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>text_delta</code> (stream: &ldquo;output&rdquo;)</td>
+<td>agent 输出文本片段</td>
+</tr>
+<tr>
+<td><code>thought</code></td>
+<td><code>text_delta</code> (stream: &ldquo;thought&rdquo;)</td>
+<td>agent 思考过程</td>
+</tr>
+<tr>
+<td><code>tool_call</code> / <code>tool_call_update</code></td>
+<td><code>tool_call</code></td>
+<td>工具调用状态</td>
+</tr>
+<tr>
+<td><code>agent_message_chunk</code></td>
+<td><code>text_delta</code> (stream: &ldquo;output&rdquo;)</td>
+<td>agent 消息文本块</td>
+</tr>
+<tr>
+<td><code>agent_thought_chunk</code></td>
+<td><code>text_delta</code> (stream: &ldquo;thought&rdquo;)</td>
+<td>agent 思考文本块</td>
+</tr>
+<tr>
+<td><code>usage_update</code></td>
+<td><code>status</code></td>
+<td>token 使用量</td>
+</tr>
+<tr>
+<td><code>available_commands_update</code></td>
+<td><code>status</code></td>
+<td>可用命令更新</td>
+</tr>
+<tr>
+<td><code>current_mode_update</code></td>
+<td><code>status</code></td>
+<td>模式切换</td>
+</tr>
+<tr>
+<td><code>done</code></td>
+<td><code>done</code></td>
+<td>任务完成</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>error</code></td>
+<td>错误</td>
+</tr>
+</tbody>
+</table>
+<p>同时支持 JSON-RPC 2.0 <code>session/update</code> 通知格式——这是 ACP 协议的原生格式。</p>
+<h3 id="27-acp-方式的完整数据流">2.7 ACP 方式的完整数据流</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">用户</span><span class="p">:</span> <span class="s2">&#34;用 Codex 给我在这个 thread 里搞个 snake game&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">OpenClaw</span> <span class="n">Gateway</span> <span class="p">(</span><span class="n">WebSocket</span><span class="p">)</span> <span class="err">→</span> <span class="n">Discord</span><span class="o">/</span><span class="n">Telegram</span> <span class="n">thread</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">Pi</span> <span class="n">Agent</span> <span class="p">(</span><span class="n">embedded</span><span class="p">,</span> <span class="n">createAgentSession</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">识别到应使用</span> <span class="n">ACP</span> <span class="err">方式（</span><span class="n">thread</span><span class="o">-</span><span class="n">bound</span> <span class="err">场景）</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">调用</span> <span class="n">sessions_spawn</span> <span class="k">tool</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="s2">&#34;acp&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">createSessionsSpawnTool</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">runtime</span><span class="o">=</span><span class="s2">&#34;acp&#34;</span> <span class="err">→</span> <span class="n">spawnAcpDirect</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">spawnAcpDirect</span><span class="p">()</span> <span class="p">(</span><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">acp</span><span class="o">-</span><span class="n">spawn</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">1.</span> <span class="err">策略检查</span><span class="p">:</span> <span class="n">ACP</span> <span class="err">启用？沙箱限制？</span><span class="n">Agent</span> <span class="err">策略？</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">2.</span> <span class="err">生成</span> <span class="n">sessionKey</span><span class="p">:</span> <span class="s2">&#34;agent:codex:acp:&lt;uuid&gt;&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">3.</span> <span class="n">Gateway</span> <span class="err">注册</span><span class="p">:</span> <span class="n">sessions</span><span class="o">.</span><span class="n">patch</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">4.</span> <span class="n">ACP</span> <span class="n">Runtime</span> <span class="err">初始化</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>    <span class="n">acpManager</span><span class="o">.</span><span class="n">initializeSession</span><span class="p">({</span> <span class="n">agent</span><span class="p">:</span> <span class="s2">&#34;codex&#34;</span><span class="p">,</span> <span class="o">...</span> <span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">5.</span> <span class="err">线程绑定</span><span class="p">:</span> <span class="n">bindingService</span><span class="o">.</span><span class="n">bind</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="mf">6.</span> <span class="err">分发任务</span><span class="p">:</span> <span class="n">callGateway</span><span class="p">(</span><span class="s2">&#34;agent&#34;</span><span class="p">,</span> <span class="p">{</span> <span class="n">key</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="n">task</span> <span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">AcpxRuntime</span><span class="o">.</span><span class="n">ensureSession</span><span class="p">()</span> <span class="p">(</span><span class="n">extensions</span><span class="o">/</span><span class="n">acpx</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">runtime</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">spawn</span><span class="p">:</span> <span class="n">acpx</span> <span class="o">--</span><span class="n">format</span> <span class="n">json</span> <span class="n">codex</span> <span class="n">sessions</span> <span class="n">ensure</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">返回</span><span class="p">:</span> <span class="n">AcpRuntimeHandle</span> <span class="p">{</span> <span class="n">sessionKey</span><span class="p">,</span> <span class="n">runtimeSessionName</span><span class="p">,</span> <span class="o">...</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">AcpxRuntime</span><span class="o">.</span><span class="n">runTurn</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="err">—</span> <span class="err">执行</span> <span class="n">prompt</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">spawn</span><span class="p">:</span> <span class="n">acpx</span> <span class="o">--</span><span class="n">format</span> <span class="n">json</span> <span class="o">--</span><span class="n">approve</span><span class="o">-</span><span class="n">reads</span> <span class="o">--</span><span class="n">cwd</span> <span class="o">/</span><span class="n">path</span> \
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>        <span class="n">codex</span> <span class="n">prompt</span> <span class="o">--</span><span class="n">session</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">file</span> <span class="o">-</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">stdin</span><span class="o">.</span><span class="n">end</span><span class="p">(</span><span class="n">promptText</span><span class="p">)</span>     <span class="err">←</span> <span class="err">写入用户任务</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">stdout</span> <span class="n">readline</span>           <span class="err">←</span> <span class="err">逐行读取</span> <span class="n">JSON</span> <span class="n">events</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span> <span class="err">───</span> <span class="n">acpx</span> <span class="n">CLI</span> <span class="err">内部</span> <span class="err">───</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">resolveAgentCommand</span><span class="p">(</span><span class="s2">&#34;codex&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="err">→</span> <span class="s2">&#34;npx @zed-industries/codex-acp&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">splitCommandLine</span> <span class="err">→</span> <span class="n">spawn</span><span class="p">(</span><span class="s2">&#34;npx&#34;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&#34;@zed-industries/codex-acp&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="n">stdio</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;pipe&#34;</span><span class="p">,</span> <span class="s2">&#34;pipe&#34;</span><span class="p">,</span> <span class="s2">&#34;pipe&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">ClientSideConnection</span> <span class="n">over</span> <span class="n">ndJsonStream</span><span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="err">→</span> <span class="n">connection</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>      <span class="n">ACP</span> <span class="err">握手</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="err">→</span> <span class="n">connection</span><span class="o">.</span><span class="n">prompt</span><span class="p">({</span>          <span class="err">发送</span> <span class="n">prompt</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>       <span class="n">sessionId</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="p">[{</span> <span class="n">type</span><span class="p">:</span> <span class="s2">&#34;text&#34;</span><span class="p">,</span> <span class="n">text</span> <span class="p">}]</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>     <span class="p">})</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span> <span class="err">───</span> <span class="err">@</span><span class="n">zed</span><span class="o">-</span><span class="n">industries</span><span class="o">/</span><span class="n">codex</span><span class="o">-</span><span class="n">acp</span> <span class="err">内部</span> <span class="err">───</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">调用</span> <span class="n">Codex</span> <span class="n">API</span> <span class="o">/</span> <span class="n">runtime</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">执行编码任务（读写文件、运行命令等）</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="err">通过</span> <span class="n">ACP</span> <span class="err">协议发回</span> <span class="n">session</span><span class="o">/</span><span class="n">update</span> <span class="err">通知</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span> <span class="err">───</span> <span class="err">回到</span> <span class="n">acpx</span> <span class="err">───</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">agent</span> <span class="err">请求</span> <span class="n">readTextFile</span> <span class="err">→</span> <span class="n">acpx</span> <span class="n">FileSystemHandlers</span> <span class="err">处理</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">agent</span> <span class="err">请求</span> <span class="n">writeTextFile</span> <span class="err">→</span> <span class="n">acpx</span> <span class="err">检查权限后执行</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">agent</span> <span class="err">请求</span> <span class="n">createTerminal</span> <span class="err">→</span> <span class="n">acpx</span> <span class="err">创建子终端</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">agent</span> <span class="err">发送</span> <span class="n">session</span><span class="o">/</span><span class="n">update</span> <span class="err">→</span> <span class="n">acpx</span> <span class="err">转为</span> <span class="n">JSON</span> <span class="err">事件输出到</span> <span class="n">stdout</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span> <span class="err">───</span> <span class="err">回到</span> <span class="n">OpenClaw</span> <span class="err">───</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="n">AcpxRuntime</span><span class="o">.</span><span class="n">runTurn</span><span class="p">()</span> <span class="err">逐行解析</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span> <span class="n">parsePromptEventLine</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="err">→</span> <span class="n">AcpRuntimeEvent</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="p">{</span> <span class="n">type</span><span class="p">:</span> <span class="s2">&#34;text_delta&#34;</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="s2">&#34;...&#34;</span><span class="p">,</span> <span class="n">stream</span><span class="p">:</span> <span class="s2">&#34;output&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="p">{</span> <span class="n">type</span><span class="p">:</span> <span class="s2">&#34;tool_call&#34;</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="s2">&#34;edit file&#34;</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="s2">&#34;running&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>   <span class="p">{</span> <span class="n">type</span><span class="p">:</span> <span class="s2">&#34;done&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">  <span class="err">▼</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ACP</span> <span class="err">事件</span> <span class="err">→</span> <span class="err">流式传回</span> <span class="n">Pi</span> <span class="n">Agent</span> <span class="err">→</span> <span class="n">Gateway</span> <span class="err">→</span> <span class="err">用户消息</span> <span class="n">thread</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="两种方式的对比">两种方式的对比</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Bash (exec)</th>
+<th>ACP (sessions_spawn)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>调用层级</strong></td>
+<td>Pi → exec tool → ProcessSupervisor → CLI 进程</td>
+<td>Pi → sessions_spawn → acpManager → AcpxRuntime → acpx CLI → ACP adapter → agent</td>
+</tr>
+<tr>
+<td><strong>通信协议</strong></td>
+<td>原始 stdin/stdout 文本流</td>
+<td>JSON-RPC 2.0 (ACP 协议)</td>
+</tr>
+<tr>
+<td><strong>会话管理</strong></td>
+<td>bash-process-registry（内存，无持久化）</td>
+<td>acpx session store（支持持久化和恢复）</td>
+</tr>
+<tr>
+<td><strong>输出解析</strong></td>
+<td>原始文本，Pi 自行理解</td>
+<td>结构化 JSON 事件（text_delta, tool_call, done, error）</td>
+</tr>
+<tr>
+<td><strong>权限控制</strong></td>
+<td>agent CLI 自身的权限机制</td>
+<td>acpx FileSystemHandlers（approve-all/approve-reads/deny-all）</td>
+</tr>
+<tr>
+<td><strong>线程绑定</strong></td>
+<td>不支持</td>
+<td>支持绑定到 Discord/Telegram 线程</td>
+</tr>
+<tr>
+<td><strong>流式回传</strong></td>
+<td>通过 process tool 手动轮询</td>
+<td>支持 streamTo=&ldquo;parent&rdquo; 自动流式回传</td>
+</tr>
+<tr>
+<td><strong>PTY 支持</strong></td>
+<td>原生支持 PTY（交互式 CLI）</td>
+<td>不使用 PTY（child_process + pipe）</td>
+</tr>
+<tr>
+<td><strong>多 agent 协同</strong></td>
+<td>手动管理多个后台进程</td>
+<td>通过 subagent-registry 自动管理生命周期</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>快速一次性任务、需要 PTY 的交互式 CLI</td>
+<td>持久会话、线程绑定、需要结构化事件流的场景</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="核心组件关系图">核心组件关系图</h2>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl">                          <span class="err">┌──────────────────────────────┐</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">│</span>     <span class="n">OpenClaw</span> <span class="n">Gateway</span>         <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">│</span>     <span class="p">(</span><span class="n">WebSocket</span> <span class="n">API</span><span class="p">)</span>          <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">└──────────┬───────────────────┘</span>
+</span></span><span class="line"><span class="cl">                                     <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">┌──────────▼───────────────────┐</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">│</span>    <span class="n">Pi</span> <span class="n">Agent</span> <span class="p">(</span><span class="n">embedded</span><span class="p">)</span>        <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">│</span>  <span class="n">createAgentSession</span><span class="p">()</span>         <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">│</span>  <span class="err">@</span><span class="n">mariozechner</span><span class="o">/</span><span class="n">pi</span><span class="o">-</span><span class="n">coding</span><span class="o">-</span><span class="n">agent</span><span class="err">│</span>
+</span></span><span class="line"><span class="cl">                          <span class="err">└──┬───────────────────────┬───┘</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">┌────────▼─────────┐</span>   <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span>   <span class="n">exec</span> <span class="k">tool</span>      <span class="err">│</span>   <span class="err">│</span> <span class="n">sessions_spawn</span>     <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="p">(</span><span class="n">Bash</span> <span class="err">方式</span><span class="p">)</span>       <span class="err">│</span>   <span class="err">│</span> <span class="k">tool</span> <span class="p">(</span><span class="n">ACP</span> <span class="err">方式</span><span class="p">)</span>    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">└────────┬─────────┘</span>   <span class="err">└────────┬──────────┘</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">┌────────▼─────────┐</span>   <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">ProcessSupervisor</span> <span class="err">│</span>   <span class="err">│</span> <span class="n">spawnAcpDirect</span><span class="p">()</span>  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span>  <span class="err">├─</span> <span class="n">PTY</span> <span class="n">adapter</span>  <span class="err">│</span>   <span class="err">│</span>  <span class="err">├─</span> <span class="err">策略检查</span>       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span>  <span class="err">└─</span> <span class="n">child</span> <span class="n">adapter</span><span class="err">│</span>   <span class="err">│</span>  <span class="err">├─</span> <span class="err">会话注册</span>       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">└────────┬─────────┘</span>   <span class="err">│</span>  <span class="err">└─</span> <span class="err">线程绑定</span>       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>             <span class="err">└────────┬──────────┘</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">┌────────▼─────────┐</span>   <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">bash</span><span class="o">-</span><span class="n">process</span><span class="o">-</span>    <span class="err">│</span>   <span class="err">│</span> <span class="n">AcpxRuntime</span>        <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">registry</span>         <span class="err">│</span>   <span class="err">│</span> <span class="p">(</span><span class="n">extensions</span><span class="o">/</span><span class="n">acpx</span><span class="p">)</span>  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span>  <span class="err">进程生命周期管理</span>  <span class="err">│</span>   <span class="err">│</span>  <span class="n">ensureSession</span><span class="p">()</span>   <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">└────────┬─────────┘</span>   <span class="err">│</span>  <span class="n">runTurn</span><span class="p">()</span>         <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>             <span class="err">└────────┬──────────┘</span>
+</span></span><span class="line"><span class="cl">                             <span class="err">│</span>                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">┌────────▼─────────┐</span>   <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="err">外部</span> <span class="n">CLI</span> <span class="err">进程</span>     <span class="err">│</span>   <span class="err">│</span> <span class="n">acpx</span> <span class="n">CLI</span> <span class="n">binary</span>   <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">codex</span> <span class="n">exec</span> <span class="o">...</span>   <span class="err">│</span>   <span class="err">│</span> <span class="p">(</span><span class="n">npm</span><span class="p">:</span> <span class="n">acpx</span><span class="err">@</span><span class="mf">0.1</span><span class="o">.</span><span class="mi">15</span><span class="p">)</span><span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">claude</span> <span class="o">--</span><span class="nb">print</span> <span class="o">..</span><span class="err">│</span>   <span class="err">└────────┬──────────┘</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">│</span> <span class="n">opencode</span> <span class="n">run</span> <span class="o">...</span> <span class="err">│</span>             <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                    <span class="err">└──────────────────┘</span>   <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span> <span class="n">ACP</span> <span class="n">adapter</span>       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span> <span class="err">@</span><span class="n">zed</span><span class="o">-</span><span class="n">industries</span><span class="o">/</span>  <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span>   <span class="n">codex</span><span class="o">-</span><span class="n">acp</span>       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span>   <span class="n">claude</span><span class="o">-</span><span class="n">agent</span><span class="o">-</span><span class="n">acp</span><span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">└────────┬──────────┘</span>
+</span></span><span class="line"><span class="cl">                                                     <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">┌────────▼──────────┐</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span> <span class="n">Agent</span> <span class="n">runtime</span>     <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">│</span> <span class="p">(</span><span class="n">Codex</span><span class="o">/</span><span class="n">Claude</span> <span class="n">API</span><span class="p">)</span><span class="err">│</span>
+</span></span><span class="line"><span class="cl">                                           <span class="err">└───────────────────┘</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><hr>
+<h2 id="关键源码文件索引">关键源码文件索引</h2>
+<h3 id="bash-路径">Bash 路径</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>skills/coding-agent/SKILL.md</code></td>
+<td>Coding agent skill 定义（触发条件、调用方式）</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.exec.ts</code></td>
+<td>exec tool 定义（参数、安全检查）</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.exec-runtime.ts</code></td>
+<td>exec 执行逻辑（spawn 分流）</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.exec-types.ts</code></td>
+<td>exec 类型定义</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-tools.process.ts</code></td>
+<td>process tool（后台进程管理）</td>
+</tr>
+<tr>
+<td><code>src/agents/bash-process-registry.ts</code></td>
+<td>进程会话注册表</td>
+</tr>
+<tr>
+<td><code>src/process/supervisor/adapters/pty.ts</code></td>
+<td>PTY 适配器</td>
+</tr>
+<tr>
+<td><code>src/process/supervisor/types.ts</code></td>
+<td>ProcessSupervisor 接口</td>
+</tr>
+</tbody>
+</table>
+<h3 id="acp-路径">ACP 路径</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/agents/tools/sessions-spawn-tool.ts</code></td>
+<td>sessions_spawn tool 定义（runtime 分流）</td>
+</tr>
+<tr>
+<td><code>src/agents/acp-spawn.ts</code></td>
+<td>ACP 会话 spawn 逻辑（策略、初始化、线程绑定）</td>
+</tr>
+<tr>
+<td><code>src/acp/runtime/types.ts</code></td>
+<td>AcpRuntime 接口定义</td>
+</tr>
+<tr>
+<td><code>src/acp/runtime/registry.ts</code></td>
+<td>ACP runtime 全局注册表</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/runtime.ts</code></td>
+<td>AcpxRuntime 实现（OpenClaw → acpx 桥梁）</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/config.ts</code></td>
+<td>acpx 插件配置（版本、权限模式）</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/service.ts</code></td>
+<td>acpx 插件服务（注册、启动、健康检查）</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/ensure.ts</code></td>
+<td>acpx binary 版本检查与自动安装</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/runtime-internals/process.ts</code></td>
+<td>子进程 spawn 工具函数</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/runtime-internals/events.ts</code></td>
+<td>ACP 事件解析（JSON → AcpRuntimeEvent）</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/runtime-internals/jsonrpc.ts</code></td>
+<td>JSON-RPC 2.0 消息识别</td>
+</tr>
+<tr>
+<td><code>extensions/acpx/src/runtime-internals/shared.ts</code></td>
+<td>共享工具函数（权限参数、session key 解析）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="共享基础设施">共享基础设施</h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/auto-reply/reply/agent-runner.ts</code></td>
+<td>顶层 reply agent 编排器</td>
+</tr>
+<tr>
+<td><code>src/auto-reply/reply/agent-runner-execution.ts</code></td>
+<td>agent turn 执行与 fallback 逻辑</td>
+</tr>
+<tr>
+<td><code>src/agents/subagent-registry.ts</code></td>
+<td>子 agent 生命周期跟踪</td>
+</tr>
+<tr>
+<td><code>src/agents/subagent-announce.ts</code></td>
+<td>子 agent 结果通知回父会话</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="设计亮点">设计亮点</h2>
+<ol>
+<li><strong>协议标准化</strong>：ACP 路径通过 Agent Client Protocol 实现了与任意 coding agent 的标准化交互，新增 agent 只需提供 ACP 适配器</li>
+<li><strong>双层 spawn 隔离</strong>：OpenClaw spawn acpx → acpx spawn agent-acp，两层 child_process 都使用 stdio pipe，实现进程隔离</li>
+<li><strong>权限集中管控</strong>：acpx 作为&quot;虚拟编辑器&quot;统一管控文件读写权限，agent 自身不直接操作文件系统</li>
+<li><strong>灵活降级</strong>：Bash 路径作为简单直接的备选，当 ACP 不可用或不适用时仍能调用 coding agent</li>
+<li><strong>自动安装</strong>：acpx 插件支持自动检测版本并安装匹配的 acpx binary（<code>ensureAcpx()</code>）</li>
+<li><strong>会话持久化</strong>：ACP 方式支持 <code>loadSession</code> 恢复之前的会话上下文，适合长期交互场景</li>
+</ol>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2026-03-05</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/openclaw-external-coding-agent/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/openclaw-external-coding-agent/" data-title="OpenClaw 使用外部 Coding Agent 的原理与调用链路" data-hashtags="OpenClaw,ACP,coding agent,Claude Code,Codex"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/openclaw-external-coding-agent/" data-hashtag="OpenClaw"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/openclaw-external-coding-agent/" data-title="OpenClaw 使用外部 Coding Agent 的原理与调用链路" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/openclaw-external-coding-agent/" data-title="OpenClaw 使用外部 Coding Agent 的原理与调用链路"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/openclaw-external-coding-agent/" data-title="OpenClaw 使用外部 Coding Agent 的原理与调用链路"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/openclaw/">OpenClaw</a>,&nbsp;<a href="/tags/acp/">ACP</a>,&nbsp;<a href="/tags/coding-agent/">Coding Agent</a>,&nbsp;<a href="/tags/claude-code/">Claude Code</a>,&nbsp;<a href="/tags/codex/">Codex</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/mcp-label-studio/" class="prev" rel="prev" title="对话式指令革新标注管理：从手动Label Studio操作到MCP Server驱动的自动化工作流"><i class="fas fa-angle-left fa-fw"></i>对话式指令革新标注管理：从手动Label Studio操作到MCP Server驱动的自动化工作流</a>
+            <a href="/openclaw-agent-execution/" class="next" rel="next" title="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排">OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

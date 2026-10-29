@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Tags - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/</link>
+        <description>Tags - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/" rel="self" type="application/rss+xml" /><item>
+    <title>Claude Code</title>
+    <link>https://lxkaka.wang/tags/claude-code/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/claude-code/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Codex</title>
+    <link>https://lxkaka.wang/tags/codex/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/codex/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Dev Container</title>
+    <link>https://lxkaka.wang/tags/dev-container/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/dev-container/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Git Worktree</title>
+    <link>https://lxkaka.wang/tags/git-worktree/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/git-worktree/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Multi-Agent</title>
+    <link>https://lxkaka.wang/tags/multi-agent/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/multi-agent/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Orca</title>
+    <link>https://lxkaka.wang/tags/orca/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/orca/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>SSH</title>
+    <link>https://lxkaka.wang/tags/ssh/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/ssh/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Cmux</title>
+    <link>https://lxkaka.wang/tags/cmux/</link>
+    <pubDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/cmux/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Docker</title>
+    <link>https://lxkaka.wang/tags/docker/</link>
+    <pubDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/docker/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>OAuth</title>
+    <link>https://lxkaka.wang/tags/oauth/</link>
+    <pubDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/tags/oauth/</guid>
+    <description><![CDATA[]]></description>
+</item></channel>
+</rss>

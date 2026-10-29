@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Embedding - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/embedding/</link>
+        <description>Embedding - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 28 Feb 2024 18:58:52 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/embedding/" rel="self" type="application/rss+xml" /><item>
+    <title>RAG 应用的关键步骤 - 优化搜索结果</title>
+    <link>https://lxkaka.wang/rag_rerank/</link>
+    <pubDate>Wed, 28 Feb 2024 18:58:52 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/rag_rerank/</guid>
+    <description><![CDATA[在这篇文章里我们介绍了快速搭建语义搜索的实践方案。在这里我们会介绍语义搜索的进阶方案，包括使用开源模型构建文本 embedding、更好用的向]]></description>
+</item><item>
+    <title>快速搭建文本语义搜索</title>
+    <link>https://lxkaka.wang/text-similarity/</link>
+    <pubDate>Sat, 16 Dec 2023 17:13:09 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/text-similarity/</guid>
+    <description><![CDATA[想象这样一个场景我们文案团队每天都会根据需求产出高质量的文案，随着需求的增加我们系统已经累积了很多优质文案。那么我们是否可以根据新的需求描述]]></description>
+</item></channel>
+</rss>

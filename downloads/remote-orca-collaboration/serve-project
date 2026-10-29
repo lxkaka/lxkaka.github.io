@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export ORCA_USER_DATA_PATH=/home/node/.config/orca
+export PATH=/home/node/.config/orca-runtime/bin:/home/node/.local/bin:$PATH
+if [ -f /home/node/.claude/setup-token.env ]; then source /home/node/.claude/setup-token.env; fi
+mkdir -p /home/node/.local/bin
+if [ ! -e /home/node/.local/bin/orca-ide ]; then
+  ln -s /home/node/.config/orca-runtime/bin/orca-ide /home/node/.local/bin/orca-ide
+fi
+export ORCA_SERVICE_PID=$$
+python3 - <<'PY'
+import pathlib,json,os
+pid=int(os.environ['ORCA_SERVICE_PID'])
+start=pathlib.Path('/proc',str(pid),'stat').read_text().rsplit(')',1)[1].split()[19]
+p=pathlib.Path('/home/node/.config/orca-runtime/server-cli.json')
+tmp=p.with_name(p.name+'.'+str(pid)+'.tmp')
+try:
+    fd=os.open(tmp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(fd,'w') as f:
+        json.dump({'pid':pid,'start':start},f);f.flush();os.fsync(f.fileno())
+    os.replace(tmp,p)
+finally:
+    tmp.unlink(missing_ok=True)
+PY
+unset ORCA_SERVICE_PID
+python3 - <<'PY'
+from pathlib import Path
+source=Path('/home/node/.config/orca-runtime/skills/orca-peer-workflow')
+for root in ['/home/node/.agents/skills','/home/node/.claude/skills']:
+    link=Path(root)/source.name
+    link.parent.mkdir(parents=True,exist_ok=True)
+    if link.is_symlink():
+        assert link.resolve()==source.resolve(), 'Unexpected peer skill link'
+    elif link.exists():
+        raise RuntimeError('Existing peer skill needs inspection')
+    else:
+        link.symlink_to(source,target_is_directory=True)
+PY
+exec /home/node/.config/orca-runtime/bin/orca-ide serve --port 6768 --pairing-address ws://127.0.0.1:16768 --json

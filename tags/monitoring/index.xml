@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Monitoring - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/monitoring/</link>
+        <description>Monitoring - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sat, 17 Apr 2021 14:42:45 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/monitoring/" rel="self" type="application/rss+xml" /><item>
+    <title>Elastic APM 补齐服务监控</title>
+    <link>https://lxkaka.wang/golang-apm/</link>
+    <pubDate>Sat, 17 Apr 2021 14:42:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/golang-apm/</guid>
+    <description><![CDATA[在之前的文章介绍过服务可观测性。其中 tracing 扩展一下我们可以称之为 APM(Application Performance Monitoring)。在这篇文章里，我会具体介绍我们在 Golang 服务中的 APM 实践。 A]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item><item>
+    <title>怎么使用 Promethues 监控 Spark 应用</title>
+    <link>https://lxkaka.wang/spark-prome/</link>
+    <pubDate>Fri, 27 Mar 2020 10:51:13 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/spark-prome/</guid>
+    <description><![CDATA[我们用 Spark 处理数据的时候，Spark 应用和它的 job 运行状态的监控十分重要。关于 Spark 的监控从官方文档上我们看到有这三种方式 Web UI, Metrics, 其他辅助工具。 这里简]]></description>
+</item></channel>
+</rss>

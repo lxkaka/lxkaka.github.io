@@ -1,0 +1,87 @@
+#!/bin/bash
+# SSH entry point. Only terminal clients belong to this connection; native workers do not.
+set -u
+umask 077
+container=project-a-devcontainer
+helper=/home/node/.local/libexec/remote-claude-session.py
+host_helper="$HOME/.local/libexec/remote-claude-session.py"
+state_dir="$HOME/.local/state/cmux-claude"
+action="${1:-new}"
+mkdir -p "$state_dir" || exit 1
+
+if ! docker inspect --format '{{.State.Running}}' "$container" 2>/dev/null | /bin/grep -qx true; then
+  echo 'Project devcontainer is not running.' >&2
+  exit 1
+fi
+
+# Keep the helper usable after rebuilding the devcontainer. The host copy is authoritative.
+docker exec -i -u node "$container" python3 -c '
+import os, pathlib, sys
+p = pathlib.Path("/home/node/.local/libexec/remote-claude-session.py")
+source = sys.stdin.buffer.read()
+if not p.exists() or p.read_bytes() != source:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_name(p.name + ".install-" + str(os.getpid()))
+    tmp.write_bytes(source)
+    tmp.chmod(0o700)
+    os.replace(tmp, p)
+' < "$host_helper" || exit 1
+
+case "$action" in
+  new)
+    info=$(docker exec -u node "$container" python3 "$helper" create) || exit 1
+    IFS='|' read -r short title <<< "$info"
+    mode=attach
+    ;;
+  resume)
+    short="${2:-}"
+    if [[ ! "$short" =~ ^[0-9a-f]{8}$ ]]; then
+      echo 'Usage: remote-claude resume <8-character session id>' >&2
+      exit 2
+    fi
+    title=$(docker exec -u node "$container" python3 "$helper" title "$short") || exit 1
+    mode=attach
+    ;;
+  list)
+    short=''
+    title='远程 Claude · 会话列表'
+    mode=list
+    ;;
+  status)
+    docker exec -u node -w /workspaces/project-a "$container" bash -lic 'exec claude agents --json --all'
+    exit $?
+    ;;
+  *) echo 'Usage: remote-claude {new|list|resume <id>|status}' >&2; exit 2 ;;
+esac
+if [[ "$mode" == attach && ! "$short" =~ ^[0-9a-f]{8}$ ]]; then
+  echo "Unexpected background session result: $info" >&2
+  exit 1
+fi
+
+token=$(cat /proc/sys/kernel/random/uuid)
+cleaned=0
+cleanup() {
+  if [ "$cleaned" = 1 ]; then return; fi
+  cleaned=1
+  if docker exec -u node "$container" python3 "$helper" cleanup "$token" "$mode" "$short" >"$state_dir/cleanup-$$.tmp" 2>"$state_dir/last-cleanup-error.log"; then
+    mv "$state_dir/cleanup-$$.tmp" "$state_dir/last-cleanup.json"
+  else
+    rm -f "$state_dir/cleanup-$$.tmp"
+  fi
+}
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 143' TERM
+trap 'exit 130' INT
+
+if [ "$mode" = attach ]; then
+  printf '远程 Claude · %s · 关闭终端后可从“远程 Claude 会话”恢复\n' "$short"
+  docker exec -it -u node -w /workspaces/project-a \
+    -e "CMUX_CLAUDE_CONNECTION=$token" "$container" bash -lic \
+    'trap - DEBUG; unset PROMPT_COMMAND; printf "\033]0;%s\007" "$1"; exec claude attach "$2"' _ "$title" "$short"
+else
+  docker exec -it -u node -w /workspaces/project-a \
+    -e "CMUX_CLAUDE_CONNECTION=$token" "$container" bash -lic \
+    'trap - DEBUG; unset PROMPT_COMMAND; printf "\033]0;%s\007" "$1"; exec claude agents --dangerously-skip-permissions' _ "$title"
+fi
+exit $?

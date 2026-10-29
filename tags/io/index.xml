@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>IO - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/io/</link>
+        <description>IO - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 25 Jan 2018 20:18:06 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/io/" rel="self" type="application/rss+xml" /><item>
+    <title>操作系统IO模式(重整)</title>
+    <link>https://lxkaka.wang/io-models/</link>
+    <pubDate>Thu, 25 Jan 2018 20:18:06 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/io-models/</guid>
+    <description><![CDATA[1.关键概念理解 同步：发起一个调用，得到结果才返回。 异步：调用发起后，调用直接返回；调用方主动询问被调用方获取结果，或被调用方通过回调函数。]]></description>
+</item><item>
+    <title>操作系统IO模式(重整)</title>
+    <link>https://lxkaka.wang/io-models/</link>
+    <pubDate>Thu, 25 Jan 2018 20:18:06 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/io-models/</guid>
+    <description><![CDATA[1.关键概念理解 同步：发起一个调用，得到结果才返回。 异步：调用发起后，调用直接返回；调用方主动询问被调用方获取结果，或被调用方通过回调函数。]]></description>
+</item></channel>
+</rss>

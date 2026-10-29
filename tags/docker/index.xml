@@ -1,0 +1,36 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Docker - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/docker/</link>
+        <description>Docker - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/docker/" rel="self" type="application/rss+xml" /><item>
+    <title>用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复</title>
+    <link>https://lxkaka.wang/remote-claude-cmux/</link>
+    <pubDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/remote-claude-cmux/</guid>
+    <description><![CDATA[我的日常开发环境在远程 Linux 主机的 Dev Container 中。代码、依赖、测试服务和命令行工具都在容器里，Mac 负责编辑和交互。Claude Code 也应运行在同一个环境中]]></description>
+</item><item>
+    <title>让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案</title>
+    <link>https://lxkaka.wang/codex-remote-devcontainer/</link>
+    <pubDate>Thu, 16 Jul 2026 16:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/codex-remote-devcontainer/</guid>
+    <description><![CDATA[背景：环境在远端，Codex 在本地 很多团队的真实开发环境并不在工程师的笔记本上，而是在一台长期运行的 Linux 开发机中：代码、依赖、数据库、编译工具]]></description>
+</item><item>
+    <title>Docker 核心原理</title>
+    <link>https://lxkaka.wang/docker-principle/</link>
+    <pubDate>Sat, 23 Jan 2021 12:34:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-principle/</guid>
+    <description><![CDATA[对 Docker 的使用大部分都比较熟悉，但是说到 docker 的实现原理很多人还是一知半解。我把在团队内部做的一次 Docker 核心原理分享总结到文章里，以供参考。 Docker 的优势 Build once,]]></description>
+</item><item>
+    <title>容器中使用 GPU 的基础环境搭建</title>
+    <link>https://lxkaka.wang/docker-nvidia/</link>
+    <pubDate>Sat, 24 Oct 2020 13:09:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/docker-nvidia/</guid>
+    <description><![CDATA[在 Linux 服务器上使用 GPU 跑深度学习的模型很正常不过。如果我们想用 docker 实现同样的需求，就需要做些额外的工作。本质上就是我们要在容器里能看到并且使用宿主]]></description>
+</item></channel>
+</rss>

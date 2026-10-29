@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>File System - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/file-system/</link>
+        <description>File System - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Mon, 22 Jul 2019 16:15:42 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/file-system/" rel="self" type="application/rss+xml" /><item>
+    <title>从“Read-Only File System” 说到 Linux 文件系统结构</title>
+    <link>https://lxkaka.wang/ufs-fsck/</link>
+    <pubDate>Mon, 22 Jul 2019 16:15:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/ufs-fsck/</guid>
+    <description><![CDATA[背景 某天深夜我们 k8s 生产环境集群发出了一条报警 “某一个节点 unavailable”。问题出现后立马查看节点 CPU, Memory, Disk 状态，发现 CPU 状态正常，但是 Memory 和]]></description>
+</item><item>
+    <title>从“Read-Only File System” 说到 Linux 文件系统结构</title>
+    <link>https://lxkaka.wang/ufs-fsck/</link>
+    <pubDate>Mon, 22 Jul 2019 16:15:42 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/ufs-fsck/</guid>
+    <description><![CDATA[背景 某天深夜我们 k8s 生产环境集群发出了一条报警 “某一个节点 unavailable”。问题出现后立马查看节点 CPU, Memory, Disk 状态，发现 CPU 状态正常，但是 Memory 和]]></description>
+</item></channel>
+</rss>

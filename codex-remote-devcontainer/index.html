@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案 - lxkaka</title><meta name="Description" content="通过 Codex Remote SSH、app-server proxy 和一个宿主机 Profile Router，把同一台远程开发机上的多个 Dev Container 暴露为独立 Codex 环境，实现 Mac 与 iPhone 上发起任务、远端容器内读写代码、执行 Shell 和运行测试。"><meta property="og:url" content="https://lxkaka.wang/codex-remote-devcontainer/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案">
+  <meta property="og:description" content="通过 Codex Remote SSH、app-server proxy 和一个宿主机 Profile Router，把同一台远程开发机上的多个 Dev Container 暴露为独立 Codex 环境，实现 Mac 与 iPhone 上发起任务、远端容器内读写代码、执行 Shell 和运行测试。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-07-16T16:00:00+08:00">
+    <meta property="article:modified_time" content="2026-07-16T16:00:00+08:00">
+    <meta property="article:tag" content="Codex">
+    <meta property="article:tag" content="Dev Container">
+    <meta property="article:tag" content="SSH">
+    <meta property="article:tag" content="Docker">
+    <meta property="article:tag" content="Remote Development">
+    <meta property="article:tag" content="IPhone">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案">
+  <meta name="twitter:description" content="通过 Codex Remote SSH、app-server proxy 和一个宿主机 Profile Router，把同一台远程开发机上的多个 Dev Container 暴露为独立 Codex 环境，实现 Mac 与 iPhone 上发起任务、远端容器内读写代码、执行 Shell 和运行测试。">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/codex-remote-devcontainer/" /><link rel="prev" href="https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/" /><link rel="next" href="https://lxkaka.wang/remote-claude-cmux/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/codex-remote-devcontainer\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Codex, Dev Container, SSH, Docker, Remote Development, iPhone","wordcount":  5153 ,
+        "url": "https:\/\/lxkaka.wang\/codex-remote-devcontainer\/","datePublished": "2026-07-16T16:00:00+08:00","dateModified": "2026-07-16T16:00:00+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "通过 Codex Remote SSH、app-server proxy 和一个宿主机 Profile Router，把同一台远程开发机上的多个 Dev Container 暴露为独立 Codex 环境，实现 Mac 与 iPhone 上发起任务、远端容器内读写代码、执行 Shell 和运行测试。"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%B7%A5%E7%A8%8B%E6%95%88%E7%8E%87/"><i class="far fa-folder fa-fw"></i>工程效率</a>&nbsp;<a href="/categories/%E6%9E%B6%E6%9E%84/"><i class="far fa-folder fa-fw"></i>架构</a>&nbsp;<a href="/categories/%E5%AE%9E%E6%88%98/"><i class="far fa-folder fa-fw"></i>实战</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2026-07-16">2026-07-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5153 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#背景环境在远端codex-在本地">背景：环境在远端，Codex 在本地</a></li>
+    <li><a href="#核心原理">核心原理</a></li>
+    <li><a href="#适用条件">适用条件</a></li>
+    <li><a href="#第一步准备容器内-codex">第一步：准备容器内 Codex</a></li>
+    <li><a href="#第二步安装宿主机-profile-router">第二步：安装宿主机 Profile Router</a>
+      <ul>
+        <li><a href="#router-为什么这样实现">Router 为什么这样实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#第三步允许-ssh-传递-profile">第三步：允许 SSH 传递 profile</a></li>
+    <li><a href="#第四步在-mac-创建两个-ssh-alias">第四步：在 Mac 创建两个 SSH alias</a></li>
+    <li><a href="#第五步在-codex-app-添加远程连接">第五步：在 Codex App 添加远程连接</a></li>
+    <li><a href="#iphone-上如何工作">iPhone 上如何工作</a>
+      <ul>
+        <li><a href="#iphone-上的测试边界">iPhone 上的测试边界</a></li>
+      </ul>
+    </li>
+    <li><a href="#app-serverproxy-与-daemon-的生命周期">App Server、Proxy 与 Daemon 的生命周期</a></li>
+    <li><a href="#更新-codex-cli">更新 Codex CLI</a></li>
+    <li><a href="#安全设计">安全设计</a>
+      <ul>
+        <li><a href="#1-docker-权限接近宿主机-root-权限">1. Docker 权限接近宿主机 root 权限</a></li>
+        <li><a href="#2-router-必须使用白名单">2. Router 必须使用白名单</a></li>
+        <li><a href="#3-不要关闭-ssh-host-key-校验">3. 不要关闭 SSH Host Key 校验</a></li>
+        <li><a href="#4-full-access-只用于可信容器">4. Full Access 只用于可信容器</a></li>
+      </ul>
+    </li>
+    <li><a href="#常见问题排查">常见问题排查</a>
+      <ul>
+        <li><a href="#连接后看到的是宿主机目录">连接后看到的是宿主机目录</a></li>
+        <li><a href="#workspacesproject-不存在"><code>/workspaces/&lt;project&gt;</code> 不存在</a></li>
+        <li><a href="#setenv-在服务端不可见"><code>SetEnv</code> 在服务端不可见</a></li>
+        <li><a href="#模型配置正确但模型选择器缺少新模型">模型配置正确，但模型选择器缺少新模型</a></li>
+        <li><a href="#连接经常中断">连接经常中断</a></li>
+        <li><a href="#容器重建后登录丢失">容器重建后登录丢失</a></li>
+      </ul>
+    </li>
+    <li><a href="#添加第三个项目">添加第三个项目</a></li>
+    <li><a href="#回滚方案">回滚方案</a></li>
+    <li><a href="#与其他方案的比较">与其他方案的比较</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h2 id="背景环境在远端codex-在本地">背景：环境在远端，Codex 在本地</h2>
+<p>很多团队的真实开发环境并不在工程师的笔记本上，而是在一台长期运行的 Linux 开发机中：代码、依赖、数据库、编译工具链和测试服务都封装在 Dev Container 里，本地 Mac 只负责编辑和交互。</p>
+<p>这种模式解决了环境一致性问题，却给 Coding Agent 带来一个新的矛盾：</p>
+<ul>
+<li>在 Mac 上运行 Codex，文件系统和 Shell 不在真正的开发环境里；</li>
+<li>通过 MCP 逐个封装文件、搜索和 Shell 操作，复杂任务会产生大量跨机器往返；</li>
+<li>在容器里运行 Codex CLI，执行效率高，但 Mac 和 iPhone 上缺少统一、友好的任务界面；</li>
+<li>给每个容器安装 SSH Server 又会引入端口、密钥、生命周期和安全维护成本。</li>
+</ul>
+<p>本文给出一种经过实际验证的方案：<strong>Codex App 仍然使用官方 Remote SSH 机制，但远端宿主机上的 <code>codex</code> 命令被替换为一个很薄的 Profile Router。Router 根据 SSH alias 传入的 profile，使用 <code>docker exec</code> 把 Codex App Server 原样启动到正确的 Dev Container 内。</strong></p>
+<p>最终效果是：</p>
+<ul>
+<li>Mac Codex App 中，每个 Dev Container 表现为一个独立的 SSH 远端环境；</li>
+<li>Codex 直接读取容器内文件、执行容器内 Shell、使用容器内依赖；</li>
+<li>Git、测试、构建和长任务都发生在远端容器内；</li>
+<li>iPhone 只是控制端，任务仍在远端开发机的容器中执行；</li>
+<li>不需要修改 Codex 源码，也不需要在容器里运行 SSH Server。</li>
+</ul>
+<h2 id="核心原理">核心原理</h2>
+<p>Codex 的 Remote SSH 原生流程是：桌面 App 从 <code>~/.ssh/config</code> 读取一个具体的 Host alias，通过 SSH 登录远端，并在远端登录 Shell 中启动 <code>codex app-server proxy</code>。官方文档将远端文件、Shell、MCP、技能和安全策略都定义为由连接的远端环境提供，参见 <a href="https://learn.chatgpt.com/docs/remote-connections.md" target="_blank" rel="noopener noreffer">Remote connections</a>。</p>
+<p>Codex App 并不知道 Docker 或 Dev Container。我们增加的 Router 正好位于“SSH 已经登录宿主机”和“远端执行 <code>codex app-server proxy</code>”之间：</p>
+<pre class="mermaid">flowchart LR
+    A["Mac Codex / ChatGPT App"] --> B{"SSH Host alias"}
+
+    B -->|"profile=project-a"| C["Linux 宿主机 sshd"]
+    B -->|"profile=project-b"| C
+
+    C --> D["宿主机 codex Profile Router"]
+
+    D -->|"docker label 查找"| E["Project A Dev Container"]
+    D -->|"docker label 查找"| F["Project B Dev Container"]
+
+    E --> G["codex app-server proxy"]
+    F --> H["codex app-server proxy"]
+
+    G --> I["Project A app-server daemon"]
+    H --> J["Project B app-server daemon"]
+
+    I --> K["代码 / Shell / Git / 测试 / 模型"]
+    J --> L["代码 / Shell / Git / 测试 / 模型"]
+</pre>
+
+
+<p>一次请求的正向链路是：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Codex App
+</span></span><span class="line"><span class="cl">  -&gt; SSH stdin
+</span></span><span class="line"><span class="cl">  -&gt; 容器内 codex app-server proxy
+</span></span><span class="line"><span class="cl">  -&gt; Unix socket
+</span></span><span class="line"><span class="cl">  -&gt; 容器内 app-server daemon
+</span></span><span class="line"><span class="cl">  -&gt; Agent 执行
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>响应走同一条双向连接返回：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Agent 事件 / 流式文本 / Shell 输出
+</span></span><span class="line"><span class="cl">  -&gt; app-server daemon
+</span></span><span class="line"><span class="cl">  -&gt; Unix socket
+</span></span><span class="line"><span class="cl">  -&gt; proxy
+</span></span><span class="line"><span class="cl">  -&gt; SSH stdout
+</span></span><span class="line"><span class="cl">  -&gt; Codex App
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>codex app-server proxy</code> 是 Codex CLI 自带的命令，它只负责把 stdin/stdout 字节流转发到正在运行的 App Server control socket。真正管理认证、会话历史、模型目录、审批、Agent turn 和流式事件的是常驻 <code>app-server daemon</code>。App Server 使用省略 <code>jsonrpc</code> 头的 JSON-RPC 2.0 风格协议，详见 <a href="https://learn.chatgpt.com/docs/app-server.md" target="_blank" rel="noopener noreffer">Codex App Server</a>。</p>
+<h2 id="适用条件">适用条件</h2>
+<p>开始前需要满足以下条件：</p>
+<ol>
+<li>一台可通过 SSH 访问的 Linux 开发机；</li>
+<li>开发机上已经安装 Docker，并已有可正常使用的 Dev Container；</li>
+<li>SSH 用户能够执行 <code>docker ps</code> 和 <code>docker exec</code>；</li>
+<li>每个目标容器内均已安装并登录 Codex CLI；</li>
+<li>Mac 上安装支持 Remote connections 的 Codex/ChatGPT 桌面 App；</li>
+<li>如果需要从 iPhone 控制，Mac 需要保持开机、联网，并启用对应的远程连接能力。</li>
+</ol>
+<p>本文示例使用两个项目：</p>
+<table>
+<thead>
+<tr>
+<th>Profile</th>
+<th>宿主机项目目录</th>
+<th>容器项目目录</th>
+<th>容器用户</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project-a</code></td>
+<td><code>/home/dev/project-a</code></td>
+<td><code>/workspaces/project-a</code></td>
+<td><code>node</code></td>
+</tr>
+<tr>
+<td><code>project-b</code></td>
+<td><code>/home/dev/project-b</code></td>
+<td><code>/workspaces/project-b</code></td>
+<td><code>node:root</code></td>
+</tr>
+</tbody>
+</table>
+<p>请根据实际项目替换这些值。</p>
+<h2 id="第一步准备容器内-codex">第一步：准备容器内 Codex</h2>
+<p>先确认每个容器都能独立运行 Codex：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker <span class="nb">exec</span> -it -u node <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -w /workspaces/project-a <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  project-a-devcontainer <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  sh -lc <span class="s1">&#39;command -v codex &amp;&amp; codex --version &amp;&amp; codex login status&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果尚未安装，可在容器内安装官方 npm 包：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install -g @openai/codex
+</span></span><span class="line"><span class="cl">codex login
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>建议为 Codex Home 配置独立持久卷，否则重建容器后可能丢失登录状态、配置、任务历史和 App Server 包：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">services</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">devtools</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">..:/workspaces/project-a</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">codex-config:/home/node/.codex</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">volumes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">codex-config</span><span class="p">:</span><span class="w">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>容器内可以设置默认模型与权限：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="c"># /home/node/.codex/config.toml</span>
+</span></span><span class="line"><span class="cl"><span class="nx">model</span> <span class="p">=</span> <span class="s2">&#34;gpt-5.6-sol&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">model_reasoning_effort</span> <span class="p">=</span> <span class="s2">&#34;high&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">sandbox_mode</span> <span class="p">=</span> <span class="s2">&#34;danger-full-access&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nx">approval_policy</span> <span class="p">=</span> <span class="s2">&#34;never&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="nx">projects</span><span class="p">.</span><span class="s2">&#34;/workspaces/project-a&#34;</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="nx">trust_level</span> <span class="p">=</span> <span class="s2">&#34;trusted&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>danger-full-access + never</code> 适合完全可信、隔离良好的个人开发容器。共享环境应采用更严格的 sandbox 和审批策略。</p>
+<h2 id="第二步安装宿主机-profile-router">第二步：安装宿主机 Profile Router</h2>
+<p>在 Linux 宿主机创建 <code>/usr/local/bin/codex</code>。下面是一个可以直接使用的完整实现：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl"><span class="cp">#!/bin/sh
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="nb">set</span> -eu
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">profile</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">${</span><span class="nv">CODEX_DEVCONTAINER_PROFILE</span><span class="k">:-</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> -z <span class="s2">&#34;</span><span class="nv">$profile</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;CODEX_DEVCONTAINER_PROFILE is required&#34;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">exit</span> <span class="m">64</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="s2">&#34;</span><span class="nv">$profile</span><span class="s2">&#34;</span> in
+</span></span><span class="line"><span class="cl">  project-a<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">host_root</span><span class="o">=</span><span class="s2">&#34;/home/dev/project-a&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_root</span><span class="o">=</span><span class="s2">&#34;/workspaces/project-a&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_user</span><span class="o">=</span><span class="s2">&#34;node&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  project-b<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">host_root</span><span class="o">=</span><span class="s2">&#34;/home/dev/project-b&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_root</span><span class="o">=</span><span class="s2">&#34;/workspaces/project-b&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_user</span><span class="o">=</span><span class="s2">&#34;node:root&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  *<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;Unsupported CODEX_DEVCONTAINER_PROFILE: </span><span class="nv">$profile</span><span class="s2">&#34;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">64</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl"><span class="k">esac</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">containers</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>/usr/bin/docker ps <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --filter <span class="s2">&#34;label=devcontainer.local_folder=</span><span class="nv">$host_root</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --format <span class="s1">&#39;{{.Names}}&#39;</span><span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">container_count</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span><span class="nb">printf</span> <span class="s1">&#39;%s\n&#39;</span> <span class="s2">&#34;</span><span class="nv">$containers</span><span class="s2">&#34;</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  /usr/bin/awk <span class="s1">&#39;NF { count++ } END { print count + 0 }&#39;</span><span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="nv">$container_count</span><span class="s2">&#34;</span> -ne <span class="m">1</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Expected exactly one running devcontainer for </span><span class="nv">$profile</span><span class="s2">; found </span><span class="nv">$container_count</span><span class="s2">&#34;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">exit</span> <span class="m">69</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">container</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span><span class="nb">printf</span> <span class="s1">&#39;%s\n&#39;</span> <span class="s2">&#34;</span><span class="nv">$containers</span><span class="s2">&#34;</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  /usr/bin/awk <span class="s1">&#39;NF { print; exit }&#39;</span><span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">host_pwd</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span><span class="nb">pwd</span> -P<span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="s2">&#34;</span><span class="nv">$host_pwd</span><span class="s2">&#34;</span> in
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;</span><span class="nv">$host_root</span><span class="s2">&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_pwd</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$container_root</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  <span class="s2">&#34;</span><span class="nv">$host_root</span><span class="s2">&#34;</span>/*<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_pwd</span><span class="o">=</span><span class="s2">&#34;</span><span class="si">${</span><span class="nv">container_root</span><span class="si">}${</span><span class="nv">host_pwd</span><span class="p">#</span><span class="s2">&#34;</span><span class="nv">$host_root</span><span class="s2">&#34;</span><span class="si">}</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  *<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nv">container_pwd</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$container_root</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">;;</span>
+</span></span><span class="line"><span class="cl"><span class="k">esac</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">container_path</span><span class="o">=</span><span class="s2">&#34;/home/node/.local/bin:/usr/local/share/nvm/current/bin:/usr/local/share/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">codex_path</span><span class="o">=</span><span class="s2">&#34;</span><span class="k">$(</span>/usr/bin/docker <span class="nb">exec</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -u <span class="s2">&#34;</span><span class="nv">$container_user</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -e <span class="nv">PATH</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$container_path</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;</span><span class="nv">$container</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /bin/sh -c <span class="s1">&#39;command -v codex&#39;</span><span class="k">)</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> -z <span class="s2">&#34;</span><span class="nv">$codex_path</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Codex is not installed in devcontainer for </span><span class="nv">$profile</span><span class="s2">&#34;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">exit</span> <span class="m">69</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> <span class="s2">&#34;</span><span class="si">${</span><span class="nv">CODEX_DEVCONTAINER_ROUTER_TRACE</span><span class="k">:-</span><span class="si">}</span><span class="s2">&#34;</span> <span class="o">=</span> <span class="s2">&#34;1&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;profile=</span><span class="nv">$profile</span><span class="s2"> container=</span><span class="nv">$container</span><span class="s2"> cwd=</span><span class="nv">$container_pwd</span><span class="s2"> codex=</span><span class="nv">$codex_path</span><span class="s2">&#34;</span> &gt;<span class="p">&amp;</span><span class="m">2</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> /usr/bin/docker <span class="nb">exec</span> -i <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -u <span class="s2">&#34;</span><span class="nv">$container_user</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -w <span class="s2">&#34;</span><span class="nv">$container_pwd</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -e <span class="nv">HOME</span><span class="o">=</span>/home/node <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -e <span class="nv">SHELL</span><span class="o">=</span>/bin/zsh <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -e <span class="nv">PATH</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$container_path</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;</span><span class="nv">$container</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;</span><span class="nv">$codex_path</span><span class="s2">&#34;</span> <span class="s2">&#34;</span><span class="nv">$@</span><span class="s2">&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>安装前先检查宿主机是否已有同名命令：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">command</span> -v codex <span class="o">||</span> <span class="nb">true</span>
+</span></span><span class="line"><span class="cl">ls -l /usr/local/bin/codex 2&gt;/dev/null <span class="o">||</span> <span class="nb">true</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果已有宿主机原生 Codex，应先备份或将 Router 安装到单独目录，再通过 PATH/symlink 让 Remote SSH alias 命中 Router。不要直接覆盖一个仍在使用的宿主机 CLI。</p>
+<p>安装脚本：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo install -o root -g root -m <span class="m">0755</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  codex-devcontainer-router <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /usr/local/bin/codex
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="router-为什么这样实现">Router 为什么这样实现</h3>
+<p>脚本包含几个重要设计：</p>
+<ul>
+<li><strong>profile 白名单</strong>：客户端不能直接传入任意容器名、用户、路径或命令；</li>
+<li><strong>缺少 profile 时失败</strong>：避免普通 SSH 会话意外进入某个默认容器；</li>
+<li><strong>通过 label 找容器</strong>：容器重建、名称变化后不需要修改配置；</li>
+<li><strong>要求恰好一个匹配容器</strong>：零个或多个都直接报错；</li>
+<li><strong>动态查找容器内 Codex</strong>：兼容 npm 和 standalone 两种安装方式；</li>
+<li><strong>原样保留 <code>&quot;$@&quot;</code></strong>：Codex App 传来的 <code>app-server proxy</code> 不被解析或改写；</li>
+<li><strong>使用 <code>exec</code></strong>：Router 不额外保留一个无意义的父 Shell 进程，退出码和信号可以正常传播。</li>
+</ul>
+<p>Dev Containers 通常会写入 <code>devcontainer.local_folder</code> label。部署前应确认：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker inspect project-a-devcontainer <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --format <span class="s1">&#39;{{ index .Config.Labels &#34;devcontainer.local_folder&#34; }}&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果自己的 Dev Container 实现没有该 label，可以在 Compose 中增加自定义 label，并相应修改 Router 的过滤条件。</p>
+<h2 id="第三步允许-ssh-传递-profile">第三步：允许 SSH 传递 profile</h2>
+<p>OpenSSH 客户端的 <code>SetEnv</code> 只有在服务端接受对应变量时才会生效。</p>
+<p>在远端开发机创建：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/etc/ssh/sshd_config.d/90-codex-devcontainer-profile.conf
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>内容：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">AcceptEnv CODEX_DEVCONTAINER_PROFILE
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>验证语法后 reload SSH：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo /usr/sbin/sshd -t
+</span></span><span class="line"><span class="cl">sudo systemctl reload ssh
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>reload 不会主动断开已有 SSH 会话，但仍建议保留一个已登录终端，确认新连接正常后再关闭。</p>
+<h2 id="第四步在-mac-创建两个-ssh-alias">第四步：在 Mac 创建两个 SSH alias</h2>
+<p>编辑 <code>~/.ssh/config</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Host devbox-project-a
+</span></span><span class="line"><span class="cl">  HostName devbox.example.com
+</span></span><span class="line"><span class="cl">  User dev
+</span></span><span class="line"><span class="cl">  IdentityFile ~/.ssh/id_ed25519
+</span></span><span class="line"><span class="cl">  SetEnv CODEX_DEVCONTAINER_PROFILE=project-a
+</span></span><span class="line"><span class="cl">  ServerAliveInterval 15
+</span></span><span class="line"><span class="cl">  ServerAliveCountMax 4
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Host devbox-project-b
+</span></span><span class="line"><span class="cl">  HostName devbox.example.com
+</span></span><span class="line"><span class="cl">  User dev
+</span></span><span class="line"><span class="cl">  IdentityFile ~/.ssh/id_ed25519
+</span></span><span class="line"><span class="cl">  SetEnv CODEX_DEVCONTAINER_PROFILE=project-b
+</span></span><span class="line"><span class="cl">  ServerAliveInterval 15
+</span></span><span class="line"><span class="cl">  ServerAliveCountMax 4
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>两条 alias 可以使用同一个地址、用户和 SSH key。profile 是每个 SSH session 单独发送的，不需要为每个容器创建密钥。</p>
+<p>先在终端验证服务端收到了变量：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s1">&#39;printf &#34;profile=%s\n&#34; &#34;$CODEX_DEVCONTAINER_PROFILE&#34;&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>预期：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">profile=project-a
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后验证 Router：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s1">&#39;CODEX_DEVCONTAINER_ROUTER_TRACE=1 codex --version&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>预期输出类似：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">profile=project-a container=project-a-devcontainer cwd=/workspaces/project-a codex=/home/node/.local/bin/codex
+</span></span><span class="line"><span class="cl">codex-cli 0.144.5
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果 profile 显示为空，优先检查：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh -G devbox-project-a <span class="p">|</span> grep -i setenv
+</span></span><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;env | grep CODEX_DEVCONTAINER_PROFILE&#39;</span>
+</span></span><span class="line"><span class="cl">sudo sshd -T <span class="p">|</span> grep -i acceptenv
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="第五步在-codex-app-添加远程连接">第五步：在 Codex App 添加远程连接</h2>
+<p>在 Mac Codex/ChatGPT App 中：</p>
+<ol>
+<li>打开 <strong>Settings / Connections / SSH</strong>；</li>
+<li>添加并启用 <code>devbox-project-a</code>；</li>
+<li>添加并启用 <code>devbox-project-b</code>；</li>
+<li>为 Project A 创建远程项目，目录选择 <code>/workspaces/project-a</code>；</li>
+<li>为 Project B 创建远程项目，目录选择 <code>/workspaces/project-b</code>。</li>
+</ol>
+<p>如果连接成功，文件夹选择器看到的应该是<strong>目标容器</strong>的文件系统，而不是宿主机 <code>/home/dev</code>。这是最直接的链路证明。</p>
+<p>在新任务中运行以下检查：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">pwd</span>
+</span></span><span class="line"><span class="cl">whoami
+</span></span><span class="line"><span class="cl"><span class="nb">test</span> -f /.dockerenv <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="nv">container</span><span class="o">=</span>yes
+</span></span><span class="line"><span class="cl">hostname
+</span></span><span class="line"><span class="cl">codex --version
+</span></span><span class="line"><span class="cl">git status --short --branch
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>正确结果应满足：</p>
+<ul>
+<li><code>pwd</code> 位于 <code>/workspaces/&lt;project&gt;</code>；</li>
+<li><code>container=yes</code>；</li>
+<li>用户与 profile 中的 <code>container_user</code> 一致；</li>
+<li>Git 状态来自远端容器 workspace；</li>
+<li>Codex CLI 是容器内版本。</li>
+</ul>
+<p>至此，Mac App 的文件读取、修改、Shell、Git、测试和模型调用都已经直接发生在 Dev Container 内。Mac 不再承担项目运行时职责。</p>
+<h2 id="iphone-上如何工作">iPhone 上如何工作</h2>
+<p>iPhone 在这套架构中是控制端，不是执行端：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">iPhone
+</span></span><span class="line"><span class="cl">  -&gt; Codex/ChatGPT 远程控制与任务界面
+</span></span><span class="line"><span class="cl">  -&gt; 已连接的 Mac Codex App
+</span></span><span class="line"><span class="cl">  -&gt; SSH
+</span></span><span class="line"><span class="cl">  -&gt; Linux 宿主机 Router
+</span></span><span class="line"><span class="cl">  -&gt; Dev Container Agent
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>手机负责：</p>
+<ul>
+<li>发起开发任务；</li>
+<li>查看流式输出和工具执行；</li>
+<li>追加要求或纠偏；</li>
+<li>查看测试结果；</li>
+<li>在必要时完成审批或中断任务。</li>
+</ul>
+<p>远端容器负责：</p>
+<ul>
+<li>代码读写；</li>
+<li>依赖安装；</li>
+<li>编译、Lint 和测试；</li>
+<li>Git 操作；</li>
+<li>长时间 Agent 执行。</li>
+</ul>
+<p>使用前需要：</p>
+<ol>
+<li>iPhone 与桌面 App 使用同一账号；</li>
+<li>Mac 上已经添加并启用两个 SSH 连接；</li>
+<li>对应远程项目已经保存；</li>
+<li>Mac 保持联网、唤醒，桌面 App 保持运行；</li>
+<li>Linux 开发机和目标 Dev Container 保持运行。</li>
+</ol>
+<h3 id="iphone-上的测试边界">iPhone 上的测试边界</h3>
+<p>单元测试、集成测试、Lint、构建和 Playwright 等自动化测试都可以由 Codex 在容器内直接执行，结果返回手机。</p>
+<p>如果需要用手机浏览器进行视觉验收，还需要单独提供 Preview URL。常见方式包括：</p>
+<ul>
+<li>将容器端口绑定到宿主机回环地址，再通过 SSH tunnel 在 Mac 访问；</li>
+<li>使用带身份验证的 Tailscale、Cloudflare Tunnel 或内部预览网关给 iPhone 提供 HTTPS 地址；</li>
+<li>不要把开发服务以无认证方式直接暴露到公网。</li>
+</ul>
+<p>远程 Codex 连接解决的是 Agent 执行环境，并不会自动解决 Web 服务的公网访问问题。</p>
+<h2 id="app-serverproxy-与-daemon-的生命周期">App Server、Proxy 与 Daemon 的生命周期</h2>
+<p>理解这三个进程能解决大多数“SSH 正常，但 Codex UI 不正常”的问题。</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>生命周期</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>codex app-server proxy</code></td>
+<td>跟随一次 SSH 连接</td>
+<td>在 SSH stdin/stdout 与 Unix socket 之间双向转发</td>
+</tr>
+<tr>
+<td><code>codex app-server daemon</code></td>
+<td>容器内常驻</td>
+<td>管理认证、模型、任务、工具、历史和事件流</td>
+</tr>
+<tr>
+<td>Codex App</td>
+<td>Mac 上常驻</td>
+<td>UI、SSH 管理和远端任务控制</td>
+</tr>
+</tbody>
+</table>
+<p>查看容器内 daemon 版本：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;codex app-server daemon version&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>输出中应重点比较：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">cliVersion
+</span></span><span class="line"><span class="cl">managedCodexVersion
+</span></span><span class="line"><span class="cl">appServerVersion
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>仅仅执行 <code>codex --version</code> 不足以证明运行中的 daemon 已经升级。CLI 可能已经是新版本，但 daemon 仍是数天前启动的旧进程，这会造成：</p>
+<ul>
+<li>模型列表缺少新模型；</li>
+<li>App 与远端协议版本不匹配；</li>
+<li>历史任务加载异常；</li>
+<li>SSH 已连接，但 UI 无响应。</li>
+</ul>
+<p>正常情况下可以重启：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;codex app-server daemon restart&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>随后重新连接：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;codex app-server daemon version&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果提示 daemon 正在运行但不受当前 manager 管理，不要使用宽泛的 <code>pkill codex</code>。先找出精确进程和 socket：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ps -eo pid,ppid,lstart,args <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  grep <span class="s1">&#39;codex app-server --listen unix://&#39;</span> <span class="p">|</span>
+</span></span><span class="line"><span class="cl">  grep -v grep
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ls -la ~/.codex/app-server-control
+</span></span><span class="line"><span class="cl">ls -la ~/.codex/app-server-daemon
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>确认 PID 后，仅终止精确的旧 daemon，清理失效 socket，再使用当前 CLI 启动：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">kill</span> -TERM &lt;exact-old-daemon-pid&gt;
+</span></span><span class="line"><span class="cl">rm -f ~/.codex/app-server-control/app-server-control.sock
+</span></span><span class="line"><span class="cl">codex app-server daemon start
+</span></span><span class="line"><span class="cl">codex app-server daemon version
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>操作期间会短暂中断该容器的 Codex 连接，但不会影响项目文件和 Git 状态。</p>
+<h2 id="更新-codex-cli">更新 Codex CLI</h2>
+<p>如果容器通过 npm 安装：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">npm install -g @openai/codex@latest
+</span></span><span class="line"><span class="cl">codex --version
+</span></span><span class="line"><span class="cl">codex app-server daemon restart
+</span></span><span class="line"><span class="cl">codex app-server daemon version
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>更新后一定要同时确认 <code>appServerVersion</code>，避免只升级磁盘上的 CLI、没有替换运行中的 daemon。</p>
+<p>不同容器可以使用不同安装方式，但为了减少排障分支，建议在同一台开发机上统一 Codex 的安装和更新策略。</p>
+<h2 id="安全设计">安全设计</h2>
+<p>这套方案把 Docker 控制能力放到了 SSH 入口之后，必须明确其权限边界。</p>
+<h3 id="1-docker-权限接近宿主机-root-权限">1. Docker 权限接近宿主机 root 权限</h3>
+<p>Docker 官方明确提醒：<code>docker</code> group 会授予 root-level privileges。Router 所在 SSH 用户必须被视为高权限可信用户，参见 <a href="https://docs.docker.com/engine/install/linux-postinstall/" target="_blank" rel="noopener noreffer">Linux post-installation steps for Docker Engine</a>。</p>
+<p>建议：</p>
+<ul>
+<li>只允许可信 SSH key 登录；</li>
+<li>不共享该 Linux 用户；</li>
+<li>不暴露 Docker TCP API；</li>
+<li>有条件时使用 Rootless Docker；</li>
+<li>对多租户环境使用专门的远端开发机，而不是共享生产宿主机。</li>
+</ul>
+<h3 id="2-router-必须使用白名单">2. Router 必须使用白名单</h3>
+<p>不要直接接受下面这些客户端输入：</p>
+<ul>
+<li>任意容器名；</li>
+<li>任意 Docker 参数；</li>
+<li>任意用户；</li>
+<li>任意 workspace 路径；</li>
+<li>任意 Codex 二进制路径。</li>
+</ul>
+<p>客户端只发送一个 profile，所有实际参数都在服务端 <code>case</code> 白名单中解析。</p>
+<h3 id="3-不要关闭-ssh-host-key-校验">3. 不要关闭 SSH Host Key 校验</h3>
+<p>生产使用中不要设置：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">StrictHostKeyChecking no
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>应该正确维护 <code>known_hosts</code>，防止 SSH 中间人攻击。</p>
+<h3 id="4-full-access-只用于可信容器">4. Full Access 只用于可信容器</h3>
+<p><code>danger-full-access + approval_policy=never</code> 意味着 Agent 可以在容器权限范围内直接执行命令。容器内不要挂载不必要的宿主机目录、生产密钥或 Docker socket。</p>
+<h2 id="常见问题排查">常见问题排查</h2>
+<h3 id="连接后看到的是宿主机目录">连接后看到的是宿主机目录</h3>
+<p>检查宿主机实际命中的 <code>codex</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;command -v codex; file &#34;$(command -v codex)&#34;&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>它必须指向 Router。如果 <code>$HOME/.local/bin/codex</code> 中存在另一个宿主机原生 Codex，并且 PATH 优先于 <code>/usr/local/bin</code>，Codex App 会绕过 Router。</p>
+<h3 id="workspacesproject-不存在"><code>/workspaces/&lt;project&gt;</code> 不存在</h3>
+<p>通常说明进入了错误容器，或者 Dev Container 没有运行：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker ps --filter <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s1">&#39;label=devcontainer.local_folder=/home/dev/project-a&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="setenv-在服务端不可见"><code>SetEnv</code> 在服务端不可见</h3>
+<p>确认三层配置：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh -G devbox-project-a <span class="p">|</span> grep -i setenv
+</span></span><span class="line"><span class="cl">sudo sshd -T <span class="p">|</span> grep -i acceptenv
+</span></span><span class="line"><span class="cl">ssh devbox-project-a <span class="s1">&#39;env | grep CODEX_DEVCONTAINER_PROFILE&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="模型配置正确但模型选择器缺少新模型">模型配置正确，但模型选择器缺少新模型</h3>
+<p>依次检查：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">codex --version
+</span></span><span class="line"><span class="cl">codex login status
+</span></span><span class="line"><span class="cl">codex app-server daemon version
+</span></span><span class="line"><span class="cl">grep -E <span class="s1">&#39;^(model|model_reasoning_effort)&#39;</span> ~/.codex/config.toml
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>重点检查 <code>appServerVersion</code> 是否落后于 CLI。</p>
+<h3 id="连接经常中断">连接经常中断</h3>
+<p>在 SSH alias 中设置：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">ServerAliveInterval 15
+</span></span><span class="line"><span class="cl">ServerAliveCountMax 4
+</span></span><span class="line"><span class="cl">TCPKeepAlive yes
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>同时确保 Mac 不进入睡眠、远端开发机不回收容器。</p>
+<h3 id="容器重建后登录丢失">容器重建后登录丢失</h3>
+<p>检查 <code>/home/node/.codex</code> 是否挂载到持久 volume。仅把 workspace bind mount 到容器并不会持久化 Codex Home。</p>
+<h2 id="添加第三个项目">添加第三个项目</h2>
+<p>新增项目只需要两步。</p>
+<p>首先在 Router 的 <code>case</code> 中增加 profile：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-sh" data-lang="sh"><span class="line"><span class="cl">project-c<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">host_root</span><span class="o">=</span><span class="s2">&#34;/home/dev/project-c&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">container_root</span><span class="o">=</span><span class="s2">&#34;/workspaces/project-c&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="nv">container_user</span><span class="o">=</span><span class="s2">&#34;node&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">;;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后在 Mac SSH config 中增加 alias：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Host devbox-project-c
+</span></span><span class="line"><span class="cl">  HostName devbox.example.com
+</span></span><span class="line"><span class="cl">  User dev
+</span></span><span class="line"><span class="cl">  SetEnv CODEX_DEVCONTAINER_PROFILE=project-c
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>验证 Router 后，在 Codex App 中添加连接和远程项目即可。</p>
+<h2 id="回滚方案">回滚方案</h2>
+<p>配置前应备份原始宿主机 <code>codex</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo cp -a /usr/local/bin/codex <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /usr/local/bin/codex.before-devcontainer-router
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>完整回滚步骤：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo cp -a <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /usr/local/bin/codex.before-devcontainer-router <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /usr/local/bin/codex
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo rm -f <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /etc/ssh/sshd_config.d/90-codex-devcontainer-profile.conf
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo /usr/sbin/sshd -t
+</span></span><span class="line"><span class="cl">sudo systemctl reload ssh
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>最后从 Mac <code>~/.ssh/config</code> 和 Codex App 中删除对应 alias/连接。</p>
+<h2 id="与其他方案的比较">与其他方案的比较</h2>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th style="text-align:right">文件与 Shell 开销</th>
+<th style="text-align:right">环境一致性</th>
+<th style="text-align:right">移动端体验</th>
+<th style="text-align:right">维护成本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mac 本地代码副本</td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">中</td>
+<td style="text-align:right">中</td>
+</tr>
+<tr>
+<td>MCP 封装文件/Shell</td>
+<td style="text-align:right">高，工具调用多</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">中</td>
+<td style="text-align:right">高</td>
+</tr>
+<tr>
+<td>每个容器运行 sshd</td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">高</td>
+</tr>
+<tr>
+<td>SSH 到宿主机后手动 <code>docker exec</code></td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">低</td>
+</tr>
+<tr>
+<td>本文 Profile Router</td>
+<td style="text-align:right">低</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">高</td>
+<td style="text-align:right">中</td>
+</tr>
+</tbody>
+</table>
+<p>Profile Router 的价值不在于创造新协议，而是复用 Codex 官方 Remote SSH 和 App Server 协议，只在宿主机增加一个可审计、可回滚的容器选择层。</p>
+<h2 id="总结">总结</h2>
+<p>这套方案的关键不是“让 Codex App 支持 Dev Container”，而是把 Codex App 所连接的远端 <code>codex</code> 入口透明地放进目标容器：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">SSH alias 负责传递 profile
+</span></span><span class="line"><span class="cl">sshd 负责接收 profile
+</span></span><span class="line"><span class="cl">宿主机 Router 负责选择容器
+</span></span><span class="line"><span class="cl">docker exec 负责进入容器
+</span></span><span class="line"><span class="cl">app-server proxy 负责双向转发
+</span></span><span class="line"><span class="cl">app-server daemon 负责真正的 Agent 执行
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>从 Mac 或 iPhone 看，它是两个普通的 Codex 远程项目；从执行层看，代码、Shell、Git、测试、模型配置和任务状态全部属于各自的 Dev Container。</p>
+<p>对于已经把远端 Dev Container 作为唯一开发环境的团队，这种方式既保留了容器内原生执行效率，也获得了 Codex App 的任务管理与移动端控制体验。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2026-07-16</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/codex-remote-devcontainer/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/codex-remote-devcontainer/" data-title="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案" data-hashtags="Codex,Dev Container,SSH,Docker,Remote Development,iPhone"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/codex-remote-devcontainer/" data-hashtag="Codex"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/codex-remote-devcontainer/" data-title="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/codex-remote-devcontainer/" data-title="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/codex-remote-devcontainer/" data-title="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/codex/">Codex</a>,&nbsp;<a href="/tags/dev-container/">Dev Container</a>,&nbsp;<a href="/tags/ssh/">SSH</a>,&nbsp;<a href="/tags/docker/">Docker</a>,&nbsp;<a href="/tags/remote-development/">Remote Development</a>,&nbsp;<a href="/tags/iphone/">IPhone</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/openclaw-telegram-ingress-env-cpu/" class="prev" rel="prev" title="一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env"><i class="fas fa-angle-left fa-fw"></i>一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env</a>
+            <a href="/remote-claude-cmux/" class="next" rel="next" title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复">用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+
+

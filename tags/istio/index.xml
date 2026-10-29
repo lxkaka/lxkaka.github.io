@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Istio - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/istio/</link>
+        <description>Istio - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 25 Jan 2019 18:48:17 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/istio/" rel="self" type="application/rss+xml" /><item>
+    <title>Istio 实践</title>
+    <link>https://lxkaka.wang/istio-init/</link>
+    <pubDate>Fri, 25 Jan 2019 18:48:17 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/istio-init/</guid>
+    <description><![CDATA[在之前的文章中我们提到过, 服务拆分后，不同的服务之间必须进行交互才能实现特定的功能。在这里引入 service mesh 这个概念，service mesh 通常用于描述构成]]></description>
+</item><item>
+    <title>Istio 实践</title>
+    <link>https://lxkaka.wang/istio-init/</link>
+    <pubDate>Fri, 25 Jan 2019 18:48:17 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/istio-init/</guid>
+    <description><![CDATA[在之前的文章中我们提到过, 服务拆分后，不同的服务之间必须进行交互才能实现特定的功能。在这里引入 service mesh 这个概念，service mesh 通常用于描述构成]]></description>
+</item></channel>
+</rss>

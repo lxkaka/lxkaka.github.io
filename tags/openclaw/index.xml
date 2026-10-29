@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>OpenClaw - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/openclaw/</link>
+        <description>OpenClaw - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 18 Jun 2026 20:20:00 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/openclaw/" rel="self" type="application/rss+xml" /><item>
+    <title>一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env</title>
+    <link>https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/</link>
+    <pubDate>Thu, 18 Jun 2026 20:20:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/</guid>
+    <description><![CDATA[这次问题的表象很普通：一个 OpenClaw bot 在生产环境里突然长时间不回复消息。更麻烦的是，它不是单次模型调用超时，而是 runtime 本身变得很不稳定，/readyz 偶]]></description>
+</item><item>
+    <title>OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排</title>
+    <link>https://lxkaka.wang/openclaw-agent-execution/</link>
+    <pubDate>Thu, 02 Apr 2026 10:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/openclaw-agent-execution/</guid>
+    <description><![CDATA[OpenClaw 是一个开源、自托管的自主 AI agent——运行在你自己的机器上，通过你已在使用的消息平台（Mattermost、Slack、Discord、]]></description>
+</item><item>
+    <title>OpenClaw 使用外部 Coding Agent 的原理与调用链路</title>
+    <link>https://lxkaka.wang/openclaw-external-coding-agent/</link>
+    <pubDate>Thu, 05 Mar 2026 10:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/openclaw-external-coding-agent/</guid>
+    <description><![CDATA[概述 OpenClaw 支持通过两种方式调用外部 coding agent（Codex、Claude Code、OpenCode、Pi 等）： 方式 入口工具 执行环境 通信协议 适用场]]></description>
+</item></channel>
+</rss>

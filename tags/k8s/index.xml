@@ -1,0 +1,71 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>K8s - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/k8s/</link>
+        <description>K8s - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 26 Dec 2021 13:55:02 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/k8s/" rel="self" type="application/rss+xml" /><item>
+    <title>用 StatefulSet 实现同步服务和异步服务的管理</title>
+    <link>https://lxkaka.wang/service-manage/</link>
+    <pubDate>Sun, 26 Dec 2021 13:55:02 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/service-manage/</guid>
+    <description><![CDATA[一个服务里既有同步逻辑又有异步逻辑是非常常见的事，比如可以通过 Http 接口调用服务或者通过消息队列传递消息来实现同样的服务逻辑，同一套代码逻辑区别]]></description>
+</item><item>
+    <title>k8s 中部署 Harbor</title>
+    <link>https://lxkaka.wang/k8s-harbor/</link>
+    <pubDate>Fri, 15 Nov 2019 12:15:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-harbor/</guid>
+    <description><![CDATA[随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是]]></description>
+</item><item>
+    <title>k8s 中部署 Harbor</title>
+    <link>https://lxkaka.wang/k8s-harbor/</link>
+    <pubDate>Fri, 15 Nov 2019 12:15:34 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-harbor/</guid>
+    <description><![CDATA[随着我们服务的全面容器化，代码和配置都以 docker image 的形式存储在 docker registry 中。搭建高可用，安全的企业r私有 docker registy 就变得十分必要。 Harbor 作为 CNCF 托管的开药 docker registry 项目是]]></description>
+</item><item>
+    <title>外部访问 k8s 中的 kafka 集群</title>
+    <link>https://lxkaka.wang/k8s-kafka/</link>
+    <pubDate>Fri, 25 Oct 2019 10:39:03 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-kafka/</guid>
+    <description><![CDATA[如果直接在云厂商提供的实例上搭建 kafka 集群可以说很简单，一般不会有什么困难。当我们选择把 kafka 部署到 k8s 里，希望利用 k8s 提供的编排能力来帮助我们更方便的]]></description>
+</item><item>
+    <title>外部访问 k8s 中的 kafka 集群</title>
+    <link>https://lxkaka.wang/k8s-kafka/</link>
+    <pubDate>Fri, 25 Oct 2019 10:39:03 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-kafka/</guid>
+    <description><![CDATA[如果直接在云厂商提供的实例上搭建 kafka 集群可以说很简单，一般不会有什么困难。当我们选择把 kafka 部署到 k8s 里，希望利用 k8s 提供的编排能力来帮助我们更方便的]]></description>
+</item><item>
+    <title>Flannel 在 k8s 中的使用</title>
+    <link>https://lxkaka.wang/flannel/</link>
+    <pubDate>Thu, 22 Aug 2019 13:58:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/flannel/</guid>
+    <description><![CDATA[在处理过的 k8s 集群的众多问题中数据链路的问题往往是最复杂，最难排查的。这需要我们对 k8s 集群的网络通信的过程有着清晰的认识。Docker 通过 veth 虚拟]]></description>
+</item><item>
+    <title>Flannel 在 k8s 中的使用</title>
+    <link>https://lxkaka.wang/flannel/</link>
+    <pubDate>Thu, 22 Aug 2019 13:58:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/flannel/</guid>
+    <description><![CDATA[在处理过的 k8s 集群的众多问题中数据链路的问题往往是最复杂，最难排查的。这需要我们对 k8s 集群的网络通信的过程有着清晰的认识。Docker 通过 veth 虚拟]]></description>
+</item><item>
+    <title>利用 K8s NodeAffinity 隔离服务</title>
+    <link>https://lxkaka.wang/k8s-affinity/</link>
+    <pubDate>Fri, 24 May 2019 15:43:22 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-affinity/</guid>
+    <description><![CDATA[我们知道在默认情况下，pod 的调度会由 scheduler-crontroller 根据节点资源和优先级来自动完成。但是有一些场景，我们希望把特定的 pod 调度到特定的节点，就不能让 scheduler 自动完]]></description>
+</item><item>
+    <title>利用 K8s NodeAffinity 隔离服务</title>
+    <link>https://lxkaka.wang/k8s-affinity/</link>
+    <pubDate>Fri, 24 May 2019 15:43:22 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-affinity/</guid>
+    <description><![CDATA[我们知道在默认情况下，pod 的调度会由 scheduler-crontroller 根据节点资源和优先级来自动完成。但是有一些场景，我们希望把特定的 pod 调度到特定的节点，就不能让 scheduler 自动完]]></description>
+</item></channel>
+</rss>

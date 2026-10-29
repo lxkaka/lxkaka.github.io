@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复 - lxkaka</title><meta name="Description" content="把浏览器授权、长期 OAuth 凭证和 Claude Code 执行统一放在远程容器内，用 cmux 创建独立后台会话，并处理关闭窗口后的连接清理、会话恢复、标题和资源回收。"><meta property="og:url" content="https://lxkaka.wang/remote-claude-cmux/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复">
+  <meta property="og:description" content="把浏览器授权、长期 OAuth 凭证和 Claude Code 执行统一放在远程容器内，用 cmux 创建独立后台会话，并处理关闭窗口后的连接清理、会话恢复、标题和资源回收。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-10-27T12:00:00+08:00">
+    <meta property="article:modified_time" content="2026-10-27T12:00:00+08:00">
+    <meta property="article:tag" content="Claude Code">
+    <meta property="article:tag" content="Cmux">
+    <meta property="article:tag" content="Dev Container">
+    <meta property="article:tag" content="SSH">
+    <meta property="article:tag" content="Docker">
+    <meta property="article:tag" content="OAuth">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复">
+  <meta name="twitter:description" content="把浏览器授权、长期 OAuth 凭证和 Claude Code 执行统一放在远程容器内，用 cmux 创建独立后台会话，并处理关闭窗口后的连接清理、会话恢复、标题和资源回收。">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/remote-claude-cmux/" /><link rel="prev" href="https://lxkaka.wang/codex-remote-devcontainer/" /><link rel="next" href="https://lxkaka.wang/remote-orca-agent-collaboration/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/remote-claude-cmux\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Claude Code, cmux, Dev Container, SSH, Docker, OAuth","wordcount":  6010 ,
+        "url": "https:\/\/lxkaka.wang\/remote-claude-cmux\/","datePublished": "2026-10-27T12:00:00+08:00","dateModified": "2026-10-27T12:00:00+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "把浏览器授权、长期 OAuth 凭证和 Claude Code 执行统一放在远程容器内，用 cmux 创建独立后台会话，并处理关闭窗口后的连接清理、会话恢复、标题和资源回收。"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%B7%A5%E7%A8%8B%E6%95%88%E7%8E%87/"><i class="far fa-folder fa-fw"></i>工程效率</a>&nbsp;<a href="/categories/%E5%AE%9E%E6%88%98/"><i class="far fa-folder fa-fw"></i>实战</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2026-10-27">2026-10-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6010 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#运行结构与适用范围">运行结构与适用范围</a></li>
+    <li><a href="#在容器内完成浏览器授权">在容器内完成浏览器授权</a>
+      <ul>
+        <li><a href="#临时浏览器桌面的职责">临时浏览器桌面的职责</a></li>
+        <li><a href="#保存凭证并让新终端自动加载">保存凭证并让新终端自动加载</a></li>
+        <li><a href="#容器重建时保留状态">容器重建时保留状态</a></li>
+      </ul>
+    </li>
+    <li><a href="#用原生后台会话承载任务">用原生后台会话承载任务</a></li>
+    <li><a href="#ssh-入口还需要清理连接端">SSH 入口还需要清理连接端</a>
+      <ul>
+        <li><a href="#安装示例脚本">安装示例脚本</a></li>
+        <li><a href="#配置-ssh-alias">配置 SSH alias</a></li>
+      </ul>
+    </li>
+    <li><a href="#将两个入口放进-cmux">将两个入口放进 cmux</a></li>
+    <li><a href="#日常使用与标题管理">日常使用与标题管理</a>
+      <ul>
+        <li><a href="#不要把随机标识当作任务名称">不要把随机标识当作任务名称</a></li>
+      </ul>
+    </li>
+    <li><a href="#关闭回收与恢复如何验证">关闭、回收与恢复如何验证</a></li>
+    <li><a href="#运维时保留的边界">运维时保留的边界</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我的日常开发环境在远程 Linux 主机的 Dev Container 中。代码、依赖、测试服务和命令行工具都在容器里，Mac 负责编辑和交互。Claude Code 也应运行在同一个环境中，直接使用真实的项目文件与工具链。</p>
+<p>落地时需要分别解决两件事：一是让浏览器授权和后续模型请求都从远程环境发起；二是让多个 Claude 会话便于创建、切换和恢复，同时能够释放不再工作的进程。</p>
+<p>本文采用的组合是：<strong>容器内 Chrome 完成授权，<code>claude setup-token</code> 生成长期凭证；容器内的 Claude 原生后台机制管理会话，Mac 上的 cmux 提供终端和工作区入口。</strong></p>
+<p>实现过程中，我遇到了关闭工作区后进程仍然存活、连接端阻止回收、随机名称覆盖任务标题等问题。下面按最终方案说明配置和验证方法。</p>
+<h2 id="运行结构与适用范围">运行结构与适用范围</h2>
+<p>认证只在初始化或更换凭证时使用临时远程桌面。日常开发通过 SSH 连接，不依赖浏览器桌面持续运行。</p>
+<pre class="mermaid">flowchart TB
+    subgraph mac["Mac：交互端"]
+        browser["本地浏览器：显示 noVNC 桌面"]
+        cmux["cmux：工作区与终端"]
+    end
+    subgraph remote["远程 Linux 主机"]
+        ssh["SSH 入口与连接清理脚本"]
+        subgraph container["Dev Container"]
+            desktop["临时 Xvfb / Chrome / noVNC"]
+            token["长期 OAuth token"]
+            attach["Claude attach / agents 客户端"]
+            supervisor["Claude 原生 supervisor"]
+            workers["多个后台 Claude 会话"]
+            storage["凭证、配置与对话记录"]
+        end
+    end
+    browser -->|"VS Code 转发 6080"| desktop
+    desktop -->|"浏览器授权"| token
+    token --> storage
+    cmux -->|"SSH"| ssh
+    ssh -->|"docker exec"| attach
+    attach <--> supervisor
+    supervisor --> workers
+    workers <--> storage
+</pre>
+
+
+<p>浏览器授权请求由容器里的 Chrome 发出，Claude 的模型请求由容器里的 Claude 进程发出。本地浏览器承载的是远程桌面的显示与输入，cmux 承载的是远程终端交互。</p>
+<p>这统一了请求的发起环境。公网出口是否固定，仍取决于远程主机的 NAT、代理、VPN 和网络配置；这套结构本身不提供固定公网 IP，也不能据此推导服务端的风控结论。</p>
+<p>本文记录的验证环境是 <strong>2026 年 10 月 27 日的 cmux 0.65.2 和 Claude Code 2.1.311</strong>。后台会话的 Agent View 仍处于 research preview，升级后应重新核对命令、快捷键和回收行为。示例统一使用以下占位名称：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>示例值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>远程宿主机 SSH alias</td>
+<td><code>project-host</code></td>
+</tr>
+<tr>
+<td>Claude 专用 SSH alias</td>
+<td><code>project-claude</code></td>
+</tr>
+<tr>
+<td>容器名称</td>
+<td><code>project-a-devcontainer</code></td>
+</tr>
+<tr>
+<td>容器用户</td>
+<td><code>node</code></td>
+</tr>
+<tr>
+<td>项目目录</td>
+<td><code>/workspaces/project-a</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="在容器内完成浏览器授权">在容器内完成浏览器授权</h2>
+<h3 id="临时浏览器桌面的职责">临时浏览器桌面的职责</h3>
+<p>容器里通常没有可见桌面，因此我使用 Xvfb 提供虚拟显示，Chrome 打开授权页面，x11vnc 与 noVNC 提供远程访问。Mac 通过 VS Code 转发容器的 <code>6080</code> 端口，再用本地浏览器查看桌面。</p>
+<p>各组件的职责如下：</p>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Xvfb</td>
+<td>提供 Chrome 所需的显示环境，例如 <code>DISPLAY=:99</code></td>
+</tr>
+<tr>
+<td>Chrome</td>
+<td>在容器中访问 Claude 登录和授权页面</td>
+</tr>
+<tr>
+<td>x11vnc</td>
+<td>将虚拟显示提供为 VNC 桌面</td>
+</tr>
+<tr>
+<td>noVNC / websockify</td>
+<td>让浏览器通过 WebSocket 连接 VNC 桌面</td>
+</tr>
+<tr>
+<td>VS Code 端口转发</td>
+<td>将容器的 <code>6080</code> 映射为本地访问入口</td>
+</tr>
+</tbody>
+</table>
+<p>镜像可以预装这些组件，具体启动脚本取决于镜像里的包路径和浏览器 sandbox 配置。VNC、noVNC 应限制在受控的本地或转发链路内，避免将登录桌面直接暴露到公网。<a href="https://novnc.com/info.html" target="_blank" rel="noopener noreffer">noVNC 官方说明</a>介绍了浏览器客户端、VNC 服务端和 WebSocket 代理之间的关系。</p>
+<p>桌面就绪后，在容器终端执行：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">DISPLAY</span><span class="o">=</span>:99 claude setup-token
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果 CLI 没有自动打开浏览器，就把它打印的授权 URL 粘贴到 <strong>noVNC 桌面中的 Chrome</strong>。完成登录和授权后，按 CLI 提示完成回调或粘贴授权码。不要把授权链接另开在 Mac 的 Chrome 中，否则这次浏览器授权仍会从 Mac 发起。</p>
+<p><code>claude setup-token</code> 会将 token 打印到终端，<strong>不会替你保存到文件</strong>。根据<a href="https://code.claude.com/docs/en/authentication#generate-a-long-lived-token" target="_blank" rel="noopener noreffer">官方认证文档</a>，它生成的是一年有效的订阅 OAuth token，提前撤销会使其失效。它可用于模型请求，本地配置的 MCP 仍可使用，但不能建立官方 Remote Control 会话或获取 claude.ai connectors。</p>
+<p>因此，本方案通过 SSH 和原生后台会话实现远程使用，不依赖官方 Remote Control。</p>
+<h3 id="保存凭证并让新终端自动加载">保存凭证并让新终端自动加载</h3>
+<p>我的容器将 token 放在以下位置：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/home/node/.claude/setup-token
+</span></span><span class="line"><span class="cl">/home/node/.claude/setup-token.env
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在容器的 Bash 中保存 token。下面的输入不会回显，也避免把 token 直接写进命令历史：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">set</span> +x
+</span></span><span class="line"><span class="cl"><span class="nb">umask</span> <span class="m">077</span>
+</span></span><span class="line"><span class="cl">mkdir -p <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nv">IFS</span><span class="o">=</span> <span class="nb">read</span> -r -s -p <span class="s1">&#39;粘贴 setup-token 生成的 token：&#39;</span> claude_setup_token
+</span></span><span class="line"><span class="cl"><span class="nb">printf</span> <span class="s1">&#39;\n&#39;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">printf</span> <span class="s1">&#39;%s\n&#39;</span> <span class="s2">&#34;</span><span class="nv">$claude_setup_token</span><span class="s2">&#34;</span> &gt; <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">unset</span> claude_setup_token
+</span></span><span class="line"><span class="cl">chmod <span class="m">600</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">cat &gt; <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token.env&#34;</span> <span class="s">&lt;&lt;&#39;EOF&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s">if [ -r &#34;$HOME/.claude/setup-token&#34; ]; then
+</span></span></span><span class="line"><span class="cl"><span class="s">    export CLAUDE_CODE_OAUTH_TOKEN=&#34;$(cat &#34;$HOME/.claude/setup-token&#34;)&#34;
+</span></span></span><span class="line"><span class="cl"><span class="s">fi
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span><span class="line"><span class="cl">chmod <span class="m">600</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token.env&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>然后在容器的 <code>.bashrc</code> 和 <code>.zshrc</code> 中各加入一次：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> -r <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token.env&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    . <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token.env&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>启动入口使用 <code>bash -lic</code>，通过容器的交互式登录 Shell 加载凭证。Bash 登录时读取的 <code>.bash_profile</code> 或 <code>.profile</code> 需要引入 <code>.bashrc</code>，或直接引入同一个环境文件；不能仅凭 <code>.bashrc</code> 中有配置就推断所有入口都能加载。已有的 <code>.bashrc</code> 如果会在非交互模式提前返回，也应核对实际启动方式。</p>
+<p>新开一个容器终端，检查变量是否存在及认证来源：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">bash -lic <span class="s1">&#39;test -n &#34;$CLAUDE_CODE_OAUTH_TOKEN&#34; &amp;&amp; echo &#34;OAuth token 已加载&#34;&#39;</span>
+</span></span><span class="line"><span class="cl">bash -lic <span class="s1">&#39;claude auth status&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>本次检查中，两个文件权限均为 <code>600</code>，Bash 和 Zsh 都会加载环境文件，<code>claude auth status</code> 返回的认证方式是 <code>oauth_token</code>。验证无需输出 token 内容。</p>
+<p>多个会话使用同一份凭证，无需分别登录。也应检查环境中是否遗留其他认证来源，例如优先级更高的 API key 或代理认证变量，避免实际使用的认证与预期不同。</p>
+<p>完成授权和新终端验证后，就可以停止这次登录使用的 Chrome、Xvfb、VNC 和 noVNC 进程，并关闭 <code>6080</code> 转发。我的运行环境中，临时桌面已经停止，<code>6080</code> 不再监听，日常 Claude 会话继续使用保存的 token。</p>
+<h3 id="容器重建时保留状态">容器重建时保留状态</h3>
+<p>容器可写层不应承担长期保存凭证和历史的职责。建议在 Dev Container 配置中持久化 Claude 配置目录：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;mounts&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;source=claude-code-config,target=/home/node/.claude,type=volume&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">],</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;containerEnv&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;CLAUDE_CONFIG_DIR&#34;</span><span class="p">:</span> <span class="s2">&#34;/home/node/.claude&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>将它合并到已有的 <code>devcontainer.json</code>，并确认目录属主与容器用户一致。给已有目录挂载一个空卷会遮蔽原文件，迁移现有 token 和历史后再重建。</p>
+<p><code>CLAUDE_CONFIG_DIR</code> 配合持久卷，也用于保留用户配置文件所在位置；Shell 中的加载语句则应写入镜像或初始化配置。具体持久化范围可对照<a href="https://code.claude.com/docs/en/devcontainer#persist-authentication-and-settings-across-rebuilds" target="_blank" rel="noopener noreffer">官方 Dev Container 文档</a>检查。</p>
+<h2 id="用原生后台会话承载任务">用原生后台会话承载任务</h2>
+<p>直接运行下面这类命令，可以得到可交互的远程 Claude：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh -t project-host <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s1">&#39;docker exec -it -u node -w /workspaces/project-a project-a-devcontainer bash -lic claude&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>但这还不足以定义任务生命周期。实际测试中，关闭 cmux 工作区后，远程的普通 Claude 进程仍然存活。SSH 连接、Docker exec 客户端和容器内进程跨越了几层边界，不能用窗口是否消失来判断远端是否退出。</p>
+<p>最终方案使用 Claude 自带的后台机制：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 在容器里创建后台会话，获得短 ID</span>
+</span></span><span class="line"><span class="cl">claude --bg --dangerously-skip-permissions
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 接入这个会话，得到完整的实时交互终端</span>
+</span></span><span class="line"><span class="cl">claude attach &lt;id&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 查看原生会话列表</span>
+</span></span><span class="line"><span class="cl">claude agents --dangerously-skip-permissions
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里需要区分三个对象：</p>
+<table>
+<thead>
+<tr>
+<th>对象</th>
+<th>生命周期与职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cmux 工作区</td>
+<td>Mac 上的终端容器，负责显示、输入与切换</td>
+</tr>
+<tr>
+<td><code>attach</code> / <code>agents</code> 连接端</td>
+<td>容器内的交互客户端，属于本次 SSH 连接</td>
+</tr>
+<tr>
+<td>后台 Claude worker</td>
+<td>原生 supervisor 管理的任务进程，独立于某个工作区</td>
+</tr>
+</tbody>
+</table>
+<p>关闭工作区时，应让连接端退出；后台任务是否继续运行，由 Claude 原生机制及会话状态决定。对话记录保存在远程磁盘中，进程回收后仍可恢复。<a href="https://code.claude.com/docs/en/agent-view" target="_blank" rel="noopener noreffer">Agent View 文档</a>描述了这些原生命令和 supervisor 的职责。</p>
+<p><code>--dangerously-skip-permissions</code> 对应完全访问模式，它跳过 Claude 的权限确认，不会提升 Linux 用户本身的权限。该模式只适用于可信、边界明确的开发环境；容器内可读的凭证和挂载目录也处于 Agent 的访问范围内。</p>
+<p>在交给启动脚本之前，应先在容器的项目目录中交互式运行一次 Claude，完成该版本要求的项目信任、首次初始化和权限提示，确认认证与普通交互可用。脚本里的后台启动无法替人完成这些对话，未完成初始化时可能直接报错退出。</p>
+<h2 id="ssh-入口还需要清理连接端">SSH 入口还需要清理连接端</h2>
+<p>把 <code>claude</code> 换成 <code>claude attach</code> 后，还有一个容易忽略的问题：<strong>如果断开 SSH 后，容器里的 attach 客户端没有退出，后台会话就可能仍被认为有人连接，进而无法进入预期的回收路径。</strong></p>
+<p>因此，我在宿主机增加了一个小的 SSH 入口脚本。它只做四件事：</p>
+<ol>
+<li>找到目标容器，必要时同步容器内辅助脚本；</li>
+<li>新建后台会话，或打开会话列表、恢复指定 ID；</li>
+<li>为本次连接端设置唯一标记；</li>
+<li>SSH 入口收到 <code>HUP</code>、<code>TERM</code> 或正常退出时，只清理携带该标记的连接端。</li>
+</ol>
+<pre class="mermaid">flowchart TB
+    A["关闭 cmux 工作区"] --> B["SSH 入口触发退出清理"]
+    B --> C["匹配本连接标记、命令与进程启动标识"]
+    C --> D["只终止本次 attach / agents 客户端"]
+    D --> E["保留后台 worker，由原生 supervisor 处理回收"]
+</pre>
+
+
+<p>清理前会同时检查连接标记、完整客户端参数和进程启动标识，避免把 PID 重用后的其他进程当成目标。不能用 <code>pkill claude</code>：后台 worker、其他任务和连接端都可能具有同样的进程名。</p>
+<p>这部分是连接结束时的清理，不是定时杀进程的守护程序，也不会根据 CPU 占用低或长时间没有终端输出来终止任务。</p>
+<h3 id="安装示例脚本">安装示例脚本</h3>
+<p>这里提供从实测实现整理出的通用版本：</p>
+<ul>
+<li><a href="/downloads/remote-claude-cmux/remote-claude" rel="">宿主机 SSH 入口：remote-claude</a></li>
+<li><a href="/downloads/remote-claude-cmux/remote-claude-session.py" rel="">容器内辅助脚本：remote-claude-session.py</a></li>
+</ul>
+<p>下载后先检查脚本顶部的容器名称、工作目录，以及容器用户和 Claude 可执行文件路径。示例使用 <code>node</code> 和原生安装器的 <code>~/.local/bin/claude</code>。</p>
+<p>在 Mac 上将两个文件放到 Linux 宿主机：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh project-host <span class="s1">&#39;mkdir -p ~/.local/bin ~/.local/libexec&#39;</span>
+</span></span><span class="line"><span class="cl">scp remote-claude project-host:.local/bin/remote-claude
+</span></span><span class="line"><span class="cl">scp remote-claude-session.py project-host:.local/libexec/remote-claude-session.py
+</span></span><span class="line"><span class="cl">ssh project-host <span class="s1">&#39;chmod 700 ~/.local/bin/remote-claude ~/.local/libexec/remote-claude-session.py&#39;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>宿主机保留辅助脚本的副本。每次进入时，入口会检查容器内的副本并在缺失或不一致时同步，因此容器重建后不会仅仅因为辅助脚本丢失而失去入口。Claude 的安装、Shell 配置和凭证持久化仍需要由容器本身保证。</p>
+<p>宿主机入口支持 <code>new</code>、<code>list</code>、<code>resume &lt;id&gt;</code> 和只读的 <code>status</code>。关闭连接后的清理结果记录在宿主机的 <code>~/.local/state/cmux-claude/last-cleanup.json</code>，便于核对究竟终止了哪个客户端。</p>
+<h3 id="配置-ssh-alias">配置 SSH alias</h3>
+<p>在 Mac 的 <code>~/.ssh/config</code> 中保留一个普通宿主机入口，再增加 Claude 专用入口：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">Host project-host
+</span></span><span class="line"><span class="cl">    HostName dev.example.com
+</span></span><span class="line"><span class="cl">    User dev
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Host project-claude
+</span></span><span class="line"><span class="cl">    HostName dev.example.com
+</span></span><span class="line"><span class="cl">    User dev
+</span></span><span class="line"><span class="cl">    RequestTTY yes
+</span></span><span class="line"><span class="cl">    RemoteCommand /home/dev/.local/bin/remote-claude new
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>已有的密钥、跳板机等配置应沿用原连接设置。这里使用稳定容器名，避免将一次创建得到的容器 ID 写进长期配置。</p>
+<p>此后，<code>ssh -t project-claude</code> 就会创建并接入一个新的远程后台会话。入口执行 <code>docker exec</code> 时使用容器用户，并通过 <code>bash -lic</code> 加载容器内的凭证。</p>
+<h2 id="将两个入口放进-cmux">将两个入口放进 cmux</h2>
+<p>在 Mac 的 <code>~/.config/cmux/cmux.json</code> 中合并以下配置，保留其他设置：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;newWorkspaceCommand&#34;</span><span class="p">:</span> <span class="s2">&#34;新建远程 Claude&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;commands&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;新建远程 Claude&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;新建远程后台 Claude 完全访问会话&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;restart&#34;</span><span class="p">:</span> <span class="s2">&#34;new&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;workspace&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;layout&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;pane&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;surfaces&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">              <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;terminal&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;exec ssh -t project-claude&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;focus&#34;</span><span class="p">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">              <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">          <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;setup&#34;</span><span class="p">:</span> <span class="s2">&#34;/Applications/cmux.app/Contents/Resources/bin/cmux workspace-action --action clear-name --workspace \&#34;$CMUX_WORKSPACE_ID\&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">},</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;远程 Claude 会话&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;description&#34;</span><span class="p">:</span> <span class="s2">&#34;查看和恢复远程后台 Claude 会话&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;restart&#34;</span><span class="p">:</span> <span class="s2">&#34;new&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nt">&#34;workspace&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;name&#34;</span><span class="p">:</span> <span class="s2">&#34;远程 Claude 会话&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&#34;layout&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="nt">&#34;pane&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nt">&#34;surfaces&#34;</span><span class="p">:</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">              <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;terminal&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;command&#34;</span><span class="p">:</span> <span class="s2">&#34;exec ssh -t -o \&#34;RemoteCommand=/home/dev/.local/bin/remote-claude list\&#34; project-claude&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nt">&#34;focus&#34;</span><span class="p">:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">              <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">]</span>
+</span></span><span class="line"><span class="cl">          <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>第一个入口创建独立会话，<code>newWorkspaceCommand</code> 让 <code>⌘N</code> 使用它。第二个入口覆盖 SSH 的 <code>RemoteCommand</code>，直接打开容器里的原生 <code>claude agents</code> 列表，不再创建一个新任务。</p>
+<p>普通会话工作区不设置固定名称，并在初始化时清除 cmux 的自定义名称，让 Claude 发出的终端标题可以同步到左侧导航栏。管理工作区则固定为“远程 Claude 会话”，便于辨认。</p>
+<p>保存后执行配置检查，再按 <code>⌘⇧,</code> 重载：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/Applications/cmux.app/Contents/Resources/bin/cmux config doctor --scope global
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>配置文件位置、合并规则和重载方式见 <a href="https://cmux.com/docs/configuration#cmux-json" target="_blank" rel="noopener noreffer">cmux 配置文档</a>。本方案以<strong>工作区</strong>作为多会话切换单位；<code>⌘T</code> 和 <code>⌘D</code> 的标签、分屏行为不应被当成同样的新建会话入口。</p>
+<h2 id="日常使用与标题管理">日常使用与标题管理</h2>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>入口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>新建独立 Claude 会话</td>
+<td><code>⌘N</code>，或命令面板中的“新建远程 Claude”</td>
+</tr>
+<tr>
+<td>查看后台会话</td>
+<td><code>⌘⇧P</code> → 搜索“远程 Claude 会话” → 回车</td>
+</tr>
+<tr>
+<td>在列表中查找</td>
+<td><code>Ctrl+F</code>，或输入 <code>n:关键词</code></td>
+</tr>
+<tr>
+<td>进入选中的会话</td>
+<td>回车</td>
+</tr>
+<tr>
+<td>从会话返回列表</td>
+<td>输入框为空时按 <code>←</code></td>
+</tr>
+<tr>
+<td>设置便于查找的会话名</td>
+<td><code>/rename 任务名称</code></td>
+</tr>
+<tr>
+<td>让 Claude 根据当前对话命名</td>
+<td>不带参数的 <code>/rename</code></td>
+</tr>
+</tbody>
+</table>
+<p>“找回”包含两种情况：worker 仍在时，客户端直接接入同一个运行中的会话；worker 已回收时，Claude 从保存的对话启动新进程，再接入终端。恢复的基础是磁盘记录，已经退出的进程内存不会被原样保留。</p>
+<h3 id="不要把随机标识当作任务名称">不要把随机标识当作任务名称</h3>
+<p>我最初给每个新会话传入 <code>--name &quot;ECAP 时间 随机后缀&quot;</code>，目的是方便区分。这样会把占位文本变成显式会话名，终端优先显示它，结果左侧出现了一串没有任务含义的名称。</p>
+<p>最终入口去掉了创建时的 <code>--name</code>。新终端先显示“远程 Claude · 新会话”，用户提交任务后，Claude 生成主题标题。实测中，一条关于登录页深色模式的问题生成了“登录页深色模式验证”。</p>
+<p>这里还要区分<strong>终端主题标题</strong>和<strong>可持久查找的会话名</strong>。在本次版本中，未显式命名的后台记录仍可能在 Agent View 中以短 ID 显示；自动主题标题不能被当成列表名称已经同步的证明。重要任务可以执行一次不带参数的 <code>/rename</code>，让 Claude 从对话生成并保存会话名，或手动设置一个明确名称。</p>
+<p>此外，cmux 自定义工作区名、自定义标签名也可能覆盖终端标题。排查时应分别检查这几层。Claude 的命名规则可参考<a href="https://code.claude.com/docs/en/sessions#name-your-sessions" target="_blank" rel="noopener noreffer">会话管理文档</a>和 <a href="https://code.claude.com/docs/en/commands" target="_blank" rel="noopener noreffer"><code>/rename</code> 命令说明</a>。</p>
+<h2 id="关闭回收与恢复如何验证">关闭、回收与恢复如何验证</h2>
+<p>原生 supervisor 会根据任务和连接状态决定是否保留进程。官方描述的典型回收场景是：会话已完成或等待下一条消息，且约一小时无人连接；正在工作、等权限对话、有人连接或被固定的会话会受到保护。详见<a href="https://code.claude.com/docs/en/agent-view#the-supervisor-process" target="_blank" rel="noopener noreffer">supervisor 生命周期说明</a>。</p>
+<p>这不能简化为“没有输出一小时就杀掉”。工具可能正在执行，Agent 可能等待审批；刚创建、还没发过首条消息的空会话，也不应套用已完成会话的回收结论。实际行为要结合 CLI 版本、会话状态和连接情况判断。</p>
+<p>我的验证过程分为两轮：先验证普通交互，再保留一个完成任务且已断开的样本，等待回收后重新检查。</p>
+<table>
+<thead>
+<tr>
+<th>验证项</th>
+<th>观察结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>实时输出</td>
+<td>生成至第 36 行时已能看到输出继续增长，最终收到完整 70 行</td>
+</tr>
+<tr>
+<td>交互与历史</td>
+<td>输入、详细历史展开和翻页正常</td>
+</tr>
+<tr>
+<td>关闭工作区</td>
+<td>本次 attach 客户端退出，后台 worker 保留，另一个工作区不受影响</td>
+</tr>
+<tr>
+<td>断开后继续对话</td>
+<td>接回原会话，准确回答之前保存的测试标记</td>
+</tr>
+<tr>
+<td>无连接空闲样本</td>
+<td>10:08 断开，11:31 复查，原 worker 已退出，会话记录和历史仍在</td>
+</tr>
+<tr>
+<td>回收后恢复</td>
+<td>出现 <code>Waking session</code>，新进程接回同一会话，并再次准确回答测试标记</td>
+</tr>
+<tr>
+<td>完全访问模式</td>
+<td>启动参数和界面状态标识保持一致</td>
+</tr>
+</tbody>
+</table>
+<p>没有记录到样本的精确退出时刻，因此这次测试验证的是“空闲后释放进程，保留对话，能够唤醒继续”的完整过程，不能据此声称恰好第 60 分钟退出。也没有用人工停止样本的结果来代替自然回收。</p>
+<p>定位问题时可以使用只读状态接口：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 容器终端</span>
+</span></span><span class="line"><span class="cl">claude agents --json --all
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Linux 宿主机上的入口</span>
+</span></span><span class="line"><span class="cl">~/.local/bin/remote-claude status
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>运行中的记录通常带有 <code>pid</code>；已释放进程的记录仍可能保留在列表中，但不再带运行 PID。判断回收时，还应检查原进程是否存在，以及记录和 transcript 是否保留，不能只看列表中的 <code>done</code> 或 <code>idle</code> 文本。</p>
+<h2 id="运维时保留的边界">运维时保留的边界</h2>
+<p><strong>凭证更换与环境更新。</strong> token 轮换后，应在新终端确认环境变量和认证来源。已经运行的进程不会因为磁盘文件变化就自动更新自身环境，需要结合任务状态验证新建和恢复路径。不要为了更换某个会话的凭证而批量终止所有 Claude 进程。</p>
+<p><strong>会话隔离与代码隔离。</strong> 多个 Claude 会话分别拥有对话上下文，不代表它们天然拥有独立 Git 工作区。并行修改同一仓库时，应核对实际工作目录与原生 worktree 设置；需要独立开发时，为任务分配独立工作树，并避免测试端口和生成文件相互覆盖。</p>
+<p><strong>旧会话迁移。</strong> 新入口只改变后续的启动方式。旧模式中的普通交互进程不会自动转换为这里的后台记录，也不会因为修改 cmux 配置而自动退出。迁移或结束它们时，需要逐个确认会话与任务。</p>
+<p><strong>停止和删除。</strong> 关闭终端、停止后台任务、删除会话记录是不同操作。需要明确停止某个任务时，使用针对 ID 的 <code>claude stop &lt;id&gt;</code>；删除原生会话前还应检查它关联的工作树和未提交改动，按当前版本的确认提示操作。</p>
+<p><strong>升级验收。</strong> 保留一组小而明确的检查：新终端能否使用预期凭证；<code>⌘N</code> 是否创建后台会话；关闭后连接端是否消失；列表能否恢复原对话；自动标题是否仍能到达左侧栏。涉及进程回收的升级，则另留无连接样本观察，避免以界面变化代替远程进程证据。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2026-10-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/remote-claude-cmux/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/remote-claude-cmux/" data-title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复" data-hashtags="Claude Code,cmux,Dev Container,SSH,Docker,OAuth"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/remote-claude-cmux/" data-hashtag="Claude Code"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/remote-claude-cmux/" data-title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/remote-claude-cmux/" data-title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/remote-claude-cmux/" data-title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/claude-code/">Claude Code</a>,&nbsp;<a href="/tags/cmux/">Cmux</a>,&nbsp;<a href="/tags/dev-container/">Dev Container</a>,&nbsp;<a href="/tags/ssh/">SSH</a>,&nbsp;<a href="/tags/docker/">Docker</a>,&nbsp;<a href="/tags/oauth/">OAuth</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/codex-remote-devcontainer/" class="prev" rel="prev" title="让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案"><i class="fas fa-angle-left fa-fw"></i>让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案</a>
+            <a href="/remote-orca-agent-collaboration/" class="next" rel="next" title="基于 Orca 的远程多 Agent 协作开发">基于 Orca 的远程多 Agent 协作开发<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+
+

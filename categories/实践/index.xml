@@ -1,0 +1,43 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>实践 - 分类 - lxkaka</title>
+        <link>https://lxkaka.wang/categories/%E5%AE%9E%E8%B7%B5/</link>
+        <description>实践 - 分类 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 30 Sep 2022 09:48:55 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/categories/%E5%AE%9E%E8%B7%B5/" rel="self" type="application/rss+xml" /><item>
+    <title>Dapr 初探-Pub/Sub 实践</title>
+    <link>https://lxkaka.wang/dapr-pubsub/</link>
+    <pubDate>Fri, 30 Sep 2022 09:48:55 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/dapr-pubsub/</guid>
+    <description><![CDATA[Dapr 介绍 Dapr 是一个开源项目，由微软发起，下面是来自 Dapr 官方网站的介绍 Dapr 是一个可移植的、事件驱动的运行时，它使任何开发人员能够轻松构建出弹性的、无状]]></description>
+</item><item>
+    <title>Golang 中实用的图片处理方法</title>
+    <link>https://lxkaka.wang/image-process/</link>
+    <pubDate>Tue, 30 Aug 2022 23:04:05 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/image-process/</guid>
+    <description><![CDATA[当我们需要在端上展示用户上传的图片时，由于用户上传的图片尺寸各异，为了良好的视觉效果，我们必须对尺寸各异的图片做处理。在这篇文章里我们介绍一]]></description>
+</item><item>
+    <title>Python 应用接入 Prometheus 监控</title>
+    <link>https://lxkaka.wang/py-metrics/</link>
+    <pubDate>Fri, 29 Jul 2022 10:04:07 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/py-metrics/</guid>
+    <description><![CDATA[在这篇文章 我们介绍了 Prmetheus metrics 的基本类型和在 Golang 中的简单应用。我们知道在一个通过 Http 协议提供在线服务的应用中可以通过接口 /metrics 来 expose metrics，然后 promethues 可]]></description>
+</item><item>
+    <title>高效搭建后台系统的解决方案-amis</title>
+    <link>https://lxkaka.wang/amis-practice/</link>
+    <pubDate>Sat, 25 Jun 2022 10:50:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/amis-practice/</guid>
+    <description><![CDATA[最近需要搭建一个管理后台来给产品和运营同学使用。管理后台简单来说就是信息管理的工具需要提供增删改查的功能。从细节上来说这样的一个后台一般都会]]></description>
+</item><item>
+    <title>使用 Promethues 实现应用监控的一些实践</title>
+    <link>https://lxkaka.wang/metrics-best-practice/</link>
+    <pubDate>Sat, 25 Sep 2021 09:34:39 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/metrics-best-practice/</guid>
+    <description><![CDATA[在这篇文章中我们介绍了如何利用 Prometheus 监控应用。在后续的工作中随着监控的深入，我们结合自己的经验和官方文档总结了一些 Metrics 的实践。希望这些实践能给大家]]></description>
+</item></channel>
+</rss>

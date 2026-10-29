@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>NodeAffinity - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/nodeaffinity/</link>
+        <description>NodeAffinity - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 24 May 2019 15:43:22 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/nodeaffinity/" rel="self" type="application/rss+xml" /><item>
+    <title>利用 K8s NodeAffinity 隔离服务</title>
+    <link>https://lxkaka.wang/k8s-affinity/</link>
+    <pubDate>Fri, 24 May 2019 15:43:22 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-affinity/</guid>
+    <description><![CDATA[我们知道在默认情况下，pod 的调度会由 scheduler-crontroller 根据节点资源和优先级来自动完成。但是有一些场景，我们希望把特定的 pod 调度到特定的节点，就不能让 scheduler 自动完]]></description>
+</item><item>
+    <title>利用 K8s NodeAffinity 隔离服务</title>
+    <link>https://lxkaka.wang/k8s-affinity/</link>
+    <pubDate>Fri, 24 May 2019 15:43:22 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/k8s-affinity/</guid>
+    <description><![CDATA[我们知道在默认情况下，pod 的调度会由 scheduler-crontroller 根据节点资源和优先级来自动完成。但是有一些场景，我们希望把特定的 pod 调度到特定的节点，就不能让 scheduler 自动完]]></description>
+</item></channel>
+</rss>

@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排 - lxkaka</title><meta name="Description" content="lxkaka&#39;s blog"><meta property="og:url" content="https://lxkaka.wang/openclaw-agent-execution/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排">
+  <meta property="og:description" content="OpenClaw 是一个开源、自托管的自主 AI agent——运行在你自己的机器上，通过你已在使用的消息平台（Mattermost、Slack、Discord、">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-04-02T10:00:00+08:00">
+    <meta property="article:modified_time" content="2026-04-02T10:00:00+08:00">
+    <meta property="article:tag" content="AI Agent">
+    <meta property="article:tag" content="OpenClaw">
+    <meta property="article:tag" content="Multi-Agent">
+    <meta property="article:tag" content="ACP">
+    <meta property="article:tag" content="Claude Code">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排">
+  <meta name="twitter:description" content="OpenClaw 是一个开源、自托管的自主 AI agent——运行在你自己的机器上，通过你已在使用的消息平台（Mattermost、Slack、Discord、">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/openclaw-agent-execution/" /><link rel="prev" href="https://lxkaka.wang/openclaw-external-coding-agent/" /><link rel="next" href="https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/openclaw-agent-execution\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "AI agent, OpenClaw, multi-agent, ACP, Claude Code","wordcount":  6033 ,
+        "url": "https:\/\/lxkaka.wang\/openclaw-agent-execution\/","datePublished": "2026-04-02T10:00:00+08:00","dateModified": "2026-04-02T10:00:00+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E6%9E%B6%E6%9E%84/"><i class="far fa-folder fa-fw"></i>架构</a>&nbsp;<a href="/categories/%E5%8E%9F%E7%90%86/"><i class="far fa-folder fa-fw"></i>原理</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2026-04-02">2026-04-02</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6033 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 13 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#基础消息是如何到达-bot-的">基础：消息是如何到达 Bot 的</a></li>
+    <li><a href="#llm-如何决定走哪条路径">LLM 如何决定走哪条路径</a>
+      <ul>
+        <li><a href="#工具是怎么传给-llm-的">工具是怎么传给 LLM 的</a></li>
+        <li><a href="#系统提示词里的路由指引">系统提示词里的路由指引</a></li>
+      </ul>
+    </li>
+    <li><a href="#路径一单步-tool-call">路径一：单步 Tool Call</a>
+      <ul>
+        <li><a href="#场景">场景</a></li>
+        <li><a href="#执行流程">执行流程</a></li>
+        <li><a href="#关键特点">关键特点</a></li>
+        <li><a href="#适用场景">适用场景</a></li>
+      </ul>
+    </li>
+    <li><a href="#路径二内置子-agent">路径二：内置子 Agent</a>
+      <ul>
+        <li><a href="#场景-1">场景</a></li>
+        <li><a href="#llm-如何决定启动子-agent">LLM 如何决定启动子 Agent</a></li>
+        <li><a href="#执行流程-1">执行流程</a></li>
+        <li><a href="#并发执行">并发执行</a></li>
+        <li><a href="#层级化能力模型">层级化能力模型</a></li>
+        <li><a href="#推送式完成通知">推送式完成通知</a></li>
+        <li><a href="#故障恢复">故障恢复</a></li>
+      </ul>
+    </li>
+    <li><a href="#路径三外部-coding-agentacp">路径三：外部 Coding Agent（ACP）</a>
+      <ul>
+        <li><a href="#场景-2">场景</a></li>
+        <li><a href="#三层进程链">三层进程链</a></li>
+        <li><a href="#执行流程-2">执行流程</a></li>
+        <li><a href="#acp-协议">ACP 协议</a></li>
+        <li><a href="#harness-命令映射表">Harness 命令映射表</a></li>
+      </ul>
+    </li>
+    <li><a href="#多轮对话上下文如何跨消息保持">多轮对话：上下文如何跨消息保持</a>
+      <ul>
+        <li><a href="#transcript-存储">Transcript 存储</a></li>
+        <li><a href="#session-key-的分配">Session Key 的分配</a></li>
+        <li><a href="#子-agent-的上下文隔离">子 Agent 的上下文隔离</a></li>
+        <li><a href="#acp-session-的上下文">ACP session 的上下文</a></li>
+      </ul>
+    </li>
+    <li><a href="#三种路径横向对比">三种路径横向对比</a></li>
+    <li><a href="#架构总结">架构总结</a>
+      <ul>
+        <li><a href="#三条路径的本质">三条路径的本质</a></li>
+        <li><a href="#为什么这样设计">为什么这样设计</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>OpenClaw 是一个开源、自托管的自主 AI agent——运行在你自己的机器上，通过你已在使用的消息平台（Mattermost、Slack、Discord、WhatsApp、Telegram 等）作为交互界面，能够真正执行任务，而不只是回答问题。</p>
+<p>当用户发送一条消息，OpenClaw 底层究竟发生了什么？答案取决于任务的复杂程度——它有三种完全不同的执行路径：</p>
+<ol>
+<li><strong>单步 Tool Call</strong>：简单任务，如生成一张图片</li>
+<li><strong>内置子 Agent</strong>：复杂任务，需要多轮推理，在进程内 fork 出子 Agent</li>
+<li><strong>外部 Coding Agent</strong>：需要写代码、操作文件系统，启动 Claude Code / Codex 等外部进程</li>
+</ol>
+<p>本文从最简单的场景出发，逐步深入到最复杂的多 Agent 编排，把三条路径讲清楚。</p>
+<hr>
+<h2 id="基础消息是如何到达-bot-的">基础：消息是如何到达 Bot 的</h2>
+<p>在讨论三种路径之前，先理解消息进入系统的通路，因为这部分对所有路径都一样。</p>
+<p>OpenClaw 的核心是一个 <strong>Gateway</strong> 进程，它同时维护多个消息频道的 WebSocket 连接（Mattermost、Slack、Discord 等）。</p>
+<p>以 Mattermost 为例（<code>extensions/mattermost/src/mattermost/monitor-websocket.ts</code>）：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">WebSocket 连接 wss://mattermost/api/v4/websocket
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">    │  收到 event: &#34;posted&#34;
+</span></span><span class="line"><span class="cl">    ▼
+</span></span><span class="line"><span class="cl">monitor.ts — debouncer 去重 + 权限/mention 校验
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">    ▼
+</span></span><span class="line"><span class="cl">createChannelReplyPipeline() — 设置 typing 指示器、分块限制
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">    ▼
+</span></span><span class="line"><span class="cl">dispatch-from-config.ts — 会话路由、插件钩子触发
+</span></span><span class="line"><span class="cl">    │
+</span></span><span class="line"><span class="cl">    ▼
+</span></span><span class="line"><span class="cl">get-reply.ts — 解析 agent 配置，调用 runEmbeddedPiAgent()
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Gateway 管理着每个 channel 的重连策略（指数退避，最大 10 次），确保连接始终在线。</p>
+<p>消息经过这条公共路径之后，才进入三种不同的执行路径。</p>
+<hr>
+<h2 id="llm-如何决定走哪条路径">LLM 如何决定走哪条路径</h2>
+<p>这是整个架构最关键的问题：三条路径的&quot;路由器&quot;在哪里？</p>
+<p>答案是：<strong>路由器就是 LLM 本身，它通过工具描述和系统提示词来做决策。</strong></p>
+<h3 id="工具是怎么传给-llm-的">工具是怎么传给 LLM 的</h3>
+<p><code>createOpenClawTools()</code>（<code>src/agents/openclaw-tools.ts</code>）负责实例化所有可用工具，包括 <code>image_generate</code>、<code>web_search</code>、<code>sessions_spawn</code> 等。之后 <code>createOpenClawCodingTools()</code>（<code>src/agents/pi-tools.ts</code>）将这些工具与文件系统工具合并，经过策略过滤（权限、模型限制等），最终通过 <code>toClientToolDefinitions()</code> 转换成 LLM API 规定的 JSON Schema 格式，随每次请求一起发出。</p>
+<p>LLM 看到的，是一份工具列表——每个工具有名称、描述、参数 schema。它根据这份列表和当前的对话上下文，决定调用哪个工具、传什么参数。</p>
+<h3 id="系统提示词里的路由指引">系统提示词里的路由指引</h3>
+<p><code>sessions_spawn</code> 工具在 schema 层面的 description 只有一句话：</p>
+<blockquote>
+<p>&ldquo;Spawn an isolated session (runtime=&ldquo;subagent&rdquo; or runtime=&ldquo;acp&rdquo;). mode=&ldquo;run&rdquo; is one-shot and mode=&ldquo;session&rdquo; is persistent/thread-bound.&rdquo;</p>
+</blockquote>
+<p>这远不足以让 LLM 知道什么时候该用哪个 runtime。<strong>真正的路由逻辑写在系统提示词里</strong>（<code>src/agents/system-prompt.ts</code>）：</p>
+<blockquote>
+<p>&ldquo;If a task is more complex or takes longer, spawn a sub-agent. Completion is push-based: it will auto-announce when done.&rdquo;</p>
+</blockquote>
+<blockquote>
+<p>&ldquo;For requests like &lsquo;do this in codex / claude code / cursor / gemini&rsquo; or similar ACP harnesses, treat it as ACP harness intent and call sessions_spawn with runtime: &lsquo;acp&rsquo;.&rdquo;</p>
+</blockquote>
+<p>也就是说，系统提示词用自然语言告诉 LLM：</p>
+<ul>
+<li>遇到复杂多步骤任务 → <code>sessions_spawn(runtime=&quot;subagent&quot;)</code></li>
+<li>用户明确提到外部工具或需要操作文件系统 → <code>sessions_spawn(runtime=&quot;acp&quot;)</code></li>
+<li>其他情况 → 直接调用对应工具函数</li>
+</ul>
+<p>这是一种<strong>用提示词编写的软路由</strong>，而非硬编码的条件判断。LLM 的理解能力就是路由逻辑本身。这意味着路由规则可以随着提示词演进，不需要改动代码，但也意味着边界情况下 LLM 有可能选错路径。</p>
+<hr>
+<h2 id="路径一单步-tool-call">路径一：单步 Tool Call</h2>
+<h3 id="场景">场景</h3>
+<p>用户发送：<code>帮我画一只猫</code></p>
+<h3 id="执行流程">执行流程</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">runEmbeddedPiAgent</span><span class="p">()</span>  <span class="err">←</span> <span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">pi</span><span class="o">-</span><span class="n">embedded</span><span class="o">-</span><span class="n">runner</span><span class="o">/</span><span class="n">run</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="err">调用</span> <span class="n">LLM</span><span class="err">（</span><span class="n">Anthropic</span> <span class="o">/</span> <span class="n">OpenAI</span> <span class="err">等）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="n">LLM</span> <span class="err">返回</span><span class="p">:</span> <span class="n">tool_call</span> <span class="err">→</span> <span class="n">image_generate</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&#34;一只可爱的猫&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">image</span><span class="o">-</span><span class="n">generate</span><span class="o">-</span><span class="k">tool</span><span class="o">.</span><span class="n">ts</span>  <span class="err">←</span> <span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">tools</span><span class="o">/</span><span class="n">image</span><span class="o">-</span><span class="n">generate</span><span class="o">-</span><span class="k">tool</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">解析参数（</span><span class="n">prompt</span> <span class="o">/</span> <span class="n">size</span> <span class="o">/</span> <span class="n">aspectRatio</span> <span class="o">/</span> <span class="n">count</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">resolveSelectedImageGenerationProvider</span><span class="p">()</span> <span class="err">选择</span> <span class="n">provider</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="n">generateImage</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">         <span class="err">├─</span> <span class="n">extensions</span><span class="o">/</span><span class="n">image</span><span class="o">-</span><span class="n">generation</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">runtime</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">         <span class="err">├─</span> <span class="err">按候选链逐一尝试（</span><span class="n">Failover</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">         <span class="err">│</span>   <span class="err">候选</span> <span class="mi">1</span><span class="p">:</span> <span class="n">OpenAI</span> <span class="n">gpt</span><span class="o">-</span><span class="n">image</span><span class="o">-</span><span class="mi">1</span>  <span class="err">→</span> <span class="err">失败？</span>
+</span></span><span class="line"><span class="cl">         <span class="err">│</span>   <span class="err">候选</span> <span class="mi">2</span><span class="p">:</span> <span class="n">Google</span> <span class="n">Imagen</span>        <span class="err">→</span> <span class="err">成功</span>
+</span></span><span class="line"><span class="cl">         <span class="err">└─</span> <span class="n">saveMediaBuffer</span><span class="p">()</span> <span class="err">保存到本地</span> <span class="n">media</span> <span class="err">目录</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="k">tool</span> <span class="n">result</span><span class="p">:</span> <span class="p">{</span> <span class="n">media</span><span class="p">:</span> <span class="p">{</span> <span class="n">mediaUrls</span><span class="p">:</span> <span class="p">[</span><span class="s2">&#34;...&#34;</span><span class="p">]</span> <span class="p">}</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">pi</span><span class="o">-</span><span class="n">embedded</span><span class="o">-</span><span class="n">subscribe</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">tools</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="err">提取</span> <span class="n">mediaUrls</span><span class="err">，加入待发送队列</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">reply</span><span class="o">-</span><span class="n">delivery</span><span class="o">.</span><span class="n">ts</span>  <span class="err">←</span> <span class="n">extensions</span><span class="o">/</span><span class="n">mattermost</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mattermost</span><span class="o">/</span><span class="n">reply</span><span class="o">-</span><span class="n">delivery</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="err">文本分块</span> <span class="o">+</span> <span class="err">调用</span> <span class="n">Mattermost</span> <span class="n">API</span> <span class="err">上传图片文件</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="关键特点">关键特点</h3>
+<p><strong>同步阻塞</strong>：LLM 发出 <code>tool_call</code> 后，Gateway 同步等待工具函数执行完毕，拿到结果后继续推理（或直接回复）。整个过程在一个 <code>runEmbeddedPiAgent()</code> 的异步调用栈里完成，不涉及任何进程间通信。</p>
+<p><strong>Failover 机制</strong>：图片生成支持多 provider 候选链。一个 provider 失败，自动切换下一个，所有候选都失败才报错。</p>
+<p><strong>工具注册</strong>：<code>createOpenClawTools()</code> 在创建 agent 时注册所有可用工具。<code>image_generate</code> 工具只有在配置了图片生成模型，或环境变量中有兼容 provider 的 API key 时才注册。</p>
+<h3 id="适用场景">适用场景</h3>
+<ul>
+<li>图片生成、视频生成</li>
+<li>网络搜索</li>
+<li>文件读写</li>
+<li>单次外部 API 调用</li>
+</ul>
+<p>一句话：<strong>LLM 决策 → 执行函数 → 返回结果</strong>，一个来回搞定。</p>
+<hr>
+<h2 id="路径二内置子-agent">路径二：内置子 Agent</h2>
+<h3 id="场景-1">场景</h3>
+<p>用户发送：<code>帮我调研一下 X 技术的优缺点，然后写一份对比报告</code></p>
+<p>这种任务有多个独立子任务（并行调研各个方向），并且每个子任务本身也可能需要多轮工具调用。直接用单步 tool call 搞不定——任务需要独立的上下文、独立的推理链。</p>
+<h3 id="llm-如何决定启动子-agent">LLM 如何决定启动子 Agent</h3>
+<p>OpenClaw 向 LLM 提供了两个特殊工具，与 <code>web_search</code>、<code>image_generate</code> 完全平级：</p>
+<ul>
+<li><strong><code>sessions_spawn</code></strong>：创建并启动一个子 Agent（<code>src/agents/tools/sessions-spawn-tool.ts</code>）</li>
+<li><strong><code>subagents</code></strong>：管理已有子 Agent（list / kill / steer）</li>
+</ul>
+<p>LLM 根据任务复杂度自主决定是否 spawn——<strong>系统里没有硬编码的 orchestrator</strong>，完全靠 LLM 的判断。</p>
+<h3 id="执行流程-1">执行流程</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">父</span> <span class="n">Agent</span> <span class="n">LLM</span> <span class="err">决定</span> <span class="n">spawn</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="n">tool_call</span><span class="p">:</span> <span class="n">sessions_spawn</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">task</span><span class="p">:</span> <span class="s2">&#34;调研 X 技术的优点&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">runtime</span><span class="p">:</span> <span class="s2">&#34;subagent&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">mode</span><span class="p">:</span> <span class="s2">&#34;run&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">cleanup</span><span class="p">:</span> <span class="s2">&#34;delete&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">acp</span><span class="o">-</span><span class="n">spawn</span><span class="o">.</span><span class="n">ts</span> <span class="err">→</span> <span class="n">spawnSubagentDirect</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">深度检查：</span><span class="n">callerDepth</span> <span class="o">&lt;</span> <span class="n">maxSpawnDepth</span><span class="err">（默认</span> <span class="mi">1</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">并发检查：</span><span class="n">activeChildren</span> <span class="o">&lt;</span> <span class="n">maxChildren</span><span class="err">（默认</span> <span class="mi">5</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">生成</span> <span class="n">childSessionKey</span> <span class="o">=</span> <span class="s2">&#34;agent:&lt;id&gt;:subagent:&lt;UUID&gt;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">buildSubagentSystemPrompt</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">└─</span> <span class="err">根据深度确定角色：</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>       <span class="n">depth</span> <span class="o">&lt;</span> <span class="n">maxSpawnDepth</span> <span class="err">→</span> <span class="n">orchestrator</span><span class="err">（可继续</span> <span class="n">spawn</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>       <span class="n">depth</span> <span class="o">=</span> <span class="n">maxSpawnDepth</span> <span class="err">→</span> <span class="n">leaf</span><span class="err">（不可再</span> <span class="n">spawn</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="n">Gateway</span> <span class="n">RPC</span><span class="p">:</span> <span class="n">callGateway</span><span class="p">({</span> <span class="n">method</span><span class="p">:</span> <span class="s2">&#34;agent&#34;</span><span class="p">,</span> <span class="n">lane</span><span class="p">:</span> <span class="n">AGENT_LANE_SUBAGENT</span> <span class="p">})</span>
+</span></span><span class="line"><span class="cl">              <span class="err">│</span>
+</span></span><span class="line"><span class="cl">              <span class="err">▼</span> <span class="err">立即返回</span> <span class="p">{</span> <span class="n">status</span><span class="p">:</span> <span class="s2">&#34;accepted&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">              <span class="err">⚠️</span> <span class="err">父</span> <span class="n">Agent</span> <span class="err">不阻塞！</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="p">[</span><span class="err">子</span> <span class="n">Agent</span> <span class="n">Session</span><span class="p">]</span> <span class="err">在</span> <span class="n">Gateway</span> <span class="err">进程内独立运行</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">独立</span> <span class="n">transcript</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">独立工具集（完整</span> <span class="n">createOpenClawTools</span><span class="p">()</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">独立</span> <span class="n">LLM</span> <span class="err">调用循环</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="err">任务完成，产出最终输出</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">SubagentRegistry</span> <span class="err">监听</span> <span class="n">lifecycle</span> <span class="s2">&#34;end&#34;</span> <span class="err">事件</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="n">runSubagentAnnounceFlow</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">         <span class="err">├─</span> <span class="err">读取子</span> <span class="n">Agent</span> <span class="err">最后一条</span> <span class="n">assistant</span> <span class="err">消息</span>
+</span></span><span class="line"><span class="cl">         <span class="err">├─</span> <span class="err">格式化为</span><span class="s2">&#34;内部事件消息&#34;</span>
+</span></span><span class="line"><span class="cl">         <span class="err">└─</span> <span class="err">注入父</span> <span class="n">Agent</span> <span class="n">session</span><span class="err">（作为</span> <span class="n">user</span> <span class="n">turn</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">               <span class="err">失败则指数退避重试</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="err">父</span> <span class="n">Agent</span> <span class="err">收到</span> <span class="n">announce</span><span class="err">，继续推理，汇总所有子</span> <span class="n">Agent</span> <span class="err">结果</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="并发执行">并发执行</h3>
+<p>父 Agent 可以同时 spawn 多个子 Agent：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">父 Agent
+</span></span><span class="line"><span class="cl">    ├── spawn: 调研 X 的优点     ─┐
+</span></span><span class="line"><span class="cl">    ├── spawn: 调研 X 的缺点     ─┤ 并发执行
+</span></span><span class="line"><span class="cl">    └── spawn: 调研 X 的竞品     ─┘
+</span></span><span class="line"><span class="cl">              │
+</span></span><span class="line"><span class="cl">              │  三个子 Agent 各自完成后
+</span></span><span class="line"><span class="cl">              │  依次 announce 回父 Agent
+</span></span><span class="line"><span class="cl">              ▼
+</span></span><span class="line"><span class="cl">         父 Agent 汇总，写对比报告
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="层级化能力模型">层级化能力模型</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">depth=0   main agent       可 spawn，完整权限
+</span></span><span class="line"><span class="cl">depth=1   orchestrator     可 spawn 自己的子 Agent
+</span></span><span class="line"><span class="cl">depth=N   leaf agent       不可再 spawn（N = maxSpawnDepth）
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>子 Agent 的系统提示词里明确写明角色约束。leaf 会被告知 &ldquo;You are a leaf worker and CANNOT spawn further sub-agents&rdquo;。</p>
+<h3 id="推送式完成通知">推送式完成通知</h3>
+<p>这是内置子 Agent 最重要的设计决策：<strong>父 Agent 不轮询，不阻塞</strong>。</p>
+<p><code>sessions_spawn</code> 的返回结果里明确包含提示：</p>
+<blockquote>
+<p>&ldquo;Auto-announce is push-based. After spawning children, do NOT call sessions_list, sessions_history, exec sleep, or any polling tool. Wait for completion events to arrive as user messages&hellip;&rdquo;</p>
+</blockquote>
+<p>子 Agent 完成 → SubagentRegistry 监听到事件 → 自动将结果 announce 回父 Agent。如果父 Agent 当时正忙，重试机制会指数退避，确保消息最终送达。</p>
+<h3 id="故障恢复">故障恢复</h3>
+<ul>
+<li><strong>Sweeper</strong>：每 60 秒清理过期的 run 记录</li>
+<li><strong>孤儿恢复</strong>：进程重启后从磁盘恢复 run 记录（<code>subagent-orphan-recovery.ts</code>），处理被 reload 中断的 session</li>
+</ul>
+<hr>
+<h2 id="路径三外部-coding-agentacp">路径三：外部 Coding Agent（ACP）</h2>
+<h3 id="场景-2">场景</h3>
+<p>用户发送：<code>用 Claude Code 帮我给这个项目写单测</code></p>
+<p>这类任务需要的能力超出了 OpenClaw 内置工具集——要在文件系统里读写代码、执行 shell 命令、进行多轮代码迭代。这时需要启动一个外部 coding agent。</p>
+<h3 id="三层进程链">三层进程链</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">OpenClaw Gateway（bot Pod 内主进程）
+</span></span><span class="line"><span class="cl">    └─ acpx CLI（子进程）
+</span></span><span class="line"><span class="cl">         └─ 外部 Harness（claude-agent-acp / codex-acp 进程）
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>外部 coding agent <strong>不在独立 Pod 里</strong>，而是在 bot Pod 内通过 <code>child_process.spawn()</code> 层层创建的子进程。</p>
+<h3 id="执行流程-2">执行流程</h3>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="err">父</span> <span class="n">Agent</span> <span class="n">LLM</span> <span class="err">决定启动外部</span> <span class="n">coding</span> <span class="n">agent</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="n">tool_call</span><span class="p">:</span> <span class="n">sessions_spawn</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">task</span><span class="p">:</span> <span class="s2">&#34;给项目写单测&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">runtime</span><span class="p">:</span> <span class="s2">&#34;acp&#34;</span><span class="p">,</span>          <span class="err">←</span> <span class="err">关键：选</span> <span class="n">ACP</span> <span class="n">runtime</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">agentId</span><span class="p">:</span> <span class="s2">&#34;claude&#34;</span><span class="p">,</span>       <span class="err">←</span> <span class="err">目标</span> <span class="n">harness</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">mode</span><span class="p">:</span> <span class="s2">&#34;run&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>    <span class="n">thread</span><span class="p">:</span> <span class="bp">true</span>             <span class="err">←</span> <span class="err">绑定到消息</span> <span class="n">thread</span><span class="err">，实时输出</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>  <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">src</span><span class="o">/</span><span class="n">agents</span><span class="o">/</span><span class="n">acp</span><span class="o">-</span><span class="n">spawn</span><span class="o">.</span><span class="n">ts</span> <span class="err">→</span> <span class="n">spawnAcpDirect</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">检查</span> <span class="n">acp</span><span class="o">.</span><span class="n">enabled</span> <span class="err">开关</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">沙箱策略检查（沙箱内禁止</span> <span class="n">ACP</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">resolveTargetAcpAgentId</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">优先级：参数</span> <span class="n">agentId</span> <span class="o">&gt;</span> <span class="err">配置</span> <span class="n">acp</span><span class="o">.</span><span class="n">defaultAgent</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">生成</span> <span class="n">sessionKey</span> <span class="o">=</span> <span class="s2">&#34;agent:&lt;id&gt;:acp:&lt;UUID&gt;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">Gateway</span> <span class="n">session</span> <span class="err">注册（</span><span class="n">sessions</span><span class="o">.</span><span class="n">patch</span> <span class="n">RPC</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">initializeAcpSpawnRuntime</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">→</span> <span class="n">getAcpSessionManager</span><span class="p">()</span><span class="o">.</span><span class="n">initializeSession</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="err">线程绑定（</span><span class="n">thread</span><span class="o">=</span><span class="bp">true</span> <span class="err">→</span> <span class="err">绑定</span> <span class="n">Mattermost</span> <span class="n">thread</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="n">callGateway</span><span class="p">({</span> <span class="n">method</span><span class="p">:</span> <span class="s2">&#34;agent&#34;</span> <span class="p">})</span> <span class="err">分派任务</span>
+</span></span><span class="line"><span class="cl">              <span class="err">│</span>
+</span></span><span class="line"><span class="cl">              <span class="err">▼</span> <span class="err">立即返回</span> <span class="p">{</span> <span class="n">status</span><span class="p">:</span> <span class="s2">&#34;accepted&#34;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="n">extensions</span><span class="o">/</span><span class="n">acpx</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">runtime</span><span class="o">.</span><span class="n">ts</span> <span class="err">→</span> <span class="n">AcpxRuntime</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">resolveAcpxAgentCommand</span><span class="p">(</span><span class="s2">&#34;claude&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="err">先查用户覆盖配置，再查内置映射表：</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="s2">&#34;claude&#34;</span>  <span class="err">→</span> <span class="s2">&#34;npx -y @zed-industries/claude-agent-acp@0.21.0&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="s2">&#34;codex&#34;</span>   <span class="err">→</span> <span class="s2">&#34;npx -y @zed-industries/codex-acp@0.9.5&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="s2">&#34;gemini&#34;</span>  <span class="err">→</span> <span class="s2">&#34;gemini --acp&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="s2">&#34;opencode&#34;</span><span class="err">→</span> <span class="s2">&#34;npx -y opencode-ai acp&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">├─</span> <span class="n">ensureSession</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="n">child_process</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&#34;acpx&#34;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&#34;sessions&#34;</span><span class="p">,</span> <span class="s2">&#34;ensure&#34;</span><span class="p">,</span> <span class="s2">&#34;--name&#34;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>   <span class="n">acpx</span> <span class="err">再</span> <span class="n">spawn</span> <span class="n">claude</span><span class="o">-</span><span class="n">agent</span><span class="o">-</span><span class="n">acp</span> <span class="err">进程，建立持久</span> <span class="n">session</span>
+</span></span><span class="line"><span class="cl">    <span class="err">│</span>
+</span></span><span class="line"><span class="cl">    <span class="err">└─</span> <span class="n">runTurn</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">        <span class="n">child_process</span><span class="o">.</span><span class="n">spawn</span><span class="p">(</span><span class="s2">&#34;acpx&#34;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&#34;prompt&#34;</span><span class="p">,</span> <span class="s2">&#34;--session&#34;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span><span class="p">,</span> <span class="s2">&#34;--file&#34;</span><span class="p">,</span> <span class="s2">&#34;-&#34;</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="n">stdin</span><span class="p">:</span>  <span class="s2">&#34;给项目写单测...&#34;</span><span class="err">（任务文本）</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="n">stdout</span><span class="p">:</span> <span class="n">NDJSON</span> <span class="err">事件流（每行一个</span> <span class="n">JSON</span><span class="err">）</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;text_delta&#34;</span><span class="p">,</span><span class="s2">&#34;text&#34;</span><span class="p">:</span><span class="s2">&#34;好的，我来分析项目结构...&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;tool_call&#34;</span><span class="p">,</span><span class="s2">&#34;tool&#34;</span><span class="p">:</span><span class="s2">&#34;read_file&#34;</span><span class="p">,</span><span class="s2">&#34;input&#34;</span><span class="p">:{</span><span class="s2">&#34;path&#34;</span><span class="p">:</span><span class="s2">&#34;...&#34;</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;text_delta&#34;</span><span class="p">,</span><span class="s2">&#34;text&#34;</span><span class="p">:</span><span class="s2">&#34;文件读取完成，开始写测试...&#34;</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;tool_call&#34;</span><span class="p">,</span><span class="s2">&#34;tool&#34;</span><span class="p">:</span><span class="s2">&#34;write_file&#34;</span><span class="p">,</span><span class="s2">&#34;input&#34;</span><span class="p">:{</span><span class="s2">&#34;path&#34;</span><span class="p">:</span><span class="s2">&#34;...&#34;</span><span class="p">}}</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;done&#34;</span><span class="p">,</span><span class="s2">&#34;exitCode&#34;</span><span class="p">:</span><span class="mi">0</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="err">│</span>
+</span></span><span class="line"><span class="cl">        <span class="err">▼</span> <span class="n">AsyncIterable</span><span class="o">&lt;</span><span class="n">AcpRuntimeEvent</span><span class="o">&gt;</span> <span class="err">回传</span> <span class="n">OpenClaw</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="err">▼</span>
+</span></span><span class="line"><span class="cl"><span class="err">结果回传（两种模式）</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="err">模式</span> <span class="n">A</span> <span class="err">—</span> <span class="n">thread</span> <span class="err">绑定（</span><span class="n">thread</span><span class="o">=</span><span class="bp">true</span><span class="err">）：</span>
+</span></span><span class="line"><span class="cl">    <span class="n">dispatch</span><span class="o">-</span><span class="n">acp</span><span class="o">.</span><span class="n">ts</span> <span class="o">+</span> <span class="n">dispatch</span><span class="o">-</span><span class="n">acp</span><span class="o">-</span><span class="n">delivery</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">→</span> <span class="err">实时将每个</span> <span class="n">text_delta</span> <span class="err">投递到</span> <span class="n">Mattermost</span> <span class="n">thread</span>
+</span></span><span class="line"><span class="cl">    <span class="err">→</span> <span class="err">用户在</span> <span class="n">thread</span> <span class="err">里实时看到</span> <span class="n">coding</span> <span class="n">agent</span> <span class="err">的工作过程</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="err">模式</span> <span class="n">B</span> <span class="err">—</span> <span class="err">流式转发到父</span> <span class="n">session</span><span class="err">（</span><span class="n">streamTo</span><span class="o">=</span><span class="s2">&#34;parent&#34;</span><span class="err">）：</span>
+</span></span><span class="line"><span class="cl">    <span class="n">acp</span><span class="o">-</span><span class="n">spawn</span><span class="o">-</span><span class="n">parent</span><span class="o">-</span><span class="n">stream</span><span class="o">.</span><span class="n">ts</span>
+</span></span><span class="line"><span class="cl">    <span class="err">→</span> <span class="err">将子</span> <span class="n">session</span> <span class="err">输出摘要注入父</span> <span class="n">Agent</span> <span class="err">的</span> <span class="n">system</span> <span class="n">events</span>
+</span></span><span class="line"><span class="cl">    <span class="err">→</span> <span class="err">父</span> <span class="n">Agent</span> <span class="err">收到后继续推理</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="acp-协议">ACP 协议</h3>
+<p>ACP（Agent Client Protocol）基于 <strong>JSON-RPC 2.0</strong>，通过 <strong>stdin/stdout NDJSON</strong> 传输。OpenClaw 不直接实现完整的 ACP 通信——它通过 <code>acpx</code> CLI 作为中间层，自己只需要读 acpx 输出的标准化事件流。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-gdscript3" data-lang="gdscript3"><span class="line"><span class="cl"><span class="n">OpenClaw</span> <span class="err">──</span><span class="n">spawn</span><span class="err">──▶</span> <span class="n">acpx</span> <span class="n">CLI</span>
+</span></span><span class="line"><span class="cl">          <span class="n">stdin</span><span class="p">:</span> <span class="err">任务文本</span>
+</span></span><span class="line"><span class="cl">          <span class="n">stdout</span><span class="p">:</span> <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;text_delta&#34;</span><span class="p">,</span><span class="s2">&#34;text&#34;</span><span class="p">:</span><span class="s2">&#34;...&#34;</span><span class="p">}</span>\<span class="n">n</span>
+</span></span><span class="line"><span class="cl">                  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;tool_call&#34;</span><span class="p">,</span><span class="o">...</span><span class="p">}</span>\<span class="n">n</span>
+</span></span><span class="line"><span class="cl">                  <span class="p">{</span><span class="s2">&#34;type&#34;</span><span class="p">:</span><span class="s2">&#34;done&#34;</span><span class="p">,</span><span class="o">...</span><span class="p">}</span>\<span class="n">n</span>
+</span></span><span class="line"><span class="cl">                       <span class="err">│</span>
+</span></span><span class="line"><span class="cl">                  <span class="n">acpx</span> <span class="err">──</span><span class="n">ACP</span> <span class="n">JSON</span><span class="o">-</span><span class="n">RPC</span><span class="err">──▶</span> <span class="n">claude</span><span class="o">-</span><span class="n">agent</span><span class="o">-</span><span class="n">acp</span>
+</span></span><span class="line"><span class="cl">                                         <span class="err">（真正的</span> <span class="n">coding</span> <span class="n">agent</span><span class="err">）</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="harness-命令映射表">Harness 命令映射表</h3>
+<p><code>extensions/acpx/src/runtime-internals/mcp-agent-command.ts</code> 维护内置映射：</p>
+<table>
+<thead>
+<tr>
+<th>agentId</th>
+<th>实际命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claude</code></td>
+<td><code>npx -y @zed-industries/claude-agent-acp@0.21.0</code></td>
+</tr>
+<tr>
+<td><code>codex</code></td>
+<td><code>npx -y @zed-industries/codex-acp@0.9.5</code></td>
+</tr>
+<tr>
+<td><code>openclaw</code></td>
+<td><code>openclaw acp</code>（OpenClaw 递归作为自身的 ACP server！）</td>
+</tr>
+<tr>
+<td><code>gemini</code></td>
+<td><code>gemini --acp</code></td>
+</tr>
+<tr>
+<td><code>cursor</code></td>
+<td><code>cursor-agent acp</code></td>
+</tr>
+<tr>
+<td><code>opencode</code></td>
+<td><code>npx -y opencode-ai acp</code></td>
+</tr>
+</tbody>
+</table>
+<p>用户可以通过 <code>acpx config</code> 覆盖这些命令，指向自定义的 harness。</p>
+<hr>
+<h2 id="多轮对话上下文如何跨消息保持">多轮对话：上下文如何跨消息保持</h2>
+<p>一个 Bot 能持续记住对话内容，依赖的是 transcript 的持久化机制。</p>
+<h3 id="transcript-存储">Transcript 存储</h3>
+<p>每个 session 的对话历史存储为磁盘上的 <strong>JSONL 文件</strong>，路径格式为：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">~/.openclaw/agents/{agentId}/sessions/{sessionId}.jsonl
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>每一行是一条消息（user / assistant / tool_result），追加写入。每次 <code>runEmbeddedPiAgent()</code> 被调用时，<code>SessionManager.open(sessionFile)</code> 从磁盘加载全部历史，连同新消息一起构造 LLM 请求。历史过长时，<code>limitHistoryTurns</code> 可按配置截断。</p>
+<h3 id="session-key-的分配">Session Key 的分配</h3>
+<p>一条新消息如何知道自己属于哪个 session？<strong>这在 <code>dispatch-from-config</code> 的上游已经完成</strong>——消息到达该函数时，<code>ctx.SessionKey</code> 已经被赋值好了（例如 Mattermost 的 channel ID + thread ID 决定了 session key）。<code>dispatch-from-config</code> 只是消费这个 key，然后决定走哪条执行路径。</p>
+<h3 id="子-agent-的上下文隔离">子 Agent 的上下文隔离</h3>
+<p>子 Agent 有自己独立的 transcript 文件（独立的 sessionId）。父 Agent 看不到子 Agent 的内部推理过程。</p>
+<p>子 Agent 完成后，announce flow 向父 Agent 的 session 注入的是一条结构化摘要消息，格式大致如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;task_completion&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;source&#34;</span><span class="p">:</span> <span class="s2">&#34;subagent&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;status&#34;</span><span class="p">:</span> <span class="s2">&#34;ok&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;result&#34;</span><span class="p">:</span> <span class="s2">&#34;调研结果：X 技术优点是...&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;statsLine&#34;</span><span class="p">:</span> <span class="s2">&#34;12 turns, 3 tool calls, 45s&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>父 Agent 的 transcript 里只留下这条摘要，<strong>不包含子 Agent 的完整对话历史</strong>。这是有意为之的设计——防止子 Agent 的大量中间推理污染父 Agent 的上下文窗口。父 Agent 基于这条摘要决定下一步行动。</p>
+<h3 id="acp-session-的上下文">ACP session 的上下文</h3>
+<p>ACP session（外部 coding agent）的上下文由 harness 自身管理，通过 acpx 的 named session 机制持久化，与 OpenClaw 的 JSONL transcript 体系完全独立。OpenClaw 这侧只保留一个 session handle（base64url 编码的 runtimeSessionName），用于后续的 cancel / close 操作。</p>
+<hr>
+<h2 id="三种路径横向对比">三种路径横向对比</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>单步 Tool Call</th>
+<th>内置子 Agent</th>
+<th>外部 Coding Agent（ACP）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>触发方式</strong></td>
+<td>LLM 调用工具函数</td>
+<td>LLM 调用 <code>sessions_spawn</code></td>
+<td>LLM 调用 <code>sessions_spawn(runtime=&quot;acp&quot;)</code></td>
+</tr>
+<tr>
+<td><strong>执行位置</strong></td>
+<td>Gateway 进程内，同步函数调用</td>
+<td>Gateway 进程内，独立异步协程</td>
+<td>Bot Pod 内，独立子进程链</td>
+</tr>
+<tr>
+<td><strong>LLM</strong></td>
+<td>OpenClaw 配置的 LLM</td>
+<td>OpenClaw 配置的 LLM（可覆盖）</td>
+<td>Harness 自带的 LLM（Claude Code 用 Anthropic API）</td>
+</tr>
+<tr>
+<td><strong>工具集</strong></td>
+<td>OpenClaw 注册的工具</td>
+<td>完整 OpenClaw 工具集</td>
+<td>Harness 自身的工具（文件读写、shell 执行等）</td>
+</tr>
+<tr>
+<td><strong>执行模型</strong></td>
+<td>同步阻塞</td>
+<td>异步，push-based 完成通知</td>
+<td>异步，流式事件输出</td>
+</tr>
+<tr>
+<td><strong>输出方式</strong></td>
+<td>任务完成后一次性返回</td>
+<td>完成后 announce 回父 Agent</td>
+<td>实时流式输出到绑定 thread</td>
+</tr>
+<tr>
+<td><strong>嵌套能力</strong></td>
+<td>不支持</td>
+<td>支持（最多 maxSpawnDepth 层）</td>
+<td>不支持进一步 spawn</td>
+</tr>
+<tr>
+<td><strong>沙箱兼容</strong></td>
+<td>兼容</td>
+<td>兼容</td>
+<td><strong>不兼容</strong>（harness 运行在宿主 fs 上）</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>图片生成、搜索、单次 API 调用</td>
+<td>多步骤调研、并行任务分解</td>
+<td>代码编写、文件操作、复杂工程任务</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="架构总结">架构总结</h2>
+<h3 id="三条路径的本质">三条路径的本质</h3>
+<p><strong>LLM 是唯一的决策者，工具调用是任务分发的唯一机制，三种路径本质上是同一套 tool call 机制在不同复杂度下的不同形态。</strong></p>
+<ul>
+<li>简单任务 → tool call 调用一个函数，同步返回结果</li>
+<li>中等复杂任务 → tool call 触发 <code>sessions_spawn</code>，在进程内 fork 出独立的推理上下文</li>
+<li>高复杂度工程任务 → tool call 触发 <code>sessions_spawn(runtime=&quot;acp&quot;)</code>，通过 ACP 协议调起外部 coding agent 进程</li>
+</ul>
+<p>三条路径共享同一个消息接收层（Gateway WebSocket）和同一个 reply pipeline，区别只在 <code>runEmbeddedPiAgent()</code> 之后如何分发和执行。</p>
+<h3 id="为什么这样设计">为什么这样设计</h3>
+<p><strong>为什么是 push-based，而不是让父 Agent 轮询子 Agent 的状态？</strong></p>
+<p>轮询模式下，父 Agent 每次检查子 Agent 状态都要消耗一次 LLM 调用（token 和延迟），而且需要在系统提示里描述轮询逻辑，增加提示词复杂度。更根本的问题是：LLM 本质上是无状态的请求-响应模型，一个运行中的 LLM 没有能力&quot;等待&quot;——它只能在收到新消息时才激活。Push-based 正好契合这个模型：父 Agent 在发出 spawn 后完成本轮对话，子 Agent 完成后系统将结果作为一条新消息投递进来，父 Agent 自然地被唤醒继续推理，中间不消耗任何资源。</p>
+<p><strong>为什么 subagent 和 ACP 要分成两条路径，而不是统一？</strong></p>
+<p>两者的本质差异在于<strong>信任边界和执行环境</strong>。内置 subagent 运行在 Gateway 进程的沙箱里，工具集由 OpenClaw 完全控制；ACP session 运行在宿主文件系统上，能执行任意 shell 命令，接触真实的代码仓库。这是不同级别的权限，必须分开管控。此外，ACP harness 有自己的 LLM 配置（Claude Code 用 Anthropic API，Codex 用 OpenAI API），OpenClaw 无法统一管理，只能通过标准化的 ACP 协议与它通信，把对话协议和执行环境都委托给外部。文档对此的总结是：</p>
+<blockquote>
+<p>&ldquo;Use ACP when you want an external harness runtime. Use sub-agents when you want OpenClaw-native delegated runs.&rdquo;</p>
+</blockquote>
+<p><strong>为什么路由逻辑写在系统提示词里，而不是代码里？</strong></p>
+<p>硬编码的路由（&ldquo;如果任务包含关键词 X 则走路径 Y&rdquo;）脆弱且难以维护。用提示词表达路由意图，让 LLM 结合上下文语义做判断，覆盖面更广，也更容易迭代——改提示词不需要发布新版本。代价是边界情况下可能选错路径，但这可以通过丰富提示词示例和加强测试来缓解。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2026-04-02</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/openclaw-agent-execution/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/openclaw-agent-execution/" data-title="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排" data-hashtags="AI agent,OpenClaw,multi-agent,ACP,Claude Code"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/openclaw-agent-execution/" data-hashtag="AI agent"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/openclaw-agent-execution/" data-title="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/openclaw-agent-execution/" data-title="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/openclaw-agent-execution/" data-title="OpenClaw 任务执行机制：从 Tool Call 到多 Agent 编排"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/ai-agent/">AI Agent</a>,&nbsp;<a href="/tags/openclaw/">OpenClaw</a>,&nbsp;<a href="/tags/multi-agent/">Multi-Agent</a>,&nbsp;<a href="/tags/acp/">ACP</a>,&nbsp;<a href="/tags/claude-code/">Claude Code</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/openclaw-external-coding-agent/" class="prev" rel="prev" title="OpenClaw 使用外部 Coding Agent 的原理与调用链路"><i class="fas fa-angle-left fa-fw"></i>OpenClaw 使用外部 Coding Agent 的原理与调用链路</a>
+            <a href="/openclaw-telegram-ingress-env-cpu/" class="next" rel="next" title="一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env">一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+

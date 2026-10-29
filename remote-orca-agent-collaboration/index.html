@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>基于 Orca 的远程多 Agent 协作开发 - lxkaka</title><meta name="Description" content="在远程 Dev Container 中运行 Orca、Claude Code 与 Codex，以自然语言决定交接或等待返回；共享单仓或跨仓任务的 worktree，并按需读取结果，减少协作准备与重复验证。"><meta property="og:url" content="https://lxkaka.wang/remote-orca-agent-collaboration/">
+  <meta property="og:site_name" content="lxkaka">
+  <meta property="og:title" content="基于 Orca 的远程多 Agent 协作开发">
+  <meta property="og:description" content="在远程 Dev Container 中运行 Orca、Claude Code 与 Codex，以自然语言决定交接或等待返回；共享单仓或跨仓任务的 worktree，并按需读取结果，减少协作准备与重复验证。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2026-10-28T21:52:21+08:00">
+    <meta property="article:modified_time" content="2026-10-29T12:38:06+08:00">
+    <meta property="article:tag" content="Orca">
+    <meta property="article:tag" content="Claude Code">
+    <meta property="article:tag" content="Codex">
+    <meta property="article:tag" content="Dev Container">
+    <meta property="article:tag" content="Multi-Agent">
+    <meta property="article:tag" content="SSH">
+    <meta property="og:image" content="https://lxkaka.wang/logo.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lxkaka.wang/logo.png">
+  <meta name="twitter:title" content="基于 Orca 的远程多 Agent 协作开发">
+  <meta name="twitter:description" content="在远程 Dev Container 中运行 Orca、Claude Code 与 Codex，以自然语言决定交接或等待返回；共享单仓或跨仓任务的 worktree，并按需读取结果，减少协作准备与重复验证。">
+<meta name="application-name" content="lxkaka">
+<meta name="apple-mobile-web-app-title" content="lxkaka"><meta name="theme-color" content="#ffffff"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://lxkaka.wang/remote-orca-agent-collaboration/" /><link rel="prev" href="https://lxkaka.wang/remote-claude-cmux/" /><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.13.0/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.7.2/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "基于 Orca 的远程多 Agent 协作开发",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/lxkaka.wang\/remote-orca-agent-collaboration\/"
+        },"image": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/cover.png",
+                "width":  800 ,
+                "height":  600 
+            },"genre": "posts","keywords": "Orca, Claude Code, Codex, Dev Container, Multi-Agent, SSH, Git Worktree","wordcount":  9854 ,
+        "url": "https:\/\/lxkaka.wang\/remote-orca-agent-collaboration\/","datePublished": "2026-10-28T21:52:21+08:00","dateModified": "2026-10-29T12:38:06+08:00","license": "This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher": {
+                "@type": "Organization",
+                "name": "xxxx",
+                "logo": {
+                "@type": "ImageObject",
+                "url": "https:\/\/lxkaka.wang\/logo.png",
+                "width":  127 ,
+                "height":  40 
+                }
+            },"author": {
+                "@type": "Person",
+                "name": "lxkaka"
+            },"description": "在远程 Dev Container 中运行 Orca、Claude Code 与 Codex，以自然语言决定交接或等待返回；共享单仓或跨仓任务的 worktree，并按需读取结果，减少协作准备与重复验证。"
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('auto' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : 'auto' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/friend/"> 友链 </a><a class="menu-item" href="/about/"> 关于 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="lxkaka"><span class="header-title-pre"><i class='far fa-kiss-wink-heart fa-fw'></i></span>lxkaka</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/friend/" title="">友链</a><a class="menu-item" href="/about/" title="">关于</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">基于 Orca 的远程多 Agent 协作开发</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="https://www.lxkaka.wang" title="Author" target="_blank" rel="noopener noreffer author" class="author"><i class="fas fa-user-circle fa-fw"></i>lxkaka</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ai/"><i class="far fa-folder fa-fw"></i>AI</a>&nbsp;<a href="/categories/%E5%B7%A5%E7%A8%8B%E6%95%88%E7%8E%87/"><i class="far fa-folder fa-fw"></i>工程效率</a>&nbsp;<a href="/categories/%E6%9E%B6%E6%9E%84/"><i class="far fa-folder fa-fw"></i>架构</a>&nbsp;<a href="/categories/%E5%AE%9E%E6%88%98/"><i class="far fa-folder fa-fw"></i>实战</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2026-10-28">2026-10-28</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9854 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 20 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#先确定执行环境和任务边界">先确定执行环境和任务边界</a></li>
+    <li><a href="#运行结构mac-连接容器中的-orca-server">运行结构：Mac 连接容器中的 Orca Server</a></li>
+    <li><a href="#容器内安装与认证">容器内安装与认证</a>
+      <ul>
+        <li><a href="#安装与客户端对应的-linux-版本">安装与客户端对应的 Linux 版本</a></li>
+        <li><a href="#沿用容器内的认证">沿用容器内的认证</a></li>
+      </ul>
+    </li>
+    <li><a href="#启动服务并打通-ssh-链路">启动服务并打通 SSH 链路</a>
+      <ul>
+        <li><a href="#服务入口要显式设置环境">服务入口要显式设置环境</a></li>
+        <li><a href="#用宿主机的用户服务托管">用宿主机的用户服务托管</a></li>
+        <li><a href="#rootless-docker-的回环转发">rootless Docker 的回环转发</a></li>
+        <li><a href="#用同一份配置源维护部署">用同一份配置源维护部署</a></li>
+        <li><a href="#在-mac-中配对">在 Mac 中配对</a></li>
+      </ul>
+    </li>
+    <li><a href="#项目内按任务创建-worktree">项目内按任务创建 worktree</a>
+      <ul>
+        <li><a href="#一个任务修改多个仓库">一个任务修改多个仓库</a></li>
+      </ul>
+    </li>
+    <li><a href="#用一份协作-skill-统一规则">用一份协作 skill 统一规则</a></li>
+    <li><a href="#三种自然语言指令对应三种行为">三种自然语言指令，对应三种行为</a>
+      <ul>
+        <li><a href="#直接交接默认走短路径">直接交接，默认走短路径</a></li>
+        <li><a href="#查看已有结果">查看已有结果</a></li>
+        <li><a href="#委派一个阶段拿到结果后继续">委派一个阶段，拿到结果后继续</a></li>
+      </ul>
+    </li>
+    <li><a href="#一次交接为什么花了五分钟">一次交接为什么花了五分钟</a></li>
+    <li><a href="#发起方如何知道另一方已经完成">发起方如何知道另一方已经完成</a></li>
+    <li><a href="#按需获取详细结果">按需获取详细结果</a></li>
+    <li><a href="#一次真实的往返验证">一次真实的往返验证</a>
+      <ul>
+        <li><a href="#进程退出与历史记录保留分开判断">进程退出与历史记录保留分开判断</a></li>
+      </ul>
+    </li>
+    <li><a href="#日常使用与收尾">日常使用与收尾</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p>我的开发环境在远程 Linux 主机的 Dev Container 中。代码、依赖、测试服务以及 Claude Code、Codex 都已经在容器里，本地 Mac 负责交互。</p>
+<p>前一篇<a href="/remote-claude-cmux/" rel="">用 cmux 管理远程 Claude Code</a>解决了登录、后台会话与恢复。接下来的需求是：同一个任务中，让 Claude Code 和 Codex 承担不同阶段的工作，并且能够读取彼此的执行结果。</p>
+<p>分工由我在对话里决定。有时 Claude 先分析，Codex 实施；有时 Codex 做完一轮修改，请 Claude 评审，再由 Codex 继续修复。两个会话都需要可见，也需要共享当前代码状态。</p>
+<p>最终采用的结构是：<strong>Mac 运行 Orca 客户端，容器内运行 Orca Server；一个任务使用一组代码 worktree，每个涉及的仓库各一个，Claude Code 和 Codex 共享这些目录，并保留独立会话。普通交接直接交付任务；明确要求等待结果后继续时，才使用原生任务与完成协议。</strong></p>
+<p>本文记录 <strong>2026 年 10 月 28 日</strong>的搭建与验证，以及 <strong>10 月 29 日</strong>对交接流程、跨仓边界和部署脚本的简化。Orca 客户端及 Linux 安装包均为 <strong>v1.4.243</strong>，参与验证的 Claude Code 为 <strong>2.1.312</strong>，Codex 为 <strong>0.165.0</strong>。Remote Orca Servers 仍处于 beta，升级后需要重新核对连接、CLI 和会话行为。</p>
+<h2 id="先确定执行环境和任务边界">先确定执行环境和任务边界</h2>
+<p>这套方案有三个基本约定。</p>
+<p>第一，Orca 的服务端和两个 agent 都运行在容器内。文件操作、Shell、Git、测试和模型调用使用同一套远程环境。Mac 上已有的登录不会自动成为容器内的登录。</p>
+<p>第二，独立任务之间使用不同的代码 worktree。同一任务只涉及一个仓库时，两个 agent 共享一个 worktree；涉及多个仓库时，各仓库各有一个任务 worktree，两个 agent 共享整组目录。双方能直接看到彼此尚未提交的修改，因此也需要明确写入责任：同一仓库通常一个修改、另一个只读，阶段结束后再交接。</p>
+<p>第三，agent 的角色随指令变化。用户让哪一方等待结果，哪一方就临时负责这一轮的派发与等待。这里不预设固定的协调者、实施者或评审者。</p>
+<p>需要区分以下概念：</p>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>在这套工作流中的含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Project</td>
+<td>Orca 中登记的代码项目；多个任务共用这个项目</td>
+</tr>
+<tr>
+<td>Git worktree</td>
+<td>独立的分支和工作目录，用于隔离不同任务的代码修改</td>
+</tr>
+<tr>
+<td>Workspace</td>
+<td>Orca 组织目录、终端、编辑器与会话的单位；可以作为任务入口，代码工作目录还可能包括其他仓库的 worktree</td>
+</tr>
+<tr>
+<td>Agent session</td>
+<td>一个 Claude Code 或 Codex 会话；两个会话有各自的上下文</td>
+</tr>
+<tr>
+<td>Run / Task / Dispatch</td>
+<td>需要等待结果的原生协作中，一次协调范围、一项工作，以及该工作的某次执行；普通交接不创建这些记录</td>
+</tr>
+</tbody>
+</table>
+<p>Orca 也支持目录型工作区，所以 workspace 与 Git worktree 并非普遍同义。本文采用的是它的 <a href="https://www.onorca.dev/docs/model/worktrees" target="_blank" rel="noopener noreffer">Git worktree 工作流</a>。</p>
+<h2 id="运行结构mac-连接容器中的-orca-server">运行结构：Mac 连接容器中的 Orca Server</h2>
+<p>我使用 <a href="https://www.onorca.dev/docs/remote-servers" target="_blank" rel="noopener noreffer">Remote Orca Server</a>承载项目和终端状态，再通过 SSH 隧道连接。这里增加了一层 Docker 转发，服务最终运行在开发容器里。</p>
+<pre class="mermaid">flowchart TB
+    mac["Mac：Orca 客户端"]
+    tunnel["Mac 127.0.0.1:16768"]
+    host["宿主机 127.0.0.1:16768：socat"]
+    relay["docker exec -i：字节流转发"]
+    subgraph container["远程 Dev Container"]
+        server["Orca Server：6768"]
+        workspace["同一任务的代码 worktree 集合"]
+        claude["Claude Code 会话"]
+        codex["Codex 会话"]
+        auth["容器内既有认证与工具链"]
+        server --> claude
+        server --> codex
+        claude <--> workspace
+        codex <--> workspace
+        auth --> claude
+        auth --> codex
+    end
+    mac <--> tunnel
+    tunnel <-->|"SSH 加密隧道"| host
+    host <--> relay
+    relay <--> server
+</pre>
+
+
+<p>连接路径是：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Mac Orca
+</span></span><span class="line"><span class="cl">  → Mac 回环端口
+</span></span><span class="line"><span class="cl">  → SSH 隧道
+</span></span><span class="line"><span class="cl">  → 宿主机回环端口
+</span></span><span class="line"><span class="cl">  → docker exec -i + 容器内 socat
+</span></span><span class="line"><span class="cl">  → 容器内 Orca Server
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>本环境使用 rootless Docker，宿主机不能按普通 bridge 网络的假设直接访问容器 IP。因此我没有将隧道目标写成一个动态容器地址，而是经由 <code>docker exec -i</code> 转发字节流。容器无需额外安装 sshd，也没有为 Orca 发布 Docker 公网端口。</p>
+<p>下文统一使用占位名称：</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>示例值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>宿主机 SSH alias</td>
+<td><code>project-host</code></td>
+</tr>
+<tr>
+<td>宿主机登录用户</td>
+<td><code>dev</code></td>
+</tr>
+<tr>
+<td>稳定的容器名称</td>
+<td><code>project-a-devcontainer</code></td>
+</tr>
+<tr>
+<td>容器用户</td>
+<td><code>node</code></td>
+</tr>
+<tr>
+<td>项目目录</td>
+<td><code>/workspaces/project-a</code></td>
+</tr>
+<tr>
+<td>容器服务端口</td>
+<td><code>6768</code></td>
+</tr>
+<tr>
+<td>隧道端口</td>
+<td><code>16768</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="容器内安装与认证">容器内安装与认证</h2>
+<h3 id="安装与客户端对应的-linux-版本">安装与客户端对应的 Linux 版本</h3>
+<p>Mac 使用 <a href="https://www.onorca.dev/docs/install" target="_blank" rel="noopener noreffer">Orca 官方安装包</a>。容器内使用同一版本的 Linux AppImage，解包后调用随包提供的 CLI，避免依赖容器内的 FUSE 挂载。</p>
+<p>下面是在容器内以 <code>node</code> 用户执行的首次安装示例，适用于尚未存在这些安装链接的情况：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">orca_version</span><span class="o">=</span>v1.4.243
+</span></span><span class="line"><span class="cl"><span class="nv">orca_root</span><span class="o">=</span><span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.config/orca-runtime&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">case</span> <span class="s2">&#34;</span><span class="k">$(</span>uname -m<span class="k">)</span><span class="s2">&#34;</span> in
+</span></span><span class="line"><span class="cl">  x86_64<span class="o">)</span> <span class="nv">orca_asset</span><span class="o">=</span>orca-linux.AppImage <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  aarch64<span class="p">|</span>arm64<span class="o">)</span> <span class="nv">orca_asset</span><span class="o">=</span>orca-linux-arm64.AppImage <span class="p">;;</span>
+</span></span><span class="line"><span class="cl">  *<span class="o">)</span> <span class="nb">printf</span> <span class="s1">&#39;请核对当前架构的安装包\n&#39;</span> &gt;<span class="p">&amp;</span>2<span class="p">;</span> <span class="nb">exit</span> <span class="m">1</span> <span class="p">;;</span>
+</span></span><span class="line"><span class="cl"><span class="k">esac</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">mkdir -p <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/releases/</span><span class="nv">$orca_version</span><span class="s2">&#34;</span> <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/bin&#34;</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/bin&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/releases/</span><span class="nv">$orca_version</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">curl -fL -o orca.AppImage <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;https://github.com/stablyai/orca/releases/download/</span><span class="nv">$orca_version</span><span class="s2">/</span><span class="nv">$orca_asset</span><span class="s2">&#34;</span>
+</span></span><span class="line"><span class="cl">chmod u+x orca.AppImage
+</span></span><span class="line"><span class="cl">./orca.AppImage --appimage-extract &gt;/dev/null
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">ln -s <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/releases/</span><span class="nv">$orca_version</span><span class="s2">/squashfs-root&#34;</span> <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/current&#34;</span>
+</span></span><span class="line"><span class="cl">ln -s <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/current/resources/bin/orca-ide&#34;</span> <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/bin/orca-ide&#34;</span>
+</span></span><span class="line"><span class="cl">ln -s <span class="s2">&#34;</span><span class="nv">$orca_root</span><span class="s2">/bin/orca-ide&#34;</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/bin/orca-ide&#34;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Linux 安装入口使用 <code>orca-ide</code>，避免与 GNOME 的 Orca 屏幕阅读器命令冲突。Orca 自己管理的终端中还会提供 <code>orca</code> 命令。脚本应先确认调用的是当前 Orca 的 CLI。</p>
+<p>我的目录结构如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/home/node/.config/
+</span></span><span class="line"><span class="cl">├── orca/                         # Server profile 与状态
+</span></span><span class="line"><span class="cl">└── orca-runtime/
+</span></span><span class="line"><span class="cl">    ├── releases/v1.4.243/        # 对应版本的解包目录
+</span></span><span class="line"><span class="cl">    ├── current                  # 当前版本链接
+</span></span><span class="line"><span class="cl">    ├── bin/                     # CLI、服务入口、停止辅助脚本
+</span></span><span class="line"><span class="cl">    └── skills/orca-peer-workflow/
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>项目目录位于持久化 bind mount，<code>.config</code> 与 <code>.claude</code> 使用既有持久化卷。Codex 的认证和历史目录也需要核对实际挂载或链接目标；仅保存 Orca 的 profile，不能代替保存 provider 的状态。容器重建前，应分别检查这些目录，避免新挂载遮住旧文件。</p>
+<h3 id="沿用容器内的认证">沿用容器内的认证</h3>
+<p>Claude 沿用上一篇文章中的登录方式：在容器内浏览器完成授权，执行 <code>claude setup-token</code>，将凭证保存在容器内，并通过 <code>setup-token.env</code> 加载 <code>CLAUDE_CODE_OAUTH_TOKEN</code>。</p>
+<p>服务进程通常不会自动执行交互式 Shell 的 <code>.bashrc</code>。因此，Orca 的服务入口会显式加载环境文件，让它随后启动的 Claude 子进程继承认证。</p>
+<p>Codex 则复用容器内既有登录。本次检查执行 <code>codex login status</code>，返回 <code>Logged in using ChatGPT</code>。我没有将 Mac 的认证文件复制进容器，也没有为每个任务重新登录。</p>
+<p>可以在容器内检查认证状态，而不输出凭证内容：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">. <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.claude/setup-token.env&#34;</span>
+</span></span><span class="line"><span class="cl">claude auth status
+</span></span><span class="line"><span class="cl">codex login status
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>本方案启动的 agent 由容器进程发起模型请求。本地 Mac 承载界面和控制连接。实际公网出口仍由远程主机的 NAT、代理和网络配置决定；“进程在远程执行”本身不等于获得固定公网 IP。</p>
+<h2 id="启动服务并打通-ssh-链路">启动服务并打通 SSH 链路</h2>
+<h3 id="服务入口要显式设置环境">服务入口要显式设置环境</h3>
+<p>核心启动配置是：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">ORCA_USER_DATA_PATH</span><span class="o">=</span>/home/node/.config/orca
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/home/node/.config/orca-runtime/bin:/home/node/.local/bin:<span class="nv">$PATH</span>
+</span></span><span class="line"><span class="cl">. /home/node/.claude/setup-token.env
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> /home/node/.config/orca-runtime/bin/orca-ide serve <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --port <span class="m">6768</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --pairing-address ws://127.0.0.1:16768 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --json
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>--pairing-address</code> 是客户端应连接的地址，不是服务监听地址。这里的回环地址指向 Mac 上的 SSH 转发入口；离开这条隧道，它不能用于另一台机器直接连接。SSH 已承担链路加密，因此这里使用 <code>ws://</code>，没有将一个明文 WebSocket 服务错误标记为 <code>wss://</code>。</p>
+<p>完整运行入口还负责原子写入自身 PID 及进程启动时间、恢复自定义 skill 的链接。官方 skill 在安装或维护时初始化，服务启动不再执行安装命令，避免把启动可用性与 skill 安装耦合。我将正在使用的入口和停止辅助脚本整理为下载文件：</p>
+<ul>
+<li><a href="/downloads/remote-orca-collaboration/serve-project" rel="">容器内服务入口：serve-project</a></li>
+<li><a href="/downloads/remote-orca-collaboration/stop-project.py" rel="">容器内停止辅助脚本：stop-project.py</a></li>
+</ul>
+<p>将它们安装到容器内 <code>/home/node/.config/orca-runtime/bin/</code>，赋予入口执行权限，并提前放置后文的协作 skill。这两个脚本按本文的 <code>node</code> 用户及目录布局编写。</p>
+<h3 id="用宿主机的用户服务托管">用宿主机的用户服务托管</h3>
+<p>宿主机的 <code>~/.config/systemd/user/orca-project.service</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="k">[Unit]</span>
+</span></span><span class="line"><span class="cl"><span class="na">Description</span><span class="o">=</span><span class="s">Orca Server in project devcontainer</span>
+</span></span><span class="line"><span class="cl"><span class="na">After</span><span class="o">=</span><span class="s">default.target</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">[Service]</span>
+</span></span><span class="line"><span class="cl"><span class="na">Type</span><span class="o">=</span><span class="s">simple</span>
+</span></span><span class="line"><span class="cl"><span class="na">ExecStart</span><span class="o">=</span><span class="s">/usr/bin/docker exec -u node project-a-devcontainer /home/node/.config/orca-runtime/bin/serve-project</span>
+</span></span><span class="line"><span class="cl"><span class="na">ExecStop</span><span class="o">=</span><span class="s">/usr/bin/docker exec -u node project-a-devcontainer python3 /home/node/.config/orca-runtime/bin/stop-project.py</span>
+</span></span><span class="line"><span class="cl"><span class="na">Restart</span><span class="o">=</span><span class="s">always</span>
+</span></span><span class="line"><span class="cl"><span class="na">RestartSec</span><span class="o">=</span><span class="s">15</span>
+</span></span><span class="line"><span class="cl"><span class="na">TimeoutStopSec</span><span class="o">=</span><span class="s">30</span>
+</span></span><span class="line"><span class="cl"><span class="na">StandardOutput</span><span class="o">=</span><span class="s">append:/home/dev/.local/state/orca-project/server.log</span>
+</span></span><span class="line"><span class="cl"><span class="na">StandardError</span><span class="o">=</span><span class="s">append:/home/dev/.local/state/orca-project/server.log</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">[Install]</span>
+</span></span><span class="line"><span class="cl"><span class="na">WantedBy</span><span class="o">=</span><span class="s">default.target</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>启动前创建日志目录和文件，并设置权限；服务启动输出可能包含配对链接：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">install -d -m <span class="m">700</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project&#34;</span>
+</span></span><span class="line"><span class="cl">touch <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/server.log&#34;</span>
+</span></span><span class="line"><span class="cl">chmod <span class="m">600</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/server.log&#34;</span>
+</span></span><span class="line"><span class="cl">systemctl --user daemon-reload
+</span></span><span class="line"><span class="cl">systemctl --user <span class="nb">enable</span> --now orca-project.service
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果需要退出 SSH 后继续托管，应检查 <code>loginctl show-user &quot;$USER&quot; -p Linger</code>；未开启时，按主机的权限策略配置 <code>loginctl enable-linger</code>。</p>
+<p>这里的 <code>ExecStop</code> 有实际作用：<strong>结束宿主机上的 <code>docker exec</code> 客户端，不能据此推断容器里的进程已经退出。</strong> 停止辅助脚本核对 PID、进程启动时间和命令行，只向身份匹配的 CLI 发送终止信号。身份无法核实或等待退出超时会返回非零状态，不能把“发过信号”报告为“已经停止”。Orca 管理的终端会话仍需遵循它自己的生命周期，不能用批量 <code>pkill claude</code> 代替清理。</p>
+<h3 id="rootless-docker-的回环转发">rootless Docker 的回环转发</h3>
+<p>宿主机和容器都需要 <code>socat</code>。宿主机的 <code>/home/dev/.local/state/orca-project/relay.sh</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/usr/bin/env bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="nb">set</span> -euo pipefail
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> /usr/bin/docker <span class="nb">exec</span> -i -u node project-a-devcontainer <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /usr/bin/socat STDIO TCP:127.0.0.1:6768
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>同目录下的 <code>proxy.sh</code>：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/usr/bin/env bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="nb">set</span> -euo pipefail
+</span></span><span class="line"><span class="cl"><span class="nb">exec</span> /usr/bin/socat <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  TCP4-LISTEN:16768,bind<span class="o">=</span>127.0.0.1,reuseaddr,fork <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  EXEC:/home/dev/.local/state/orca-project/relay.sh,pipes
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>把带有 <code>TCP:...</code> 的容器转发命令放入独立脚本，可以避免将它直接嵌进 <code>socat EXEC:</code> 地址时产生冒号解析问题。转发只监听宿主机的 <code>127.0.0.1:16768</code>。</p>
+<p>第二个用户服务 <code>~/.config/systemd/user/orca-project-proxy.service</code> 托管这个入口：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-ini" data-lang="ini"><span class="line"><span class="cl"><span class="k">[Unit]</span>
+</span></span><span class="line"><span class="cl"><span class="na">Description</span><span class="o">=</span><span class="s">Private loopback transport for Orca</span>
+</span></span><span class="line"><span class="cl"><span class="na">After</span><span class="o">=</span><span class="s">orca-project.service</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">[Service]</span>
+</span></span><span class="line"><span class="cl"><span class="na">Type</span><span class="o">=</span><span class="s">simple</span>
+</span></span><span class="line"><span class="cl"><span class="na">ExecStart</span><span class="o">=</span><span class="s">/home/dev/.local/state/orca-project/proxy.sh</span>
+</span></span><span class="line"><span class="cl"><span class="na">Restart</span><span class="o">=</span><span class="s">always</span>
+</span></span><span class="line"><span class="cl"><span class="na">RestartSec</span><span class="o">=</span><span class="s">10</span>
+</span></span><span class="line"><span class="cl"><span class="na">StandardOutput</span><span class="o">=</span><span class="s">append:/home/dev/.local/state/orca-project/proxy.log</span>
+</span></span><span class="line"><span class="cl"><span class="na">StandardError</span><span class="o">=</span><span class="s">append:/home/dev/.local/state/orca-project/proxy.log</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">[Install]</span>
+</span></span><span class="line"><span class="cl"><span class="na">WantedBy</span><span class="o">=</span><span class="s">default.target</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在宿主机设置脚本和日志权限，再启用服务：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">chmod <span class="m">700</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/relay.sh&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/proxy.sh&#34;</span>
+</span></span><span class="line"><span class="cl">touch <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/proxy.log&#34;</span>
+</span></span><span class="line"><span class="cl">chmod <span class="m">600</span> <span class="s2">&#34;</span><span class="nv">$HOME</span><span class="s2">/.local/state/orca-project/proxy.log&#34;</span>
+</span></span><span class="line"><span class="cl">systemctl --user daemon-reload
+</span></span><span class="line"><span class="cl">systemctl --user <span class="nb">enable</span> --now orca-project-proxy.service
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>Mac 上建立隧道：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">ssh -N -T <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">BatchMode</span><span class="o">=</span>yes <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">RemoteCommand</span><span class="o">=</span>none <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">RequestTTY</span><span class="o">=</span>no <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">ControlPath</span><span class="o">=</span>none <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">ExitOnForwardFailure</span><span class="o">=</span>yes <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">ServerAliveInterval</span><span class="o">=</span><span class="m">30</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -o <span class="nv">ServerAliveCountMax</span><span class="o">=</span><span class="m">3</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -L 127.0.0.1:16768:127.0.0.1:16768 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  project-host
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>RemoteCommand=none</code> 和 <code>RequestTTY=no</code> 用于覆盖 SSH alias 中可能存在的“自动进入 Claude”配置，避免隧道连接执行交互式启动命令。我的 Mac 使用 LaunchAgent 托管这条隧道，配置 <code>RunAtLoad</code>、<code>KeepAlive</code> 和重启间隔；<code>ProgramArguments</code> 直接指向 <code>/usr/bin/ssh</code> 及其参数，不再经由 Python 包装脚本。每次打开任务无需重新手输 SSH。</p>
+<h3 id="用同一份配置源维护部署">用同一份配置源维护部署</h3>
+<p>手工配置用于说明各层职责。日常维护则统一从一份配置源生成服务、转发脚本和 LaunchAgent，避免早期安装脚本把已经修正的地址、协议或入口覆盖回去。</p>
+<p>可下载<a href="/downloads/remote-orca-collaboration/orca-project-config.zip" rel="">配置维护包 orca-project-config.zip</a>。它包含 <code>install-project.py</code>、服务入口、停止脚本和完整协作 skill。先完成前文的 Orca 解包安装，确保宿主机与容器都有 <code>socat</code>；在 Mac 解压，按自己的环境修改安装脚本顶部的 <code>ALIAS</code> 与 <code>CONTAINER</code>，再从解压目录运行：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">python3 install-project.py --check
+</span></span><span class="line"><span class="cl">python3 install-project.py --apply
+</span></span><span class="line"><span class="cl">python3 install-project.py --apply --reload-tunnel
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>--check</code> 只读，有配置差异、服务未运行或隧道需要加载时返回退出码 2。<code>--apply</code> 先备份再同步，仅在服务未运行时启动，不重启活跃的远程服务；新增启动逻辑在下次正常启动时使用。<code>--reload-tunnel</code> 加载 Mac 隧道配置，可能让客户端短暂重连，容器中的 agent 继续运行。重复执行无差异的配置不会重写文件。</p>
+<p>这个维护包不负责下载或升级 Orca，也不复制认证。示例仍使用 <code>node</code> 用户、<code>/home/node/.config/orca-runtime</code> 和前文端口；目录布局不同的环境需一起调整。没有为简化链路重建当前容器：它没有发布 Orca 端口，现有回环代理仍有实际作用。</p>
+<h3 id="在-mac-中配对">在 Mac 中配对</h3>
+<p>服务启动后会生成配对信息。保持 SSH 隧道在线，在 Mac Orca 的 <strong>Settings → Remote Orca Servers → Add Server</strong> 中添加服务，使用该服务生成的配对链接。</p>
+<p>配对链接包含访问能力，不能放入文章、仓库或截图。添加后确认连接状态为 Connected，并将新项目的默认 host 指向该远程环境，再登记容器内的项目目录。</p>
+<p>这一步应验证远程终端中的 <code>pwd</code>、<code>whoami</code> 和 agent 路径，而不只是检查界面上出现了一个项目名称。服务端、代理、隧道是三个独立环节，排查时也应分别检查。</p>
+<h2 id="项目内按任务创建-worktree">项目内按任务创建 worktree</h2>
+<p>我的项目只登记一次。在项目旁点击创建工作树的 <code>+</code>，为独立任务创建 worktree，并选择起始分支和第一个 agent。</p>
+<p>打开该任务的工作区后，再使用顶部的“新标签页”菜单启动 Claude 或 Codex，或通过自然语言让当前 agent 在<strong>当前 worktree</strong> 中启动另一方。后者应使用 Orca 的 <code>agent launch</code>，而不是另开一个不受 Orca 管理的 SSH 终端。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">项目 project-a
+</span></span><span class="line"><span class="cl">├── 任务：修复登录状态
+</span></span><span class="line"><span class="cl">│   ├── Claude Code
+</span></span><span class="line"><span class="cl">│   └── Codex
+</span></span><span class="line"><span class="cl">└── 任务：调整查询缓存
+</span></span><span class="line"><span class="cl">    ├── Codex
+</span></span><span class="line"><span class="cl">    └── Claude Code
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>项目旁的 <code>+</code> 创建任务工作树；工作区内部的新标签页菜单增加会话。<strong>给当前工作区增加一个标签页，不会为新任务建立文件隔离。</strong> 原始 checkout 的“主要”标记也不表示它当前检出的一定是 Git <code>main</code> 分支。</p>
+<p>我将新建 worktree 的位置配置在项目自己的持久化挂载中：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/workspaces/project-a/.worktrees/project-a/&lt;task-name&gt;
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这里将项目设置中的 <code>worktreeBasePath</code> 设为 <code>.worktrees</code>。本次搭建发现，Mac 客户端的通用工作目录设置没有替代 headless 服务端的项目配置。也不宜把默认工作树目录简单软链接到另一处：路径被规范化后，可能与 Orca 记录的工作区身份不一致。</p>
+<p>这套流程保留了“先创建任务 worktree，再开始会话”的原生模型。“先开一个未绑定 worktree 的空白任务，再在对话中原地转换，并仍显示在同一项目下”的入口不在本文方案中。</p>
+<h3 id="一个任务修改多个仓库">一个任务修改多个仓库</h3>
+<p>Orca 中登记的项目决定创建工作树时默认针对哪个仓库。例如，登记 <code>project-a</code> 后，从它旁边的 <code>+</code> 创建的是该仓库的工作树；这个操作不会自动为另一个仓库创建 worktree。</p>
+<p>我仍可以保留 <code>project-a</code> 的 Orca 工作区作为统一入口，通过对话让 agent 为参与修改的其他仓库准备本任务的 worktree，并明确目录映射：</p>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th>本任务的代码 worktree</th>
+<th>分支示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>project-a</td>
+<td><code>/workspaces/project-a/.worktrees/project-a/fix-session</code></td>
+<td><code>feat/fix-session</code></td>
+</tr>
+<tr>
+<td>engine</td>
+<td><code>/workspaces/engine/.worktrees/fix-session</code></td>
+<td><code>feat/fix-session</code></td>
+</tr>
+</tbody>
+</table>
+<p>两个 agent 复用这份映射，不因切换 agent 或进入下一阶段重新创建 worktree，也不要求为每个阶段登记新项目。Orca 的工作区身份用于定位终端；代码读写、Git 和测试则使用目标仓库的实际目录，例如 <code>git -C &lt;engine-worktree&gt; status</code>。不能把入口工作区的 <code>worktree current</code> 结果当成所有仓库的代码路径。</p>
+<p>同一仓库默认仍只有一方写入；确需并行时，由用户明确划分不同仓库或其他互不重叠的修改范围。</p>
+<p>当前 agent 的启动权限沿用 Orca 的全自动配置：Claude 使用 <code>--dangerously-skip-permissions</code>，Codex 使用 <code>--dangerously-bypass-approvals-and-sandbox</code>。它们仍受容器和 <code>node</code> 用户的系统权限限制。写入范围由任务指令约束，而不是把共享 worktree 当作两个进程之间的强隔离边界。</p>
+<h2 id="用一份协作-skill-统一规则">用一份协作 skill 统一规则</h2>
+<p>Orca 提供工作区、终端和协作协议；Claude 与 Codex 并不会因此自动共享模型上下文。需要让双方知道什么时候读取、什么时候派发，以及谁负责后续工作。</p>
+<p>我保留官方 <code>orca-cli</code> 和 <code>orchestration</code>，另加一个短的 <code>orca-peer-workflow</code> skill，记录本环境的协作约定。入口先区分查看、直接交接和等待返回；只有明确需要等待时，才加载 <code>references/supervised.md</code>。它不复制整套 CLI 文档，而是按需通过运行中的 CLI 获取对应版本的指南；同一会话读过且版本未变的指南直接复用。</p>
+<p>官方 skill 可以在容器中安装：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">orca-ide skills install --skill orca-cli --skill orchestration --agent claude,codex
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>自定义 skill 的完整内容可下载：<a href="/downloads/remote-orca-collaboration/orca-peer-workflow.zip" rel="">orca-peer-workflow.zip</a>。压缩包包含主文件和按需加载的参考文件，并保留完整 front matter，避免托管平台将它作为 Markdown 页面处理。解压后保留整个目录：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/home/node/.config/orca-runtime/skills/orca-peer-workflow/
+</span></span><span class="line"><span class="cl">├── SKILL.md
+</span></span><span class="line"><span class="cl">└── references/supervised.md
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>并让双方的发现目录指向它：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">/home/node/.agents/skills/orca-peer-workflow  → 同一份 skill
+</span></span><span class="line"><span class="cl">/home/node/.claude/skills/orca-peer-workflow  → 同一份 skill
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>服务入口会检查并恢复这些链接，已有同名非预期文件时应先检查，避免覆盖。对于已打开、可能缓存旧规则的会话，我会明确要求它重新读取这份 <code>SKILL.md</code>。</p>
+<p>本次实测还暴露了一个容易浪费时间的细节：agent 为了寻找 <code>orchestration/SKILL.md</code> 扫描了整个文件系统。实际上，官方 skill 使用很薄的发现入口，完整指南由当前 CLI 提供。最终规则直接要求：使用 <code>ORCA_CLI_COMMAND</code> 指向的 CLI 执行 <code>skills get orca-cli</code> 或 <code>skills get orchestration</code>，不全盘搜索文档。相关机制见 <a href="https://www.onorca.dev/docs/cli/skills" target="_blank" rel="noopener noreffer">Orca skills 说明</a>。</p>
+<h2 id="三种自然语言指令对应三种行为">三种自然语言指令，对应三种行为</h2>
+<h3 id="直接交接默认走短路径">直接交接，默认走短路径</h3>
+<p>例如对 Codex 说：</p>
+<blockquote>
+<p>把已有的性能验证结果交给 Claude，让它设计 Phase 2。</p>
+</blockquote>
+<p>在我的协作规则里，这表示由 Claude 接手后续阶段，Codex 交付后停下。单独出现“Phase 2”或“下一阶段”，不表示原 agent 还要监督执行或再取回结果。这个默认约定与官方指南中<a href="https://github.com/stablyai/orca/blob/v1.4.243/skill-guides/orca-cli.md#full-handoffs" target="_blank" rel="noopener noreffer">完整交接</a>的职责边界一致。</p>
+<p>已有目标会话和有效句柄时直接复用；目标状态不明确时先检查当前屏幕。交接消息只传必要的目标、修改权限、仓库目录映射、已有证据位置和待办，大段分析按需读取，不为了发送任务重新跑一遍调查和测试。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">orca terminal send \
+</span></span><span class="line"><span class="cl">  --terminal &lt;目标终端句柄&gt; \
+</span></span><span class="line"><span class="cl">  --text &#34;根据现有验证报告设计 Phase 2；先只读，报告与代码目录见任务上下文&#34; \
+</span></span><span class="line"><span class="cl">  --enter --json
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>发送回执表示已接受，不能据此宣称对方已开始工作或已经完成。需要确认开始执行时，再使用提交观察能力核对。普通交接不创建 Run、Task 或 Dispatch，原 agent 也不继续轮询；回执不明确时按原请求核查，避免重复发送。</p>
+<h3 id="查看已有结果">查看已有结果</h3>
+<p>例如对 Claude 说：</p>
+<blockquote>
+<p>看一下 Codex 刚才的分析，结合当前 diff 判断还有哪些问题。</p>
+</blockquote>
+<p>Claude 应复用当前任务中 Codex 的会话信息，先读已有结论，按需要补充终端输出和实际代码。只有信息缺失或句柄失效时再查询。这里不向 Codex 派新任务，也不建立编排记录。</p>
+<h3 id="委派一个阶段拿到结果后继续">委派一个阶段，拿到结果后继续</h3>
+<p>例如对 Codex 说：</p>
+<blockquote>
+<p>让 Claude 只读评审这一阶段的修改，你等待它完成，读取评审结论后继续修复。</p>
+</blockquote>
+<p>这包含一个明确的返回关系：Codex 保留后续责任，Claude 只负责这轮评审。Codex 等待期间暂停修改，Claude 完成并待命后，再由 Codex 继续。</p>
+<p>三种行为的区别在于后续责任归谁。说“交给 Claude”时，Claude 接手；说“你等 Claude 评审完再继续”时，原 agent 保留后续责任。明确这件事，比为所有协作套同一个完整流程更有效。</p>
+<h2 id="一次交接为什么花了五分钟">一次交接为什么花了五分钟</h2>
+<p>10 月 29 日，一条普通交接从用户提出要求到首次发送消息，准备了 <strong>314.27 秒</strong>；实际发送命令只用了 <strong>1.62 秒</strong>。发送前执行了 13 次 Shell 命令，原始工具输出约 17.8 万字符，包括整份 CLI 帮助、重复读取的协作指南和项目材料。最后使用的仍是普通 <code>terminal send</code>，没有建立监督任务。</p>
+<p>这次记录说明，耗时主要发生在交接准备阶段，不能归因于消息传输慢。旧规则把“交给另一方”和“等另一方完成后继续”的路径混在了一起，还要求预读游标、收到完成消息后再读终端并核对代码，给简单交接引入了额外工作。</p>
+<p>修订后的规则先决定交接方式，再按需获取信息：复用有效句柄和已有指南，发送摘要与证据位置，不为交接重做研究；只有明确需要等待时才加载编排协议。这是一次具体记录与对应修正，尚没有优化后的耗时对照，不能把它写成已经验证的加速比例。</p>
+<h2 id="发起方如何知道另一方已经完成">发起方如何知道另一方已经完成</h2>
+<p>只有明确要求等待结果后继续的阶段，才使用 Orca 原生 <code>orchestration</code>。发起方为本轮绑定 Run，再将 Task 派给已有的目标终端；Dispatch 标识这次具体执行。这里的流程不用于普通交接。</p>
+<p>下面是在 Orca 管理的终端中执行的命令形态。尖括号是运行时返回值的占位符；真实执行由 agent 读取当前指南完成：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">orca orchestration run-create --objective &#34;评审当前阶段并取回结论&#34; --json
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">orca orchestration worker-start \
+</span></span><span class="line"><span class="cl">  --spec &#34;当前 worktree 只读评审；输出结论、验证结果和待办，然后按派发指令上报完成&#34; \
+</span></span><span class="line"><span class="cl">  --worktree current \
+</span></span><span class="line"><span class="cl">  --terminal &lt;目标终端句柄&gt; \
+</span></span><span class="line"><span class="cl">  --json
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">orca orchestration check \
+</span></span><span class="line"><span class="cl">  --wait \
+</span></span><span class="line"><span class="cl">  --types &#34;worker_done,escalation,question&#34; \
+</span></span><span class="line"><span class="cl">  --timeout-ms 60000 \
+</span></span><span class="line"><span class="cl">  --json
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><code>worker-start --terminal</code> 复用已经存在的会话。不能只传 <code>--agent</code> 然后假定它会找到先前的那个终端；在当前版本中，不显式指定终端通常会启动新的 worker。</p>
+<p>接收方拿到的原生派发指令包含准确的身份和上报参数。完成阶段工作后，它先给出结论、验证结果和未解决问题，再发送一次 <code>worker_done</code>，明确标记 <code>succeeded</code> 或 <code>failed</code>，随后待命。它应按实际注入的指令上报，不能从旧记录拼一个 Task 或 Dispatch ID。</p>
+<p>发起方正在 <code>check --wait</code> 中等待。消息返回后，先核对它是否属于预期 Task 和 Dispatch，并检查结果状态。<strong>完成消息正文足以支持下一步时，直接使用其中的结论；只有缺少细节或证据时，才补读终端、报告或 diff。</strong> 是否需要复核测试和代码，取决于本轮职责，不默认重做对方全部验证。</p>
+<p>完成消息按协议确认，终端则根据所有权决定复用、保留或释放。用户已有会话继续保留；临时 worker 不应每次都永久 <code>retain</code>。</p>
+<pre class="mermaid">sequenceDiagram
+    participant U as 用户
+    participant A as Agent 1
+    participant O as Orca
+    participant B as Agent 2
+    U->>A: 让 2 完成这一阶段，你取回结果后继续
+    A->>O: 派发到已有终端，记录 Task / Dispatch
+    O->>B: 任务与原生上报指令
+    A->>O: check --wait
+    B->>B: 执行阶段任务，输出结论
+    B->>O: worker_done：成功或失败
+    O-->>A: 对应任务的完成消息与简短结论
+    opt 缺少细节或证据
+        A->>O: 按需读取终端或现有报告
+        O-->>A: 相关详细结果
+    end
+    A->>A: 按协议确认消息并处理终端所有权，继续下一阶段
+</pre>
+
+
+<p>因此，“知道完成”依靠对应任务的完成协议，取多少详细结果则由下一步需要决定。终端暂时安静、显示 Done、消息已接受，都不能单独代替任务完成协议。超时只是检查点：核查本轮任务状态，不扫描无关历史 worker，也不直接宣告成功或重复派发。完整协议见 <a href="https://github.com/stablyai/orca/blob/v1.4.243/skill-guides/orchestration.md" target="_blank" rel="noopener noreffer">v1.4.243 的 orchestration 指南</a>。</p>
+<h2 id="按需获取详细结果">按需获取详细结果</h2>
+<p>我的默认做法是：派发指令发送必要摘要、边界和来源终端句柄，大段结果由对方通过 <code>terminal read</code> 按需读取。代码与 diff 直接读取共享 worktree，不额外复制一份。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">orca terminal list --worktree current --json
+</span></span><span class="line"><span class="cl">orca terminal read --terminal &lt;目标句柄&gt; --json
+</span></span><span class="line"><span class="cl">orca terminal read --terminal &lt;目标句柄&gt; --cursor &lt;输出流游标&gt; --limit 1000 --json
+</span></span><span class="line"><span class="cl">orca terminal read --terminal &lt;目标句柄&gt; --screen --json
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><a href="https://www.onorca.dev/docs/cli/reference#terminals" target="_blank" rel="noopener noreffer">CLI 的终端读取接口</a>区分输出流与当前屏幕：</p>
+<table>
+<thead>
+<tr>
+<th>读取方式</th>
+<th>用途与限制</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>默认 <code>terminal read</code></td>
+<td>读取输出流；TUI 重绘可能产生重复和碎片</td>
+</tr>
+<tr>
+<td><code>--cursor</code></td>
+<td>从输出流位置继续读取；需要检查实际返回来源和分页标记</td>
+</tr>
+<tr>
+<td><code>--screen</code></td>
+<td>读取当前渲染画面；没有可分页的历史，不能与 <code>--cursor</code> 混用</td>
+</tr>
+</tbody>
+</table>
+<p>需要跟踪新增输出时，使用不带 <code>--screen</code> 的读取，只有返回 <code>source: stream</code> 时才保存输出流游标，再按需分页。不能把屏幕读取中的游标用于输出流，也不把“先读游标、再读输出流、再读屏幕”规定成每次交接的固定步骤。</p>
+<p><strong>本次验证发现，当前远程环境中的输出流读取没有返回预期的新增内容。</strong> 发起方最初还混用了屏幕游标。最后是通过 <code>terminal read --screen</code> 读到了目标终端上完整可见的短结论，并与完成消息一致。</p>
+<p>因此，skill 保留了来源检查和屏幕回退。如果输出流历史丢失、当前屏幕也没有覆盖全部内容，agent 应明确说明缺失；一条完成摘要足以支撑某个决定，不代表已经读过全部分析。</p>
+<p>本工作流不强制每次生成交接文件。已有日志和文档可以直接引用；如果具体任务要求保存完整报告，再按任务需要落文件。无论读取终端还是读取文件，进入接收方的内容都会占用它的上下文，需要控制相关性和读取范围。</p>
+<h2 id="一次真实的往返验证">一次真实的往返验证</h2>
+<p>为了验证阶段委派，我创建了一个独立测试 worktree，打开 Claude 与 Codex 两个终端，测试范围只允许生成随机值，不修改业务文件。</p>
+<p>Claude 作为本轮发起方，复用已经存在的 Codex 终端，要求它运行 <code>python3</code> 生成一个 UUID，在终端输出结果，再按原生协议上报完成。Claude 事先不知道这个随机值，必须等待并读取对方结果后才能继续。</p>
+<p>目标会话输出：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">PEER_RESULT=6ee69921-65ff-4924-94a1-40b86ee31219
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>发起方收到完成消息并读取目标终端后输出：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">CONTINUED=6ee69921-65ff-4924-94a1-40b86ee31219
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>除了对比文本，我还核对了原生状态：</p>
+<table>
+<thead>
+<tr>
+<th>验证项</th>
+<th>观察结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>目标会话</td>
+<td><code>worker-start --terminal</code> 复用既有 Codex，没有另开 worker</td>
+</tr>
+<tr>
+<td>完成消息</td>
+<td>由 Codex 自己发送，Task / Dispatch 与本轮一致</td>
+</tr>
+<tr>
+<td>执行状态</td>
+<td>Dispatch 为 <code>completed</code>，worker 为 <code>succeeded</code>、<code>settled</code></td>
+</tr>
+<tr>
+<td>结果取回</td>
+<td>Claude 读到与 Codex 实际生成值相同的 UUID；本次依赖屏幕读取回退</td>
+</tr>
+<tr>
+<td>会话保留</td>
+<td>这次旧版测试执行了保留操作；当前规则按终端所有权与后续用途决定，不对临时 worker 一律保留</td>
+</tr>
+<tr>
+<td>文件状态</td>
+<td>测试 worktree 无修改，HEAD 未变化</td>
+</tr>
+<tr>
+<td>清理</td>
+<td>测试终端、worktree 和测试分支均已删除，原有两个开发会话保留；历史资源记录仍存在，见下文</td>
+</tr>
+</tbody>
+</table>
+<p>这次验证覆盖了 <strong>Claude → Codex → Claude</strong> 的完成通知和短结果取回，支持本轮使用原生协议闭环。它没有证明反向协作、任意长度历史读取、网络异常恢复或服务重启后的全部行为都已经通过测试。角色互换沿用同一份规则，仍需在实际使用中核对。</p>
+<p>10 月 29 日的配置修订通过了只读一致性检查、六项隔离的停止逻辑检查，以及 Mac 经 SSH 隧道调用远程 CLI 的检查。重载 Mac 隧道后，远程服务 PID、运行时 ID 和两个真实开发会话的句柄均未变化。启动脚本已更新，新增逻辑等待下次正常启动使用；这次没有为验证它重启正在工作的 Server。</p>
+<h3 id="进程退出与历史记录保留分开判断">进程退出与历史记录保留分开判断</h3>
+<p>后续检查发现，测试终端和进程虽然已退出，原生资源记录仍为 <code>external/retained</code>。再次执行 <code>worker-release</code> 也没有清掉这条历史元数据。<strong>释放命令成功、元数据仍被保留、进程已经退出，是三个不同状态。</strong> 不能把历史记录显示为保留，直接判断成后台还有一个 agent 在运行。</p>
+<p>当前 v1.4.243 的 <code>orchestration reset</code> 只提供 <code>--all</code>、<code>--tasks</code>、<code>--messages</code> 范围，没有单 Run 选项。环境中已有真实任务记录，因此我保留了这条测试历史，没有为清掉它执行全局重置或直接修改数据库。日常等待只检查本轮 Task 和 Dispatch；不再使用的临时 worker 先核对释放回执，再清理测试工作区。</p>
+<h2 id="日常使用与收尾">日常使用与收尾</h2>
+<p>现在每个独立任务先在项目中建立入口工作区，选择一个 agent 开始。跨仓任务再明确参与仓库的代码 worktree 映射。需要第二方时，在当前任务中增加会话，再用自然语言说明它本轮的职责和是否需要返回结果；换阶段不换一组代码目录。</p>
+<p>一些日常指令可以写得很直接：</p>
+<blockquote>
+<p>在当前 worktree 启动 Claude，只读分析这次失败的测试，先不要修改代码。</p>
+</blockquote>
+<blockquote>
+<p>把现有验证报告交给 Claude，让它设计下一阶段方案。</p>
+</blockquote>
+<blockquote>
+<p>让 Codex 实施刚才确定的方案，你等待它完成，然后读取结果并检查测试。</p>
+</blockquote>
+<blockquote>
+<p>看一下 Claude 的结论，结合当前 diff 继续修复；保留现有未提交修改。</p>
+</blockquote>
+<p>同一 worktree 中，等待结果的一方暂停写入；接收方完成并待命后，再交回写入责任。确实需要同时修改时，由用户明确划分互不重叠的范围。</p>
+<p>Mac 断开连接时，容器中的服务和 agent 可以继续运行；直接关闭终端标签则属于进程和会话生命周期操作，不能当作“仅断开显示”。暂停、恢复、关闭和删除 worktree 应分别处理，删除工作区前先确认代码及提交状态。本次没有启用自动休眠，也没有增加按空闲时间杀进程的脚本。</p>
+<p>任务完成后，我仍按各仓库正常的 Git 流程检查 diff、运行测试、提交和发起评审，再清理对应 worktree。Orca 负责组织任务环境和协作状态，具体开发决策与角色交接仍由对话中的指令决定。</p>
+</div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2026-10-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"><span>
+                            <a class="link-to-markdown" href="/remote-orca-agent-collaboration/index.md" target="_blank">阅读原始文档</a>
+                        </span></div>
+            <div class="post-info-share">
+                <span><a href="javascript:void(0);" title="分享到 Twitter" data-sharer="twitter" data-url="https://lxkaka.wang/remote-orca-agent-collaboration/" data-title="基于 Orca 的远程多 Agent 协作开发" data-hashtags="Orca,Claude Code,Codex,Dev Container,Multi-Agent,SSH,Git Worktree"><i class="fab fa-twitter fa-fw"></i></a><a href="javascript:void(0);" title="分享到 Facebook" data-sharer="facebook" data-url="https://lxkaka.wang/remote-orca-agent-collaboration/" data-hashtag="Orca"><i class="fab fa-facebook-square fa-fw"></i></a><a href="javascript:void(0);" title="分享到 WhatsApp" data-sharer="whatsapp" data-url="https://lxkaka.wang/remote-orca-agent-collaboration/" data-title="基于 Orca 的远程多 Agent 协作开发" data-web><i class="fab fa-whatsapp fa-fw"></i></a><a href="javascript:void(0);" title="分享到 微博" data-sharer="weibo" data-url="https://lxkaka.wang/remote-orca-agent-collaboration/" data-title="基于 Orca 的远程多 Agent 协作开发"><i class="fab fa-weibo fa-fw"></i></a><a href="javascript:void(0);" title="分享到 百度" data-sharer="baidu" data-url="https://lxkaka.wang/remote-orca-agent-collaboration/" data-title="基于 Orca 的远程多 Agent 协作开发"><i data-svg-src="https://cdn.jsdelivr.net/npm/simple-icons@2.12.0/icons/baidu.svg"></i></a></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/orca/">Orca</a>,&nbsp;<a href="/tags/claude-code/">Claude Code</a>,&nbsp;<a href="/tags/codex/">Codex</a>,&nbsp;<a href="/tags/dev-container/">Dev Container</a>,&nbsp;<a href="/tags/multi-agent/">Multi-Agent</a>,&nbsp;<a href="/tags/ssh/">SSH</a>,&nbsp;<a href="/tags/git-worktree/">Git Worktree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/remote-claude-cmux/" class="prev" rel="prev" title="用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复"><i class="fas fa-angle-left fa-fw"></i>用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复</a></div>
+</div>
+<div id="comments"><div id="disqus_thread" class="comment"></div><noscript>
+                Please enable JavaScript to view the comments powered by <a href="https://disqus.com/?ref_noscript">Disqus</a>.
+            </noscript></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">Welcome to lxkaka's blog</div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2017 - 2026</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://www.lxkaka.wang" target="_blank">lxkaka</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><script type="text/javascript" src="https://lxkaka.disqus.com/embed.js" defer></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/smooth-scroll@16.1.3/dist/smooth-scroll.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/autocomplete.js@0.37.1/dist/autocomplete.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lunr@2.3.8/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lazysizes@5.2.0/lazysizes.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/sharer.js@0.4.0/sharer.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10},"comment":{},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"}};</script><script type="text/javascript" src="/js/theme.min.js"></script><script type="text/javascript">
+            window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+            gtag('config', 'UA-173214698-1', { 'anonymize_ip': true });
+        </script><script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-173214698-1" async></script></body>
+</html>
+
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+
+

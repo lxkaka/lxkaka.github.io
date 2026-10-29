@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Cni - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/cni/</link>
+        <description>Cni - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 22 Aug 2019 13:58:00 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/cni/" rel="self" type="application/rss+xml" /><item>
+    <title>Flannel 在 k8s 中的使用</title>
+    <link>https://lxkaka.wang/flannel/</link>
+    <pubDate>Thu, 22 Aug 2019 13:58:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/flannel/</guid>
+    <description><![CDATA[在处理过的 k8s 集群的众多问题中数据链路的问题往往是最复杂，最难排查的。这需要我们对 k8s 集群的网络通信的过程有着清晰的认识。Docker 通过 veth 虚拟]]></description>
+</item><item>
+    <title>Flannel 在 k8s 中的使用</title>
+    <link>https://lxkaka.wang/flannel/</link>
+    <pubDate>Thu, 22 Aug 2019 13:58:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/flannel/</guid>
+    <description><![CDATA[在处理过的 k8s 集群的众多问题中数据链路的问题往往是最复杂，最难排查的。这需要我们对 k8s 集群的网络通信的过程有着清晰的认识。Docker 通过 veth 虚拟]]></description>
+</item></channel>
+</rss>

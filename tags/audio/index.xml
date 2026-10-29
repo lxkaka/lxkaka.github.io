@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Audio - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/audio/</link>
+        <description>Audio - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 23 Jan 2025 15:16:44 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/audio/" rel="self" type="application/rss+xml" /><item>
+    <title>实时语音服务构建实践：基于 OpenAI Real-time 协议的技术分享</title>
+    <link>https://lxkaka.wang/end-to-end-audio-service/</link>
+    <pubDate>Thu, 23 Jan 2025 15:16:44 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/end-to-end-audio-service/</guid>
+    <description><![CDATA[在这里和大家分享一下构建实时语音服务的实践经验，这个服务是基于 OpenAI 最新推出的 Real-time 协议实现的。 随着 AI 技术的快速发展，实时语音交互的应用前景非常广阔]]></description>
+</item><item>
+    <title>深度学习中的常用音频处理方法</title>
+    <link>https://lxkaka.wang/audio-process/</link>
+    <pubDate>Sat, 21 Aug 2021 11:14:26 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/audio-process/</guid>
+    <description><![CDATA[在利用深度学习给音乐打标签的实践过程中，我们不会把音频的原始信号直接作为模型的直接输入。常见的做法是我们会对音频信号做一系列的处理生成频谱图]]></description>
+</item></channel>
+</rss>

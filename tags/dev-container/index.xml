@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Dev Container - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/dev-container/</link>
+        <description>Dev Container - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/dev-container/" rel="self" type="application/rss+xml" /><item>
+    <title>基于 Orca 的远程多 Agent 协作开发</title>
+    <link>https://lxkaka.wang/remote-orca-agent-collaboration/</link>
+    <pubDate>Wed, 28 Oct 2026 21:52:21 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/remote-orca-agent-collaboration/</guid>
+    <description><![CDATA[我的开发环境在远程 Linux 主机的 Dev Container 中。代码、依赖、测试服务以及 Claude Code、Codex 都已经在容器里，本地 Mac 负责交互。 前一篇用 cmux 管理远程 Claude Code]]></description>
+</item><item>
+    <title>用 cmux 管理远程 Dev Container 中的 Claude Code：登录、后台会话与恢复</title>
+    <link>https://lxkaka.wang/remote-claude-cmux/</link>
+    <pubDate>Tue, 27 Oct 2026 12:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/remote-claude-cmux/</guid>
+    <description><![CDATA[我的日常开发环境在远程 Linux 主机的 Dev Container 中。代码、依赖、测试服务和命令行工具都在容器里，Mac 负责编辑和交互。Claude Code 也应运行在同一个环境中]]></description>
+</item><item>
+    <title>让 Codex 直接运行在远端 Dev Container：从 Mac 到 iPhone 的透明开发方案</title>
+    <link>https://lxkaka.wang/codex-remote-devcontainer/</link>
+    <pubDate>Thu, 16 Jul 2026 16:00:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/codex-remote-devcontainer/</guid>
+    <description><![CDATA[背景：环境在远端，Codex 在本地 很多团队的真实开发环境并不在工程师的笔记本上，而是在一台长期运行的 Linux 开发机中：代码、依赖、数据库、编译工具]]></description>
+</item></channel>
+</rss>

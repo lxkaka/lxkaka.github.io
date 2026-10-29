@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>GRPC - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/grpc/</link>
+        <description>GRPC - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Sun, 21 Feb 2021 11:52:38 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/grpc/" rel="self" type="application/rss+xml" /><item>
+    <title>gRPC 一致性 Hash balancer 实现</title>
+    <link>https://lxkaka.wang/gprc-balancer/</link>
+    <pubDate>Sun, 21 Feb 2021 11:52:38 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/gprc-balancer/</guid>
+    <description><![CDATA[在开发过程中我们遇到了需要 session 保持的场景，即同一个用户的请求需要我们路由到后端服务的同一个实例。如果是 http 请求我们可用利用 nginx 的 ip hash 负载均衡策略来]]></description>
+</item><item>
+    <title>Python 和 Go 之间的 gRPC 交互</title>
+    <link>https://lxkaka.wang/python-grpc/</link>
+    <pubDate>Sat, 22 Aug 2020 10:33:59 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/python-grpc/</guid>
+    <description><![CDATA[因为不同的业务场景，异构的业务系统十分常见。异构服务之间的同步通信方式的选择不外乎 HTTP 和 RPC 两种。RPC 方式可以像调用本地方法一样调用远程服务提]]></description>
+</item><item>
+    <title>Python 和 Go 之间的 gRPC 交互</title>
+    <link>https://lxkaka.wang/python-grpc/</link>
+    <pubDate>Sat, 22 Aug 2020 10:33:59 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/python-grpc/</guid>
+    <description><![CDATA[因为不同的业务场景，异构的业务系统十分常见。异构服务之间的同步通信方式的选择不外乎 HTTP 和 RPC 两种。RPC 方式可以像调用本地方法一样调用远程服务提]]></description>
+</item></channel>
+</rss>

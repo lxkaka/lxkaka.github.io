@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>性能优化 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</link>
+        <description>性能优化 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 18 Jun 2026 20:20:00 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/" rel="self" type="application/rss+xml" /><item>
+    <title>一次 OpenClaw Bot 卡死问题排查：Telegram Polling、Kubernetes Service Env 与 Node.js process.env</title>
+    <link>https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/</link>
+    <pubDate>Thu, 18 Jun 2026 20:20:00 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/openclaw-telegram-ingress-env-cpu/</guid>
+    <description><![CDATA[这次问题的表象很普通：一个 OpenClaw bot 在生产环境里突然长时间不回复消息。更麻烦的是，它不是单次模型调用超时，而是 runtime 本身变得很不稳定，/readyz 偶]]></description>
+</item></channel>
+</rss>

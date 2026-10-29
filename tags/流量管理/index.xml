@@ -1,0 +1,29 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>流量管理 - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/%E6%B5%81%E9%87%8F%E7%AE%A1%E7%90%86/</link>
+        <description>流量管理 - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Fri, 06 Sep 2024 16:04:09 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/%E6%B5%81%E9%87%8F%E7%AE%A1%E7%90%86/" rel="self" type="application/rss+xml" /><item>
+    <title>AB Test 框架方案设计</title>
+    <link>https://lxkaka.wang/ab-test-design/</link>
+    <pubDate>Fri, 06 Sep 2024 16:04:09 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/ab-test-design/</guid>
+    <description><![CDATA[作者注：文章的结构是我让 LLM 参考我的设计简稿生成的 引言 AB Test 是现代软件开发和产品管理中的一项关键技术。它允许团队通过比较网页或应用功能的两个或多]]></description>
+</item><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item><item>
+    <title>Nginx Ingress 进阶——灰度发布</title>
+    <link>https://lxkaka.wang/nginx-ingress/</link>
+    <pubDate>Fri, 27 Dec 2019 16:53:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/nginx-ingress/</guid>
+    <description><![CDATA[Nginx Ingress Controller 作为 Kubernetes 官方推荐的 ingress controller 实现，可以说是非常好用，尤其是在你之前如果使用 Nginx 作为反向代理或者负载均衡，那么对于 nginx ingress controller 的应用也会得心应手。Ngi]]></description>
+</item></channel>
+</rss>

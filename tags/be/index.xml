@@ -1,0 +1,22 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>BE - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/be/</link>
+        <description>BE - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/be/" rel="self" type="application/rss+xml" /><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item></channel>
+</rss>

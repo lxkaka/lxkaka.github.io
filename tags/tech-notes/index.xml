@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Tech Notes - 标签 - lxkaka</title>
+        <link>https://lxkaka.wang/tags/tech-notes/</link>
+        <description>Tech Notes - 标签 - lxkaka</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>linxiaoking@gmail.com (lxkaka)</managingEditor>
+            <webMaster>linxiaoking@gmail.com (lxkaka)</webMaster><copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright><lastBuildDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</lastBuildDate><atom:link href="https://lxkaka.wang/tags/tech-notes/" rel="self" type="application/rss+xml" /><item>
+    <title>ZooKeeper初识整理(老酒装新瓶)</title>
+    <link>https://lxkaka.wang/zookeeper/</link>
+    <pubDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zookeeper/</guid>
+    <description><![CDATA[整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能]]></description>
+</item><item>
+    <title>ZooKeeper初识整理(老酒装新瓶)</title>
+    <link>https://lxkaka.wang/zookeeper/</link>
+    <pubDate>Thu, 21 Dec 2017 19:36:37 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/zookeeper/</guid>
+    <description><![CDATA[整体把握 (文中ZK与ZooKeeper混用请忽略这些细节) ZK 是针对分布式系统的协调服务（本身就是分布式应用程序），优点是可靠，可扩展，高性能]]></description>
+</item><item>
+    <title>Mongo查询优化-借助explain分析查询计划和执行信息</title>
+    <link>https://lxkaka.wang/mongo-optimize-md/</link>
+    <pubDate>Sat, 21 Oct 2017 14:01:29 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/mongo-optimize-md/</guid>
+    <description><![CDATA[背景 有这样的的批量查询需求，从mongo里要查每一个月内符合条件的交易流水总和。单条查询如下，可以看到查询条件其实很简单。但是测试的时候，发]]></description>
+</item><item>
+    <title>Mongo查询优化-借助explain分析查询计划和执行信息</title>
+    <link>https://lxkaka.wang/mongo-optimize-md/</link>
+    <pubDate>Sat, 21 Oct 2017 14:01:29 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/mongo-optimize-md/</guid>
+    <description><![CDATA[背景 有这样的的批量查询需求，从mongo里要查每一个月内符合条件的交易流水总和。单条查询如下，可以看到查询条件其实很简单。但是测试的时候，发]]></description>
+</item><item>
+    <title>ELK进阶之Logstash配置和Kibana应用</title>
+    <link>https://lxkaka.wang/elx-process/</link>
+    <pubDate>Thu, 12 Oct 2017 20:07:14 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elx-process/</guid>
+    <description><![CDATA[在搭建好ELK之后，我们可能会有不同的类型的日志。当我们想把这些不同的日志收集起来并需要查看分析，这个时候就需要合理的配置logstash,]]></description>
+</item><item>
+    <title>ELK进阶之Logstash配置和Kibana应用</title>
+    <link>https://lxkaka.wang/elx-process/</link>
+    <pubDate>Thu, 12 Oct 2017 20:07:14 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elx-process/</guid>
+    <description><![CDATA[在搭建好ELK之后，我们可能会有不同的类型的日志。当我们想把这些不同的日志收集起来并需要查看分析，这个时候就需要合理的配置logstash,]]></description>
+</item><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item><item>
+    <title>Django特殊使用场景集合(updated at 2017-12-21）</title>
+    <link>https://lxkaka.wang/django-use/</link>
+    <pubDate>Tue, 05 Sep 2017 18:33:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/django-use/</guid>
+    <description><![CDATA[》query的时候 QuerySet.first() 和 QuerySet[0]的区别: 指明了排序，即 order_by('field')的时候， **first()和[0]**是]]></description>
+</item><item>
+    <title>ELK stack日志系统搭建</title>
+    <link>https://lxkaka.wang/elk-build/</link>
+    <pubDate>Sat, 26 Aug 2017 12:56:48 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elk-build/</guid>
+    <description><![CDATA[ELK简要说明 ELK 不是一款软件，而是 Elasticsearch、Logstash 和 Kibana 三种软件产品的首字母缩写。这三者都是开源软件，通常配合使用]]></description>
+</item><item>
+    <title>ELK stack日志系统搭建</title>
+    <link>https://lxkaka.wang/elk-build/</link>
+    <pubDate>Sat, 26 Aug 2017 12:56:48 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://lxkaka.wang/elk-build/</guid>
+    <description><![CDATA[ELK简要说明 ELK 不是一款软件，而是 Elasticsearch、Logstash 和 Kibana 三种软件产品的首字母缩写。这三者都是开源软件，通常配合使用]]></description>
+</item></channel>
+</rss>
